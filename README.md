@@ -4,9 +4,6 @@
 
 Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen Linux-Server zu betreiben. Mit Web-Dashboard, automatischer Datenbank-Erstellung und GitHub-Integration.
 
-> **Server-IP konfigurierbar**: Die IP-Adresse wird in `config.sh` zentral konfiguriert.
-> Bei der Ersteinrichtung mit `./quick-start.sh` oder `./web-setup.sh` wird die IP automatisch abgefragt.
-
 ## Voraussetzungen
 
 | Komponente | Mindestversion | Hinweis |
@@ -15,9 +12,6 @@ Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen
 | **Docker** | 20.10+ | `curl -fsSL https://get.docker.com \| sh` |
 | **Docker Compose** | v2.0+ | Als Plugin: `docker compose` |
 | **Git** | 2.0+ | Optional, für GitHub-Integration |
-| **SSH-Zugang** | - | Für Remote-Verwaltung |
-
-> Das `quick-start.sh` Script prüft automatisch ob Docker installiert ist und zeigt Installationsanleitungen.
 
 ## Features
 
@@ -33,72 +27,42 @@ Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen
 
 ## Schnellstart
 
-### Option A: Web-Setup (Empfohlen)
+### Option A: Docker Compose (Empfohlen)
 
-Setup komplett über den Browser - kein SSH nötig:
-
-```bash
-# 1. Web-Setup starten
-chmod +x web-setup.sh
-./web-setup.sh
-
-# 2. Browser öffnen
-# http://<SERVER_IP>:3000
-
-# 3. Setup-Wizard durchlaufen:
-#    - Server-IP konfigurieren
-#    - MySQL Passwort festlegen
-#    - Admin-Account erstellen
-#    - Fertig!
-```
-
-### Option B: Kommandozeilen-Setup
-
-Klassisches Setup über Terminal:
+Ein Befehl - alles läuft:
 
 ```bash
-# 1. Setup ausführen (einmalig)
-chmod +x quick-start.sh
-./quick-start.sh
+# 1. Repository klonen
+git clone https://github.com/dein-username/deployr.git /opt/deployr
+cd /opt/deployr
 
-# 2. Neues Projekt erstellen
-cd /opt/webserver
-./scripts/create-project.sh
+# 2. Konfiguration erstellen
+cp .env.example .env
+nano .env  # Passwörter setzen!
 
-# Das Script fragt dich:
-# - Username (Standard: mehmed)
-# - Projektname
-# - Template (Static/PHP/Node.js)
-# - Port (automatisch vorgeschlagen)
-# - GitHub Repository (optional)
-# - Datenbank erstellen? (bei PHP/Node.js)
-# - Container direkt starten?
+# 3. Alles starten
+docker compose up -d
 
-# 3. Fertig! Website ist live
-# http://<SERVER_IP>:PORT
+# 4. Browser öffnen → Setup-Wizard
+# http://<SERVER_IP>:3000/setup
 ```
 
-### Mit GitHub-Projekt
+**Was wird gestartet:**
+- MariaDB (Port 3306)
+- phpMyAdmin (Port 8080)
+- Web-Dashboard (Port 3000)
 
-```bash
-./scripts/create-project.sh
-
-# Bei GitHub-Frage:
-# git@github.com:username/repo.git eingeben
-# → Repository wird automatisch geklont
-# → Berechtigungen werden gesetzt
-# → Projekt ist sofort einsatzbereit
-```
-
-Siehe **SETUP.md** für detaillierte Anleitung.
+Nach dem Setup-Wizard kannst du direkt loslegen!
 
 ## Verzeichnisstruktur
 
 ```
-webserver/
-├── infrastructure/             # Zentrale Services
-│   ├── docker-compose.yml     # MariaDB + phpMyAdmin
-│   ├── .env                  # Konfiguration (Root-Passwort!)
+deployr/
+├── docker-compose.yml         # ⭐ Haupt-Datei - startet alles
+├── .env                       # Konfiguration (aus .env.example)
+├── .env.example               # Template für Konfiguration
+│
+├── infrastructure/            # MariaDB/phpMyAdmin Config
 │   └── mariadb/              # DB-Konfiguration
 │
 ├── users/                     # User-Projekte
@@ -121,20 +85,13 @@ webserver/
 │   ├── create-database.sh    # Datenbank manuell erstellen
 │   ├── delete-project.sh     # Projekt löschen
 │   ├── delete-user.sh        # User mit allen Projekten löschen
-│   ├── list-projects.sh      # Alle Projekte anzeigen
-│   ├── setup-dashboard.sh    # Dashboard installieren
-│   └── start-infrastructure.sh
+│   └── list-projects.sh      # Alle Projekte anzeigen
 │
-├── dashboard/                # ⭐ Web-Dashboard (Node.js)
-│   ├── docker-compose.yml
+├── dashboard/                # Web-Dashboard (Node.js)
 │   ├── Dockerfile
 │   └── src/                  # Dashboard Quellcode
 │
-├── config.sh.example        # Template für Server-Konfiguration
-├── config.sh                # Server-Konfiguration (IP, User, Ports)
-├── README.md                # Diese Datei
-├── SETUP.md                 # Detaillierte Setup-Anleitung
-└── quick-start.sh           # Automatisches Setup-Script
+└── README.md                # Diese Datei
 ```
 
 ## Wichtige Befehle
@@ -164,7 +121,7 @@ webserver/
 ./scripts/delete-project.sh <username> <projektname>
 
 # Manuell
-cd /opt/webserver/users/<USER>/PROJEKTNAME
+cd /opt/deployr/users/<USER>/PROJEKTNAME
 docker compose down
 cd ..
 rm -rf PROJEKTNAME
@@ -179,14 +136,7 @@ rm -rf PROJEKTNAME
 
 ### Web-Dashboard
 
-```bash
-# Dashboard installieren und starten
-./scripts/setup-dashboard.sh
-
-# Dashboard öffnen: http://<SERVER_IP>:3000
-```
-
-Das Dashboard bietet:
+Das Dashboard ist unter `http://<SERVER_IP>:3000` erreichbar und bietet:
 - Projekte erstellen, starten, stoppen, löschen
 - Container-Status und Logs anzeigen
 - Datenbanken verwalten
@@ -196,13 +146,13 @@ Das Dashboard bietet:
 
 ```bash
 # Starten
-./scripts/start-infrastructure.sh
+docker compose up -d
 
 # Stoppen
-./scripts/stop-infrastructure.sh
+docker compose down
 
 # Status
-docker ps --filter network=webserver-network
+docker ps --filter network=deployr-network
 ```
 
 ### Einzelnes Projekt
@@ -226,9 +176,9 @@ git pull
 
 ## Services
 
-Nach dem Start verfügbar (IP aus `config.sh`):
+Nach dem Start verfügbar:
 
-- **MariaDB**: `<SERVER_IP>:3306` (oder `webserver-mariadb:3306` im Docker Network)
+- **MariaDB**: `<SERVER_IP>:3306` (oder `deployr-mariadb:3306` im Docker Network)
 - **phpMyAdmin**: `http://<SERVER_IP>:8080`
 
 ## VS Code Remote SSH
@@ -239,11 +189,9 @@ Die beste Methode um auf dem Server zu arbeiten:
 # 1. Extension Remote - SSH installieren
 # 2. Ctrl+Shift+P → Remote-SSH: Connect to Host
 # 3. <USER>@<SERVER_IP> (z.B. mehmed@192.168.2.125)
-# 4. Open Folder → /opt/webserver/users/mehmed/PROJEKTNAME/html
+# 4. Open Folder → /opt/deployr/users/mehmed/PROJEKTNAME/html
 # 5. Dateien bearbeiten → Speichern = LIVE!
 ```
-
-Siehe **VSCODE_REMOTE_SSH.md** für Details.
 
 ## Workflow: Von GitHub bis Live
 
@@ -261,7 +209,7 @@ Siehe **VSCODE_REMOTE_SSH.md** für Details.
    
    VARIANTE B (Update bestehendes Projekt):
    ssh <USER>@<SERVER_IP>
-   cd /opt/webserver/users/mehmed/PROJEKT/html
+   cd /opt/deployr/users/mehmed/PROJEKT/html
    git pull
    
    VARIANTE C (VS Code Remote SSH):
@@ -299,13 +247,6 @@ Für jedes Projekt in Nginx Proxy Manager:
 - Berechtigungen werden gesetzt
 - Git-Ready für Updates
 
-## Dokumentation
-
-- **SETUP.md**: Vollständige Setup-Anleitung
-- **VSCODE_REMOTE_SSH.md**: VS Code Remote SSH Guide
-- **GIT_WORKFLOW.md**: Git & Deployment Workflow
-- **templates/README.md**: Template-Dokumentation
-
 ## Quick Reference
 
 ```bash
@@ -331,14 +272,10 @@ cd users/<USER>/PROJEKT && docker compose logs -f
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 ```
 
-## Support & Troubleshooting
-
-Siehe SETUP.md Abschnitt Troubleshooting für häufige Probleme.
-
 ## Sicherheit
 
-- MySQL Root Passwort in `infrastructure/.env` ändern
+- MySQL Root Passwort in `.env` setzen
 - Jeder DB-User hat nur Zugriff auf seine eigenen Datenbanken
 - Container sind netzwerk-isoliert
-- SSL/TLS über NPM verwenden
+- SSL/TLS über Nginx Proxy Manager verwenden
 - Automatisch generierte sichere Passwörter für DB-User
