@@ -53,7 +53,7 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td><code>webserver-mariadb:3306</code></td>
+                                <td><code>deployr-mariadb:3306</code></td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
                                             data-bs-toggle="modal" data-bs-target="#deleteModal-<%= db.database %>">
@@ -104,14 +104,14 @@
         </div>
         <div class="card-body">
             <p>Verwende diese Einstellungen in deiner Anwendung:</p>
-            <pre class="bg-light p-3 rounded"><code>DB_HOST=webserver-mariadb
+            <pre class="bg-light p-3 rounded"><code>DB_HOST=deployr-mariadb
 DB_PORT=3306
 DB_DATABASE=&lt;datenbank&gt;
 DB_USERNAME=&lt;benutzer&gt;
 DB_PASSWORD=&lt;passwort&gt;</code></pre>
             <p class="text-muted mb-0">
                 <i class="bi bi-lightbulb"></i>
-                Im Docker-Netzwerk ist MariaDB unter <code>webserver-mariadb:3306</code> erreichbar.
+                Im Docker-Netzwerk ist MariaDB unter <code>deployr-mariadb:3306</code> erreichbar.
             </p>
         </div>
     </div>

@@ -34,9 +34,9 @@ if [ ! -f ".env" ]; then
 fi
 
 # Docker Network erstellen (falls nicht vorhanden)
-if ! docker network ls | grep -q "webserver-network"; then
-    echo "Erstelle Docker Network: webserver-network"
-    docker network create webserver-network
+if ! docker network ls | grep -q "deployr-network"; then
+    echo "Erstelle Docker Network: deployr-network"
+    docker network create deployr-network
 fi
 
 # Infrastruktur starten

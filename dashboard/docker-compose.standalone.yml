@@ -8,7 +8,7 @@
 services:
   dashboard:
     build: .
-    container_name: webserver-dashboard
+    container_name: deployr-dashboard
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -27,16 +27,16 @@ services:
       - NODE_ENV=production
       - SETUP_MODE=true
       # Temporäre Werte für den Start
-      - DB_HOST=webserver-mariadb
+      - DB_HOST=deployr-mariadb
       - DB_PORT=3306
       - DB_DATABASE=dashboard
       - DB_USERNAME=dashboard_user
       - DB_PASSWORD=setup_temp_password
       - SESSION_SECRET=setup-wizard-temp-secret
     networks:
-      - webserver-network
+      - deployr-network
 
 networks:
-  webserver-network:
-    name: webserver-network
+  deployr-network:
+    name: deployr-network
     driver: bridge

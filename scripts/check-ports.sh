@@ -48,13 +48,13 @@ done
 echo ""
 
 # Docker Container
-echo "Docker Container im webserver-network:"
+echo "Docker Container im deployr-network:"
 echo "─────────────────────────────────"
 if command -v docker &> /dev/null; then
-    if docker network ls 2>/dev/null | grep -q webserver-network; then
-        docker ps --filter "network=webserver-network" --format "{{.Names}}\t{{.Ports}}" 2>/dev/null || echo "Keine Container im webserver-network"
+    if docker network ls 2>/dev/null | grep -q deployr-network; then
+        docker ps --filter "network=deployr-network" --format "{{.Names}}\t{{.Ports}}" 2>/dev/null || echo "Keine Container im deployr-network"
     else
-        echo "webserver-network existiert noch nicht"
+        echo "deployr-network existiert noch nicht"
     fi
 else
     echo "Docker nicht installiert"

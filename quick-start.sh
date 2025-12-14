@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo "════════════════════════════════════════════"
-echo "Webserver Multi-User Setup - Quick Start"
+echo "       Deployr - Quick Start Setup"
 echo "════════════════════════════════════════════"
 echo ""
 
@@ -114,11 +114,11 @@ echo ""
 
 # Docker Network erstellen
 echo "[3/5] Erstelle Docker Network..."
-if ! docker network ls | grep -q "webserver-network"; then
-    docker network create webserver-network
-    echo "✓ webserver-network erstellt"
+if ! docker network ls | grep -q "deployr-network"; then
+    docker network create deployr-network
+    echo "✓ deployr-network erstellt"
 else
-    echo "✓ webserver-network existiert bereits"
+    echo "✓ deployr-network existiert bereits"
 fi
 echo ""
 
@@ -158,7 +158,7 @@ if [ "$INSTALL_DASHBOARD" = "j" ] || [ "$INSTALL_DASHBOARD" = "J" ]; then
 
         cat > "$SCRIPT_DIR/dashboard/.env" << EOF
 # Dashboard Datenbank-Konfiguration
-DB_HOST=webserver-mariadb
+DB_HOST=deployr-mariadb
 DB_PORT=3306
 DB_DATABASE=dashboard
 DB_USERNAME=dashboard_user
@@ -183,7 +183,7 @@ EOF
     sleep 5
 
     # Dashboard Datenbank erstellen
-    docker exec -i webserver-mariadb mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-ChangeMeInProduction123!}" << EOF 2>/dev/null || true
+    docker exec -i deployr-mariadb mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-ChangeMeInProduction123!}" << EOF 2>/dev/null || true
 CREATE DATABASE IF NOT EXISTS dashboard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'dashboard_user'@'%' IDENTIFIED BY '$DASHBOARD_DB_PASSWORD';
 GRANT ALL PRIVILEGES ON dashboard.* TO 'dashboard_user'@'%';
@@ -206,7 +206,7 @@ echo "✓ Setup abgeschlossen!"
 echo "════════════════════════════════════════════"
 echo ""
 echo "Was läuft jetzt:"
-docker ps --filter "network=webserver-network" --format "  - {{.Names}} ({{.Status}})"
+docker ps --filter "network=deployr-network" --format "  - {{.Names}} ({{.Status}})"
 echo ""
 echo "Services:"
 echo "  MariaDB:     $SERVER_IP:$MARIADB_PORT"

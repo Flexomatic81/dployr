@@ -61,7 +61,7 @@ async function createDatabase(systemUsername, databaseName) {
     // Verbindung zur MariaDB herstellen (als root)
     const mysql = require('mysql2/promise');
     const rootConnection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'webserver-mariadb',
+        host: process.env.DB_HOST || 'deployr-mariadb',
         port: process.env.DB_PORT || 3306,
         user: 'root',
         password: process.env.MYSQL_ROOT_PASSWORD
@@ -92,7 +92,7 @@ async function createDatabase(systemUsername, databaseName) {
             database: databaseName,
             username: dbUser,
             password: dbPassword,
-            host: 'webserver-mariadb',
+            host: 'deployr-mariadb',
             port: 3306
         };
     } finally {
@@ -113,7 +113,7 @@ async function deleteDatabase(systemUsername, databaseName) {
     // Verbindung zur MariaDB herstellen (als root)
     const mysql = require('mysql2/promise');
     const rootConnection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'webserver-mariadb',
+        host: process.env.DB_HOST || 'deployr-mariadb',
         port: process.env.DB_PORT || 3306,
         user: 'root',
         password: process.env.MYSQL_ROOT_PASSWORD

@@ -10,7 +10,7 @@ services:
       - ./app:/app
       - /app/node_modules  # Verhindert, dass lokale node_modules überschrieben werden
     networks:
-      - webserver-network
+      - deployr-network
     ports:
       - "${EXPOSED_PORT:-8003}:${APP_PORT:-3000}"
     environment:
@@ -18,7 +18,7 @@ services:
       - PORT=${APP_PORT:-3000}
       - TZ=Europe/Berlin
       # Datenbank
-      - DB_HOST=webserver-mariadb
+      - DB_HOST=deployr-mariadb
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE}
       - DB_USERNAME=${DB_USERNAME}
@@ -26,5 +26,5 @@ services:
     command: sh -c "npm install && npm start"
 
 networks:
-  webserver-network:
+  deployr-network:
     external: true

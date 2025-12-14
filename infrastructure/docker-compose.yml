@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mariadb:
     image: mariadb:11
-    container_name: webserver-mariadb
+    container_name: deployr-mariadb
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ChangeMeInProduction123!}
@@ -14,7 +14,7 @@ services:
       - ./mariadb/init:/docker-entrypoint-initdb.d:ro
       - ./mariadb/conf:/etc/mysql/conf.d:ro
     networks:
-      - webserver-network
+      - deployr-network
     ports:
       - "127.0.0.1:3306:3306"  # Nur lokal erreichbar (für Admin-Zugriff)
     healthcheck:
@@ -26,14 +26,14 @@ services:
   # Optional: phpMyAdmin für einfache Datenbank-Verwaltung
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: webserver-phpmyadmin
+    container_name: deployr-phpmyadmin
     restart: unless-stopped
     environment:
       PMA_HOST: mariadb
       PMA_PORT: 3306
       UPLOAD_LIMIT: 256M
     networks:
-      - webserver-network
+      - deployr-network
     ports:
       - "127.0.0.1:8080:80"  # Lokal auf Port 8080 (oder über NPM exposen)
     depends_on:
@@ -41,10 +41,10 @@ services:
         condition: service_healthy
 
 networks:
-  webserver-network:
-    name: webserver-network
+  deployr-network:
+    name: deployr-network
     driver: bridge
 
 volumes:
   mariadb_data:
-    name: webserver-mariadb-data
+    name: deployr-mariadb-data

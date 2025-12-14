@@ -32,7 +32,7 @@ if [ ! -d "$DASHBOARD_DIR" ]; then
 fi
 
 # Prüfen ob MariaDB läuft
-MARIADB_CONTAINER="webserver-mariadb"
+MARIADB_CONTAINER="deployr-mariadb"
 if ! docker ps | grep -q "$MARIADB_CONTAINER"; then
     echo -e "${YELLOW}⚠ MariaDB Container läuft nicht.${NC}"
     echo "Starte Infrastruktur..."
@@ -50,7 +50,7 @@ if [ ! -f "$DASHBOARD_DIR/.env" ]; then
 
     cat > "$DASHBOARD_DIR/.env" << EOF
 # Dashboard Datenbank-Konfiguration
-DB_HOST=webserver-mariadb
+DB_HOST=deployr-mariadb
 DB_PORT=3306
 DB_DATABASE=dashboard
 DB_USERNAME=dashboard_user

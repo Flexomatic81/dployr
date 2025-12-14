@@ -1,12 +1,11 @@
-# Multi-User Webserver Infrastruktur
+# Deployr
 
-Docker-basierte Multi-User Umgebung für Webprojekte auf Linux-Servern.
+**Docker-basierte Multi-User Hosting-Plattform für Webprojekte.**
+
+Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen Linux-Server zu betreiben. Mit Web-Dashboard, automatischer Datenbank-Erstellung und GitHub-Integration.
 
 > **Server-IP konfigurierbar**: Die IP-Adresse wird in `config.sh` zentral konfiguriert.
-> Bei der Ersteinrichtung mit `./quick-start.sh` wird die IP automatisch abgefragt.
-
-Ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen Server zu betreiben.
-Jeder User kann statische Websites, PHP-Anwendungen oder Node.js Apps hosten.
+> Bei der Ersteinrichtung mit `./quick-start.sh` oder `./web-setup.sh` wird die IP automatisch abgefragt.
 
 ## Voraussetzungen
 

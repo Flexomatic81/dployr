@@ -17,8 +17,8 @@ async function isSetupComplete() {
 
         // Prüfen ob MariaDB Container läuft
         return new Promise((resolve) => {
-            exec('docker ps --filter "name=webserver-mariadb" --format "{{.Names}}"', (error, stdout) => {
-                resolve(stdout.trim() === 'webserver-mariadb');
+            exec('docker ps --filter "name=deployr-mariadb" --format "{{.Names}}"', (error, stdout) => {
+                resolve(stdout.trim() === 'deployr-mariadb');
             });
         });
     } catch {
@@ -123,7 +123,7 @@ async function fileExists(filePath) {
 
 async function isInfrastructureRunning() {
     return new Promise((resolve) => {
-        exec('docker ps --filter "name=webserver-mariadb" -q', (error, stdout) => {
+        exec('docker ps --filter "name=deployr-mariadb" -q', (error, stdout) => {
             resolve(stdout.trim().length > 0);
         });
     });
@@ -158,7 +158,7 @@ MYSQL_ROOT_PASSWORD=${mysqlRootPassword}
 
 async function createDockerNetwork() {
     return new Promise((resolve, reject) => {
-        exec('docker network create webserver-network 2>/dev/null || true', (error, stdout, stderr) => {
+        exec('docker network create deployr-network 2>/dev/null || true', (error, stdout, stderr) => {
             resolve();
         });
     });
@@ -179,7 +179,7 @@ async function startInfrastructure() {
 async function waitForMariaDB(mysqlRootPassword, maxAttempts = 30) {
     for (let i = 0; i < maxAttempts; i++) {
         const isReady = await new Promise((resolve) => {
-            exec(`docker exec webserver-mariadb mysql -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
+            exec(`docker exec deployr-mariadb mysql -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
                 (error) => resolve(!error));
         });
 
@@ -200,7 +200,7 @@ async function createDashboardDatabase(mysqlRootPassword) {
             FLUSH PRIVILEGES;
         `;
 
-        exec(`docker exec -i webserver-mariadb mysql -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
+        exec(`docker exec -i deployr-mariadb mysql -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
             (error, stdout, stderr) => {
                 if (error) {
                     reject(new Error(stderr || error.message));

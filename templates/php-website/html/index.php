@@ -78,7 +78,7 @@
 
         <?php
         // Datenbank-Verbindung testen
-        $db_host = getenv('DB_HOST') ?: 'webserver-mariadb';
+        $db_host = getenv('DB_HOST') ?: 'deployr-mariadb';
         $db_database = getenv('DB_DATABASE') ?: '';
         $db_username = getenv('DB_USERNAME') ?: '';
         $db_password = getenv('DB_PASSWORD') ?: '';

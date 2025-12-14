@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Web-basiertes Setup für Webserver-Infrastruktur
+# Deployr - Web-basiertes Setup
 # Startet das Dashboard im Setup-Modus
 
 set -e
@@ -17,7 +17,7 @@ NC='\033[0m'
 
 echo ""
 echo "════════════════════════════════════════════"
-echo "  Webserver Web-Setup"
+echo "         Deployr - Web Setup"
 echo "════════════════════════════════════════════"
 echo ""
 
@@ -53,7 +53,7 @@ if [ ! -f "$DASHBOARD_DIR/.env" ]; then
 
     cat > "$DASHBOARD_DIR/.env" << EOF
 # Temporäre Konfiguration für Setup-Wizard
-DB_HOST=webserver-mariadb
+DB_HOST=deployr-mariadb
 DB_PORT=3306
 DB_DATABASE=dashboard
 DB_USERNAME=dashboard_user
@@ -68,7 +68,7 @@ fi
 
 # Docker Network erstellen falls nicht vorhanden
 echo "Erstelle Docker-Netzwerk..."
-docker network create webserver-network 2>/dev/null || true
+docker network create deployr-network 2>/dev/null || true
 
 # Leere config.sh erstellen falls nicht vorhanden (für Volume-Mount)
 if [ ! -f "$SCRIPT_DIR/config.sh" ]; then

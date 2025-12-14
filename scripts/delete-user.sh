@@ -113,7 +113,7 @@ else
 fi
 
 # 2. Datenbanken löschen
-MARIADB_CONTAINER="webserver-mariadb"
+MARIADB_CONTAINER="deployr-mariadb"
 if [ -n "$DATABASES" ] && [ "$DB_COUNT" -gt 0 ] && docker ps | grep -q "$MARIADB_CONTAINER"; then
     echo "[2/3] Lösche Datenbanken..."
 

@@ -1,7 +1,7 @@
 {
-  "name": "webserver-dashboard",
+  "name": "deployr-dashboard",
   "version": "1.0.0",
-  "description": "Web Dashboard für Multi-User Webserver Management",
+  "description": "Deployr - Web Dashboard für Multi-User Hosting",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",

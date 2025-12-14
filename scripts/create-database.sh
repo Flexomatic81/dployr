@@ -33,7 +33,7 @@ DB_USER="${USERNAME}_${DB_NAME}"
 DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16)
 
 # MariaDB Container Name
-MARIADB_CONTAINER="webserver-mariadb"
+MARIADB_CONTAINER="deployr-mariadb"
 
 # Prüfen ob MariaDB läuft
 if ! docker ps | grep -q "$MARIADB_CONTAINER"; then
@@ -84,7 +84,7 @@ echo "Datenbank:  $DB_NAME"
 echo "User:       $DB_USER"
 echo "Passwort:   $DB_PASSWORD"
 echo ""
-echo "Host:       webserver-mariadb (im Docker Network)"
+echo "Host:       deployr-mariadb (im Docker Network)"
 echo "            $SERVER_IP:$MARIADB_PORT (von außen)"
 echo "Port:       3306"
 echo ""
