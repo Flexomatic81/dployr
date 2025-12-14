@@ -1,6 +1,17 @@
 const Docker = require('dockerode');
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
+const USERS_PATH = process.env.USERS_PATH || '/app/users';
+const HOST_USERS_PATH = process.env.HOST_USERS_PATH || '/opt/deployr/users';
+
+// Konvertiert Container-Pfad zu Host-Pfad für Docker-Befehle
+function toHostPath(containerPath) {
+    if (containerPath.startsWith(USERS_PATH)) {
+        return containerPath.replace(USERS_PATH, HOST_USERS_PATH);
+    }
+    return containerPath;
+}
+
 // Container-Liste für einen User abrufen
 async function getUserContainers(systemUsername) {
     try {
@@ -92,8 +103,9 @@ async function getContainerLogs(containerId, lines = 100) {
 // Projekt mit docker-compose starten
 async function startProject(projectPath) {
     const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
     return new Promise((resolve, reject) => {
-        exec(`cd "${projectPath}" && docker compose up -d`, (error, stdout, stderr) => {
+        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {
@@ -106,8 +118,9 @@ async function startProject(projectPath) {
 // Projekt mit docker-compose stoppen
 async function stopProject(projectPath) {
     const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
     return new Promise((resolve, reject) => {
-        exec(`cd "${projectPath}" && docker compose down`, (error, stdout, stderr) => {
+        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" down`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {
@@ -120,8 +133,9 @@ async function stopProject(projectPath) {
 // Projekt mit docker-compose neustarten
 async function restartProject(projectPath) {
     const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
     return new Promise((resolve, reject) => {
-        exec(`cd "${projectPath}" && docker compose restart`, (error, stdout, stderr) => {
+        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" restart`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {

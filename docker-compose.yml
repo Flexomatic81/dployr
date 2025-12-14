@@ -68,6 +68,7 @@ services:
       - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET muss gesetzt sein}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - USERS_PATH=/app/users
+      - HOST_USERS_PATH=${HOST_USERS_PATH:-/opt/deployr/users}
       - SCRIPTS_PATH=/app/scripts
       - TEMPLATES_PATH=/app/templates
     networks:
