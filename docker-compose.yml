@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Deployr - Komplette Infrastruktur
 # Startet alle Services mit: docker compose up -d
 
