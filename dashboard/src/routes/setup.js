@@ -122,7 +122,8 @@ async function createDockerNetwork() {
 async function waitForMariaDB(mysqlRootPassword, maxAttempts = 30) {
     for (let i = 0; i < maxAttempts; i++) {
         const isReady = await new Promise((resolve) => {
-            exec(`docker exec deployr-mariadb mysql -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
+            // MariaDB 11 verwendet 'mariadb' statt 'mysql' als Client
+            exec(`docker exec deployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
                 (error) => resolve(!error));
         });
 
@@ -143,7 +144,7 @@ async function createDashboardDatabase(mysqlRootPassword) {
             FLUSH PRIVILEGES;
         `;
 
-        exec(`docker exec -i deployr-mariadb mysql -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
+        exec(`docker exec -i deployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
             (error, stdout, stderr) => {
                 if (error) {
                     reject(new Error(stderr || error.message));
