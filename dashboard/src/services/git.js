@@ -350,11 +350,47 @@ function detectProjectType(projectPath) {
     const hasPackageJson = fs.existsSync(path.join(projectPath, 'package.json'));
     const hasComposerJson = fs.existsSync(path.join(projectPath, 'composer.json'));
 
+    // Node.js Projekte genauer analysieren
     if (hasPackageJson) {
+        try {
+            const packageJson = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
+            const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+
+            // Next.js erkennen
+            if (deps['next']) {
+                return 'nextjs';
+            }
+            // React/Vue/Vite Build-Projekte erkennen
+            if (deps['react'] || deps['vue'] || deps['vite'] || deps['@vitejs/plugin-react'] || deps['@vitejs/plugin-vue']) {
+                return 'nodejs-static';
+            }
+        } catch (e) {
+            // Fehler beim Parsen - Fallback zu nodejs
+        }
         return 'nodejs';
-    } else if (hasIndexPhp || hasComposerJson) {
+    }
+
+    // PHP Projekte genauer analysieren
+    if (hasComposerJson) {
+        try {
+            const composerJson = JSON.parse(fs.readFileSync(path.join(projectPath, 'composer.json'), 'utf8'));
+            const deps = { ...composerJson.require, ...composerJson['require-dev'] };
+
+            // Laravel/Symfony erkennen
+            if (deps['laravel/framework'] || deps['symfony/framework-bundle']) {
+                return 'laravel';
+            }
+        } catch (e) {
+            // Fehler beim Parsen - Fallback zu php
+        }
         return 'php';
-    } else if (hasIndexHtml) {
+    }
+
+    if (hasIndexPhp) {
+        return 'php';
+    }
+
+    if (hasIndexHtml) {
         return 'static';
     }
 
@@ -430,6 +466,101 @@ services:
       - TZ=Europe/Berlin
       - NODE_ENV=production
     command: sh -c "npm install && npm start"
+
+networks:
+  deployr-network:
+    external: true`,
+
+        // Laravel/Symfony mit Composer
+        laravel: `version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM php:8.2-apache
+        RUN apt-get update && apt-get install -y git unzip libzip-dev libpng-dev libonig-dev libxml2-dev
+        RUN docker-php-ext-install pdo pdo_mysql mbstring zip gd xml
+        RUN a2enmod rewrite
+        COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+        ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+        RUN sed -ri -e 's!/var/www/html!\$\{APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+        RUN sed -ri -e 's!/var/www/!\$\{APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+    container_name: \${PROJECT_NAME:-${projectName}}
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - deployr-network
+    ports:
+      - "\${EXPOSED_PORT:-${port}}:80"
+    environment:
+      - TZ=Europe/Berlin
+      - APP_ENV=production
+    command: sh -c "composer install --no-dev --optimize-autoloader && apache2-foreground"
+
+networks:
+  deployr-network:
+    external: true`,
+
+        // React/Vue/Vite - Build zu statischen Dateien
+        'nodejs-static': `version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine AS builder
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm install
+        COPY . .
+        RUN npm run build
+
+        FROM nginx:alpine
+        COPY --from=builder /app/dist /usr/share/nginx/html
+        COPY --from=builder /app/build /usr/share/nginx/html 2>/dev/null || true
+    container_name: \${PROJECT_NAME:-${projectName}}
+    restart: unless-stopped
+    networks:
+      - deployr-network
+    ports:
+      - "\${EXPOSED_PORT:-${port}}:80"
+    environment:
+      - TZ=Europe/Berlin
+
+networks:
+  deployr-network:
+    external: true`,
+
+        // Next.js SSR
+        nextjs: `version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm install
+        COPY . .
+        RUN npm run build
+        EXPOSE 3000
+        CMD ["npm", "start"]
+    container_name: \${PROJECT_NAME:-${projectName}}
+    restart: unless-stopped
+    networks:
+      - deployr-network
+    ports:
+      - "\${EXPOSED_PORT:-${port}}:3000"
+    environment:
+      - TZ=Europe/Berlin
+      - NODE_ENV=production
 
 networks:
   deployr-network:

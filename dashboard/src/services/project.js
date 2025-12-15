@@ -86,7 +86,14 @@ async function detectTemplateType(projectPath) {
         const composePath = path.join(projectPath, 'docker-compose.yml');
         const content = await fs.readFile(composePath, 'utf8');
 
-        if (content.includes('php-fpm') || content.includes('php:')) {
+        // Neue erweiterte Typen erkennen
+        if (content.includes('composer install') || content.includes('APACHE_DOCUMENT_ROOT')) {
+            return 'laravel';
+        } else if (content.includes('next') || (content.includes('npm run build') && content.includes('npm start') && content.includes('3000'))) {
+            return 'nextjs';
+        } else if (content.includes('npm run build') && content.includes('FROM nginx:alpine')) {
+            return 'nodejs-static';
+        } else if (content.includes('php-fpm') || content.includes('php:')) {
             return 'php-website';
         } else if (content.includes('node:') || content.includes('npm')) {
             return 'nodejs-app';
@@ -291,7 +298,7 @@ async function deleteProject(systemUsername, projectName, deleteDatabase = false
 
 // Projekttyp ändern
 async function changeProjectType(systemUsername, projectName, newType) {
-    const validTypes = ['static', 'php', 'nodejs'];
+    const validTypes = ['static', 'php', 'nodejs', 'laravel', 'nodejs-static', 'nextjs'];
     if (!validTypes.includes(newType)) {
         throw new Error(`Ungültiger Projekttyp. Erlaubt: ${validTypes.join(', ')}`);
     }
