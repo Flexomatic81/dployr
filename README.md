@@ -17,6 +17,7 @@ Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen
 
 - 🚀 **Interaktives Projekt-Setup** - Keine Parameter nötig, alles wird abgefragt
 - 🖥️ **Web-Dashboard** - Browser-basierte Verwaltungsoberfläche
+- 🌙 **Dark/Light Theme** - Umschaltbar mit Speicherung der Präferenz
 - 🗄️ **Automatische Datenbank-Erstellung** - Optional beim Projekt-Setup
 - 🔐 **Sichere Credentials** - Automatisch generiert und in .env gespeichert
 - 📦 **GitHub Integration** - Repository direkt beim Setup klonen
@@ -24,6 +25,8 @@ Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen
 - 🐳 **Docker-basierte Isolation** - Jedes Projekt läuft isoliert
 - 🗃️ **Zentrale MariaDB** - Mit User-Isolation und phpMyAdmin
 - 📋 **Fertige Templates** - Static, PHP, Node.js sofort einsatzbereit
+- 👥 **Multi-User mit Admin-Freischaltung** - Neue User müssen durch Admin genehmigt werden
+- 🔄 **Projekt-Typ änderbar** - Nachträglicher Wechsel zwischen Static/PHP/Node.js
 
 ## Schnellstart
 
@@ -142,8 +145,10 @@ Das Dashboard ist unter `http://<SERVER_IP>:3000` erreichbar und bietet:
 - Container starten, stoppen, neustarten, löschen
 - Container-Status und Logs anzeigen
 - Git Pull für verbundene Repositories
-- Datenbanken verwalten
-- Multi-User Login
+- Datenbanken verwalten (mit User-Prefix für Isolation)
+- Multi-User Login mit Admin-Freischaltung
+- Dark/Light Theme Toggle
+- Admin-Panel für Benutzerverwaltung
 
 ### Infrastruktur
 
@@ -291,6 +296,9 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
 - MySQL Root Passwort in `.env` setzen
 - Jeder DB-User hat nur Zugriff auf seine eigenen Datenbanken
+- Datenbanknamen werden mit Username prefixed (z.B. `mehmed_meinprojekt`)
 - Container sind netzwerk-isoliert
 - SSL/TLS über Nginx Proxy Manager verwenden
 - Automatisch generierte sichere Passwörter für DB-User
+- Neue Benutzer müssen durch Admin freigeschaltet werden
+- Server-IP wird im Setup-Wizard konfiguriert und sicher gespeichert

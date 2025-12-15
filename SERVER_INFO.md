@@ -213,11 +213,21 @@ sudo apt upgrade
 
 ## Änderungshistorie
 
-- **2025-12-15**: Git Integration
-  - Projekt von Git-Repository erstellen (im Dashboard)
-  - Automatische Projekttyp-Erkennung (Static/PHP/Node.js)
-  - Pull-Funktion für Git-verbundene Projekte
-  - Unterstützung für private Repositories (Access Token)
+- **2025-12-15**: Dark Mode, Admin-Freischaltung & Verbesserungen
+  - Dark/Light Theme Toggle mit localStorage-Speicherung
+  - Registrierungs-Freischaltung durch Admin
+    - Neue User müssen von Admin genehmigt werden
+    - Admin-Panel zeigt ausstehende Registrierungen
+    - Info-Hinweis auf Registrierungsseite
+  - Projekt-Typ nachträglich änderbar (Static/PHP/Node.js)
+  - Datenbanknamen mit Username-Prefix für bessere Isolation
+  - Server-IP aus Setup-Wizard in Port-Links verwendet
+  - Git Integration
+    - Projekt von Git-Repository erstellen (im Dashboard)
+    - Automatische Projekttyp-Erkennung (Static/PHP/Node.js)
+    - Pull-Funktion für Git-verbundene Projekte
+    - Unterstützung für private Repositories (Access Token)
+  - PDO MySQL-Erweiterung für PHP-Container
 
 - **2025-12-14**: Admin Panel & Service-Architektur
   - Admin-Bereich für Benutzerverwaltung
