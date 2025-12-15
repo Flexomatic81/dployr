@@ -55,6 +55,8 @@ async function createDatabase(systemUsername, databaseName) {
         throw new Error('Datenbankname darf nur Kleinbuchstaben, Zahlen und Unterstriche enthalten');
     }
 
+    // User-Prefix für Eindeutigkeit hinzufügen
+    const fullDbName = `${systemUsername}_${databaseName}`;
     const dbUser = `${systemUsername}_${databaseName}`;
     const dbPassword = generatePassword();
 
@@ -68,9 +70,9 @@ async function createDatabase(systemUsername, databaseName) {
     });
 
     try {
-        // Datenbank erstellen
+        // Datenbank erstellen (mit User-Prefix)
         await rootConnection.execute(
-            `CREATE DATABASE IF NOT EXISTS \`${databaseName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+            `CREATE DATABASE IF NOT EXISTS \`${fullDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
         );
 
         // User erstellen
@@ -80,16 +82,16 @@ async function createDatabase(systemUsername, databaseName) {
 
         // Rechte vergeben
         await rootConnection.execute(
-            `GRANT ALL PRIVILEGES ON \`${databaseName}\`.* TO '${dbUser}'@'%'`
+            `GRANT ALL PRIVILEGES ON \`${fullDbName}\`.* TO '${dbUser}'@'%'`
         );
 
         await rootConnection.execute('FLUSH PRIVILEGES');
 
-        // Credentials speichern
-        await saveCredentials(systemUsername, databaseName, dbUser, dbPassword);
+        // Credentials speichern (mit vollem DB-Namen)
+        await saveCredentials(systemUsername, fullDbName, dbUser, dbPassword);
 
         return {
-            database: databaseName,
+            database: fullDbName,
             username: dbUser,
             password: dbPassword,
             host: 'deployr-mariadb',
