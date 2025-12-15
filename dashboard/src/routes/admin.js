@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { pool } = require('../config/database');
+const userService = require('../services/user');
 const projectService = require('../services/project');
 
 // Alle Admin-Routen erfordern Admin-Rechte
@@ -12,16 +11,14 @@ router.use(requireAdmin);
 // Admin Dashboard - Übersicht
 router.get('/', async (req, res) => {
     try {
-        
-        // Statistiken abrufen
-        const [users] = await pool.query('SELECT COUNT(*) as count FROM dashboard_users');
-        const [admins] = await pool.query('SELECT COUNT(*) as count FROM dashboard_users WHERE is_admin = TRUE');
+        const userCount = await userService.getUserCount();
+        const adminCount = await userService.getAdminCount();
 
         // Alle Projekte aller User zählen
-        const [allUsers] = await pool.query('SELECT system_username FROM dashboard_users');
+        const users = await userService.getAllUsers();
         let totalProjects = 0;
 
-        for (const user of allUsers) {
+        for (const user of users) {
             const projects = await projectService.getUserProjects(user.system_username);
             totalProjects += projects.length;
         }
@@ -29,8 +26,8 @@ router.get('/', async (req, res) => {
         res.render('admin/index', {
             title: 'Admin-Bereich',
             stats: {
-                users: users[0].count,
-                admins: admins[0].count,
+                users: userCount,
+                admins: adminCount,
                 projects: totalProjects
             }
         });
@@ -44,9 +41,7 @@ router.get('/', async (req, res) => {
 // User-Verwaltung - Liste
 router.get('/users', async (req, res) => {
     try {
-                const [users] = await pool.query(
-            'SELECT id, username, system_username, is_admin, created_at FROM dashboard_users ORDER BY created_at DESC'
-        );
+        const users = await userService.getAllUsers();
 
         // Projekte pro User zählen
         for (const user of users) {
@@ -93,24 +88,13 @@ router.post('/users', async (req, res) => {
             return res.redirect('/admin/users/create');
         }
 
-        
         // Prüfen ob User existiert
-        const [existing] = await pool.query(
-            'SELECT id FROM dashboard_users WHERE username = ? OR system_username = ?',
-            [username, system_username]
-        );
-
-        if (existing.length > 0) {
+        if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
             req.flash('error', 'Benutzername oder System-Username existiert bereits');
             return res.redirect('/admin/users/create');
         }
 
-        // Password hashen und User erstellen
-        const passwordHash = await bcrypt.hash(password, 10);
-        await pool.query(
-            'INSERT INTO dashboard_users (username, password_hash, system_username, is_admin) VALUES (?, ?, ?, ?)',
-            [username, passwordHash, system_username, is_admin === 'on']
-        );
+        await userService.createUser(username, password, system_username, is_admin === 'on');
 
         req.flash('success', `User "${username}" erfolgreich erstellt`);
         res.redirect('/admin/users');
@@ -124,19 +108,16 @@ router.post('/users', async (req, res) => {
 // User bearbeiten - Formular
 router.get('/users/:id/edit', async (req, res) => {
     try {
-                const [users] = await pool.query(
-            'SELECT id, username, system_username, is_admin FROM dashboard_users WHERE id = ?',
-            [req.params.id]
-        );
+        const editUser = await userService.getUserById(req.params.id);
 
-        if (users.length === 0) {
+        if (!editUser) {
             req.flash('error', 'User nicht gefunden');
             return res.redirect('/admin/users');
         }
 
         res.render('admin/users-edit', {
             title: 'User bearbeiten',
-            editUser: users[0]
+            editUser
         });
     } catch (error) {
         console.error('Fehler beim Laden des Users:', error);
@@ -157,31 +138,18 @@ router.put('/users/:id', async (req, res) => {
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
-        
-        // Prüfen ob User existiert
-        const [existing] = await pool.query(
-            'SELECT id FROM dashboard_users WHERE (username = ? OR system_username = ?) AND id != ?',
-            [username, system_username, userId]
-        );
-
-        if (existing.length > 0) {
+        // Prüfen ob Username/System-Username bereits verwendet wird
+        if (await userService.existsUsernameOrSystemUsername(username, system_username, userId)) {
             req.flash('error', 'Benutzername oder System-Username wird bereits verwendet');
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
-        // User aktualisieren
-        if (password) {
-            const passwordHash = await bcrypt.hash(password, 10);
-            await pool.query(
-                'UPDATE dashboard_users SET username = ?, password_hash = ?, system_username = ?, is_admin = ? WHERE id = ?',
-                [username, passwordHash, system_username, is_admin === 'on', userId]
-            );
-        } else {
-            await pool.query(
-                'UPDATE dashboard_users SET username = ?, system_username = ?, is_admin = ? WHERE id = ?',
-                [username, system_username, is_admin === 'on', userId]
-            );
-        }
+        await userService.updateUser(userId, {
+            username,
+            password: password || null,
+            systemUsername: system_username,
+            isAdmin: is_admin === 'on'
+        });
 
         req.flash('success', 'User erfolgreich aktualisiert');
         res.redirect('/admin/users');
@@ -196,7 +164,7 @@ router.put('/users/:id', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
     try {
         const userId = req.params.id;
-        
+
         // Eigenen Account nicht löschen
         if (parseInt(userId) === req.session.user.id) {
             req.flash('error', 'Sie können Ihren eigenen Account nicht löschen');
@@ -204,16 +172,12 @@ router.delete('/users/:id', async (req, res) => {
         }
 
         // Prüfen ob es der letzte Admin ist
-        const [user] = await pool.query('SELECT is_admin FROM dashboard_users WHERE id = ?', [userId]);
-        if (user.length > 0 && user[0].is_admin) {
-            const [adminCount] = await pool.query('SELECT COUNT(*) as count FROM dashboard_users WHERE is_admin = TRUE');
-            if (adminCount[0].count <= 1) {
-                req.flash('error', 'Der letzte Admin-Account kann nicht gelöscht werden');
-                return res.redirect('/admin/users');
-            }
+        if (await userService.isLastAdmin(userId)) {
+            req.flash('error', 'Der letzte Admin-Account kann nicht gelöscht werden');
+            return res.redirect('/admin/users');
         }
 
-        await pool.query('DELETE FROM dashboard_users WHERE id = ?', [userId]);
+        await userService.deleteUser(userId);
 
         req.flash('success', 'User erfolgreich gelöscht');
         res.redirect('/admin/users');
@@ -227,8 +191,7 @@ router.delete('/users/:id', async (req, res) => {
 // Alle Projekte aller User anzeigen
 router.get('/projects', async (req, res) => {
     try {
-                const [users] = await pool.query('SELECT username, system_username FROM dashboard_users');
-
+        const users = await userService.getAllUsers();
         const allProjects = [];
 
         for (const user of users) {
