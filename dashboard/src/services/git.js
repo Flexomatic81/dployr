@@ -92,24 +92,19 @@ function createAuthenticatedUrl(repoUrl, token) {
 
 /**
  * Klont ein Git-Repository in ein Projekt-Verzeichnis
+ * Existierende Dateien werden durch Repository-Dateien ersetzt,
+ * aber docker-compose.yml und nginx/ werden beibehalten
  */
 async function cloneRepository(projectPath, repoUrl, token = null) {
-    // Prüfen ob Verzeichnis existiert und nicht leer ist
-    if (fs.existsSync(projectPath)) {
-        const files = fs.readdirSync(projectPath);
-        // Erlaubt: leeres Verzeichnis oder nur docker-compose.yml und nginx
-        const allowedFiles = ['docker-compose.yml', 'nginx', '.git'];
-        const hasOtherFiles = files.some(f => !allowedFiles.includes(f));
-
-        if (hasOtherFiles) {
-            throw new Error('Projekt-Verzeichnis enthält bereits Dateien. Bitte erst bereinigen.');
-        }
+    // Prüfen ob bereits ein Git-Repository existiert
+    if (isGitRepository(projectPath)) {
+        throw new Error('Projekt ist bereits mit einem Git-Repository verbunden. Bitte zuerst trennen.');
     }
 
     const authenticatedUrl = createAuthenticatedUrl(repoUrl, token);
 
     return new Promise((resolve, reject) => {
-        // Clone in temporäres Verzeichnis, dann verschieben
+        // Clone in temporäres Verzeichnis, dann zusammenführen
         const tempDir = `${projectPath}_temp_${Date.now()}`;
 
         exec(`git clone "${authenticatedUrl}" "${tempDir}"`, {
@@ -128,48 +123,59 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
             }
 
             try {
-                // Existierende Dateien sichern (docker-compose.yml, nginx)
+                // Wichtige Dateien sichern (docker-compose.yml, nginx)
                 const backups = {};
                 const filesToPreserve = ['docker-compose.yml', 'nginx'];
 
                 for (const file of filesToPreserve) {
                     const filePath = path.join(projectPath, file);
                     if (fs.existsSync(filePath)) {
+                        const tempBackupPath = path.join(tempDir, `_backup_${file}`);
                         if (fs.statSync(filePath).isDirectory()) {
-                            backups[file] = { isDir: true, path: filePath };
+                            // Verzeichnis rekursiv kopieren
+                            fs.cpSync(filePath, tempBackupPath, { recursive: true });
+                            backups[file] = { isDir: true, backupPath: tempBackupPath };
                         } else {
-                            backups[file] = { isDir: false, content: fs.readFileSync(filePath) };
+                            fs.copyFileSync(filePath, tempBackupPath);
+                            backups[file] = { isDir: false, backupPath: tempBackupPath };
                         }
                     }
                 }
 
-                // Altes Verzeichnis leeren (außer .git falls vorhanden)
+                // Altes Verzeichnis komplett leeren
                 const oldFiles = fs.readdirSync(projectPath);
                 for (const file of oldFiles) {
                     const filePath = path.join(projectPath, file);
                     fs.rmSync(filePath, { recursive: true, force: true });
                 }
 
-                // Dateien aus temp verschieben
+                // Dateien aus temp verschieben (außer Backups)
                 const newFiles = fs.readdirSync(tempDir);
                 for (const file of newFiles) {
+                    // Backup-Dateien überspringen
+                    if (file.startsWith('_backup_')) continue;
+
                     const src = path.join(tempDir, file);
                     const dest = path.join(projectPath, file);
                     fs.renameSync(src, dest);
                 }
 
-                // Gesicherte Dateien wiederherstellen (überschreiben falls nötig)
+                // Gesicherte Dateien wiederherstellen (überschreiben Repository-Dateien)
                 for (const [file, backup] of Object.entries(backups)) {
                     const filePath = path.join(projectPath, file);
+                    // Erst eventuelle Datei aus Repo löschen
+                    if (fs.existsSync(filePath)) {
+                        fs.rmSync(filePath, { recursive: true, force: true });
+                    }
+                    // Backup wiederherstellen
                     if (backup.isDir) {
-                        // Verzeichnisse werden nicht überschrieben,
-                        // das geklonte Repo könnte ein eigenes nginx haben
+                        fs.cpSync(backup.backupPath, filePath, { recursive: true });
                     } else {
-                        fs.writeFileSync(filePath, backup.content);
+                        fs.copyFileSync(backup.backupPath, filePath);
                     }
                 }
 
-                // Temp-Verzeichnis löschen
+                // Temp-Verzeichnis löschen (inkl. Backups)
                 fs.rmSync(tempDir, { recursive: true, force: true });
 
                 // Token in .git-credentials speichern für spätere Pulls
