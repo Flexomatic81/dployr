@@ -137,8 +137,11 @@ rm -rf PROJEKTNAME
 ### Web-Dashboard
 
 Das Dashboard ist unter `http://<SERVER_IP>:3000` erreichbar und bietet:
-- Projekte erstellen, starten, stoppen, löschen
+- Projekte erstellen (von Template oder Git-Repository)
+- Git-Integration: Projekte direkt von GitHub/GitLab/Bitbucket erstellen
+- Container starten, stoppen, neustarten, löschen
 - Container-Status und Logs anzeigen
+- Git Pull für verbundene Repositories
 - Datenbanken verwalten
 - Multi-User Login
 
@@ -201,18 +204,26 @@ Die beste Methode um auf dem Server zu arbeiten:
 2. git push zu GitHub
    ↓
 3. Auf Server deployen:
-   
-   VARIANTE A (Neues Projekt):
+
+   VARIANTE A (Web-Dashboard - Empfohlen):
+   → Dashboard öffnen → Neues Projekt
+   → Tab "Von Git-Repository"
+   → Repository-URL eingeben (+ Token für private Repos)
+   → Projekttyp wird automatisch erkannt
+   → Projekt ist live!
+
+   VARIANTE B (CLI Script):
    ./scripts/create-project.sh
    → GitHub-URL eingeben
    → Projekt ist live!
-   
-   VARIANTE B (Update bestehendes Projekt):
-   ssh <USER>@<SERVER_IP>
-   cd /opt/deployr/users/mehmed/PROJEKT/html
+
+   VARIANTE C (Update bestehendes Git-Projekt):
+   Dashboard → Projekt öffnen → "Pull" Button
+   ODER: ssh <USER>@<SERVER_IP>
+   cd /opt/deployr/users/mehmed/PROJEKT
    git pull
-   
-   VARIANTE C (VS Code Remote SSH):
+
+   VARIANTE D (VS Code Remote SSH):
    VS Code → Server → Source Control → Pull
    ↓
 4. Fertig! Website ist aktualisiert
@@ -243,9 +254,13 @@ Für jedes Projekt in Nginx Proxy Manager:
 - Kein 403 Forbidden mehr!
 
 ### GitHub Integration
-- Repository wird automatisch geklont
-- Berechtigungen werden gesetzt
-- Git-Ready für Updates
+- **Im Dashboard**: Projekt direkt von Git-Repository erstellen
+  - Automatische Projekttyp-Erkennung (Static/PHP/Node.js)
+  - Passende Docker-Konfiguration wird generiert
+  - Unterstützt private Repos mit Personal Access Token
+- **Per Script**: Repository beim Projekt-Setup klonen
+- Git Pull direkt im Dashboard ausführen
+- Berechtigungen werden automatisch gesetzt
 
 ## Quick Reference
 

@@ -213,6 +213,17 @@ sudo apt upgrade
 
 ## Änderungshistorie
 
+- **2025-12-15**: Git Integration
+  - Projekt von Git-Repository erstellen (im Dashboard)
+  - Automatische Projekttyp-Erkennung (Static/PHP/Node.js)
+  - Pull-Funktion für Git-verbundene Projekte
+  - Unterstützung für private Repositories (Access Token)
+
+- **2025-12-14**: Admin Panel & Service-Architektur
+  - Admin-Bereich für Benutzerverwaltung
+  - Refactoring zu Service-Layer Architektur
+  - Passwort-Reset Funktion
+
 - **2025-12-13**: Initiale Installation
   - MariaDB + phpMyAdmin setup
   - Demo-Projekt erstellt
