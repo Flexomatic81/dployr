@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { getPool } = require('../config/database');
+const { pool } = require('../config/database');
 const projectService = require('../services/project');
 
 // Alle Admin-Routen erfordern Admin-Rechte
@@ -12,8 +12,7 @@ router.use(requireAdmin);
 // Admin Dashboard - Übersicht
 router.get('/', async (req, res) => {
     try {
-        const pool = getPool();
-
+        
         // Statistiken abrufen
         const [users] = await pool.query('SELECT COUNT(*) as count FROM dashboard_users');
         const [admins] = await pool.query('SELECT COUNT(*) as count FROM dashboard_users WHERE is_admin = TRUE');
@@ -45,8 +44,7 @@ router.get('/', async (req, res) => {
 // User-Verwaltung - Liste
 router.get('/users', async (req, res) => {
     try {
-        const pool = getPool();
-        const [users] = await pool.query(
+                const [users] = await pool.query(
             'SELECT id, username, system_username, is_admin, created_at FROM dashboard_users ORDER BY created_at DESC'
         );
 
@@ -95,8 +93,7 @@ router.post('/users', async (req, res) => {
             return res.redirect('/admin/users/create');
         }
 
-        const pool = getPool();
-
+        
         // Prüfen ob User existiert
         const [existing] = await pool.query(
             'SELECT id FROM dashboard_users WHERE username = ? OR system_username = ?',
@@ -127,8 +124,7 @@ router.post('/users', async (req, res) => {
 // User bearbeiten - Formular
 router.get('/users/:id/edit', async (req, res) => {
     try {
-        const pool = getPool();
-        const [users] = await pool.query(
+                const [users] = await pool.query(
             'SELECT id, username, system_username, is_admin FROM dashboard_users WHERE id = ?',
             [req.params.id]
         );
@@ -161,8 +157,7 @@ router.put('/users/:id', async (req, res) => {
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
-        const pool = getPool();
-
+        
         // Prüfen ob User existiert
         const [existing] = await pool.query(
             'SELECT id FROM dashboard_users WHERE (username = ? OR system_username = ?) AND id != ?',
@@ -201,8 +196,7 @@ router.put('/users/:id', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
     try {
         const userId = req.params.id;
-        const pool = getPool();
-
+        
         // Eigenen Account nicht löschen
         if (parseInt(userId) === req.session.user.id) {
             req.flash('error', 'Sie können Ihren eigenen Account nicht löschen');
@@ -233,8 +227,7 @@ router.delete('/users/:id', async (req, res) => {
 // Alle Projekte aller User anzeigen
 router.get('/projects', async (req, res) => {
     try {
-        const pool = getPool();
-        const [users] = await pool.query('SELECT username, system_username FROM dashboard_users');
+                const [users] = await pool.query('SELECT username, system_username FROM dashboard_users');
 
         const allProjects = [];
 
