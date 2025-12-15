@@ -54,6 +54,10 @@
                                         <a href="/admin/users/<%= u.id %>/edit" class="btn btn-outline-primary" title="Bearbeiten">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                        <button type="button" class="btn btn-outline-warning" title="Passwort zurücksetzen"
+                                                onclick="resetPassword(<%= u.id %>, '<%= u.username %>')">
+                                            <i class="bi bi-key"></i>
+                                        </button>
                                         <% if (u.id !== user.id) { %>
                                             <form action="/admin/users/<%= u.id %>?_method=DELETE" method="POST" class="d-inline"
                                                   onsubmit="return confirm('User &quot;<%= u.username %>&quot; wirklich löschen?')">
@@ -72,3 +76,79 @@
         <% } %>
     </div>
 </div>
+
+<!-- Passwort zurücksetzen Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-key"></i> Passwort zurücksetzen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="resetPasswordForm" method="POST">
+                <input type="hidden" name="_method" value="PUT">
+                <div class="modal-body">
+                    <p>Neues Passwort für <strong id="resetUsername"></strong>:</p>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newPassword" name="password" required minlength="6">
+                            <button class="btn btn-outline-primary" type="button" onclick="generateNewPassword()">
+                                <i class="bi bi-shuffle"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyPassword()">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Mindestens 6 Zeichen. Kopieren Sie das Passwort bevor Sie speichern!</div>
+                    </div>
+                    <input type="hidden" id="resetUsernameField" name="username">
+                    <input type="hidden" id="resetSystemUsername" name="system_username">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-key"></i> Passwort setzen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const usersData = <%- JSON.stringify(users.map(u => ({ id: u.id, username: u.username, system_username: u.system_username }))) %>;
+
+function resetPassword(userId, username) {
+    const user = usersData.find(u => u.id === userId);
+    if (!user) return;
+
+    document.getElementById('resetUsername').textContent = username;
+    document.getElementById('resetUsernameField').value = user.username;
+    document.getElementById('resetSystemUsername').value = user.system_username;
+    document.getElementById('resetPasswordForm').action = '/admin/users/' + userId + '?_method=PUT';
+
+    generateNewPassword();
+
+    const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+    modal.show();
+}
+
+function generateNewPassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
+    let password = '';
+    for (let i = 0; i < 16; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('newPassword').value = password;
+}
+
+function copyPassword() {
+    const password = document.getElementById('newPassword').value;
+    navigator.clipboard.writeText(password).then(() => {
+        const btn = event.target.closest('button');
+        const icon = btn.querySelector('i');
+        icon.className = 'bi bi-check';
+        setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 2000);
+    });
+}
+</script>
