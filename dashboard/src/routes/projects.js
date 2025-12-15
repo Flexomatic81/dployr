@@ -95,7 +95,10 @@ router.post('/from-git', requireAuth, async (req, res) => {
         const typeNames = {
             static: 'Statische Website',
             php: 'PHP Website',
-            nodejs: 'Node.js App'
+            nodejs: 'Node.js App',
+            laravel: 'Laravel/Symfony',
+            'nodejs-static': 'React/Vue (Static Build)',
+            nextjs: 'Next.js (SSR)'
         };
 
         req.flash('success', `Projekt "${name}" erfolgreich von Git erstellt! Erkannt als: ${typeNames[result.projectType] || result.projectType}`);
@@ -205,7 +208,10 @@ router.post('/:name/change-type', requireAuth, async (req, res) => {
         const typeNames = {
             static: 'Statische Website',
             php: 'PHP Website',
-            nodejs: 'Node.js App'
+            nodejs: 'Node.js App',
+            laravel: 'Laravel/Symfony',
+            'nodejs-static': 'React/Vue (Static Build)',
+            nextjs: 'Next.js (SSR)'
         };
 
         if (!typeNames[type]) {

@@ -61,6 +61,12 @@
                                 <span class="badge bg-purple">PHP Website</span>
                             <% } else if (project.templateType === 'nodejs-app') { %>
                                 <span class="badge bg-success">Node.js App</span>
+                            <% } else if (project.templateType === 'laravel') { %>
+                                <span class="badge bg-danger">Laravel / Symfony</span>
+                            <% } else if (project.templateType === 'nodejs-static') { %>
+                                <span class="badge bg-info">React / Vue (Build)</span>
+                            <% } else if (project.templateType === 'nextjs') { %>
+                                <span class="badge bg-dark">Next.js (SSR)</span>
                             <% } else { %>
                                 <span class="badge bg-secondary">Statische Website</span>
                             <% } %>
@@ -143,15 +149,28 @@
             <div class="col-md-6">
                 <label for="projectType" class="form-label">Projekttyp</label>
                 <select name="type" id="projectType" class="form-select">
-                    <option value="static" <%= project.templateType === 'static-website' ? 'selected' : '' %>>
-                        Statische Website (nginx)
-                    </option>
-                    <option value="php" <%= project.templateType === 'php-website' ? 'selected' : '' %>>
-                        PHP Website (Apache + PHP)
-                    </option>
-                    <option value="nodejs" <%= project.templateType === 'nodejs-app' ? 'selected' : '' %>>
-                        Node.js App
-                    </option>
+                    <optgroup label="Einfache Projekte">
+                        <option value="static" <%= project.templateType === 'static-website' ? 'selected' : '' %>>
+                            Statische Website (nginx)
+                        </option>
+                        <option value="php" <%= project.templateType === 'php-website' ? 'selected' : '' %>>
+                            PHP Website (Apache + PHP)
+                        </option>
+                        <option value="nodejs" <%= project.templateType === 'nodejs-app' ? 'selected' : '' %>>
+                            Node.js App (Express)
+                        </option>
+                    </optgroup>
+                    <optgroup label="Framework-Projekte">
+                        <option value="laravel" <%= project.templateType === 'laravel' ? 'selected' : '' %>>
+                            Laravel / Symfony (Composer)
+                        </option>
+                        <option value="nodejs-static" <%= project.templateType === 'nodejs-static' ? 'selected' : '' %>>
+                            React / Vue / Vite (Static Build)
+                        </option>
+                        <option value="nextjs" <%= project.templateType === 'nextjs' ? 'selected' : '' %>>
+                            Next.js (SSR)
+                        </option>
+                    </optgroup>
                 </select>
             </div>
             <div class="col-md-6">
