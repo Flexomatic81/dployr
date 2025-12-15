@@ -8,9 +8,29 @@ const SALT_ROUNDS = 10;
  */
 async function getAllUsers() {
     const [users] = await pool.query(
-        'SELECT id, username, system_username, is_admin, created_at FROM dashboard_users ORDER BY created_at DESC'
+        'SELECT id, username, system_username, is_admin, approved, created_at FROM dashboard_users ORDER BY created_at DESC'
     );
     return users;
+}
+
+/**
+ * Alle ausstehenden User (nicht freigeschaltet) abrufen
+ */
+async function getPendingUsers() {
+    const [users] = await pool.query(
+        'SELECT id, username, system_username, created_at FROM dashboard_users WHERE approved = FALSE ORDER BY created_at ASC'
+    );
+    return users;
+}
+
+/**
+ * Anzahl ausstehender Registrierungen
+ */
+async function getPendingCount() {
+    const [result] = await pool.query(
+        'SELECT COUNT(*) as count FROM dashboard_users WHERE approved = FALSE'
+    );
+    return result[0].count;
 }
 
 /**
@@ -18,7 +38,7 @@ async function getAllUsers() {
  */
 async function getUserById(id) {
     const [users] = await pool.query(
-        'SELECT id, username, system_username, is_admin, created_at FROM dashboard_users WHERE id = ?',
+        'SELECT id, username, system_username, is_admin, approved, created_at FROM dashboard_users WHERE id = ?',
         [id]
     );
     return users[0] || null;
@@ -53,20 +73,22 @@ async function existsUsernameOrSystemUsername(username, systemUsername, excludeI
 
 /**
  * Neuen User erstellen
+ * @param {boolean} approved - Wenn true, wird User sofort freigeschaltet (Admin-Erstellung)
  */
-async function createUser(username, password, systemUsername, isAdmin = false) {
+async function createUser(username, password, systemUsername, isAdmin = false, approved = false) {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     const [result] = await pool.query(
-        'INSERT INTO dashboard_users (username, password_hash, system_username, is_admin) VALUES (?, ?, ?, ?)',
-        [username, passwordHash, systemUsername, isAdmin]
+        'INSERT INTO dashboard_users (username, password_hash, system_username, is_admin, approved) VALUES (?, ?, ?, ?, ?)',
+        [username, passwordHash, systemUsername, isAdmin, approved]
     );
 
     return {
         id: result.insertId,
         username,
         system_username: systemUsername,
-        is_admin: isAdmin
+        is_admin: isAdmin,
+        approved
     };
 }
 
@@ -146,8 +168,36 @@ async function isLastAdmin(userId) {
     return adminCount <= 1;
 }
 
+/**
+ * User freischalten (Registrierung genehmigen)
+ */
+async function approveUser(id) {
+    await pool.query(
+        'UPDATE dashboard_users SET approved = TRUE WHERE id = ?',
+        [id]
+    );
+    return getUserById(id);
+}
+
+/**
+ * User-Registrierung ablehnen (User löschen)
+ */
+async function rejectUser(id) {
+    // Nur nicht freigeschaltete User können abgelehnt werden
+    const user = await getUserById(id);
+    if (!user) {
+        throw new Error('User nicht gefunden');
+    }
+    if (user.approved) {
+        throw new Error('Bereits freigeschaltete User können nicht abgelehnt werden');
+    }
+    await pool.query('DELETE FROM dashboard_users WHERE id = ?', [id]);
+}
+
 module.exports = {
     getAllUsers,
+    getPendingUsers,
+    getPendingCount,
     getUserById,
     getUserByUsername,
     existsUsernameOrSystemUsername,
@@ -158,5 +208,7 @@ module.exports = {
     verifyPassword,
     getAdminCount,
     getUserCount,
-    isLastAdmin
+    isLastAdmin,
+    approveUser,
+    rejectUser
 };

@@ -61,6 +61,27 @@
             </div>
         </div>
     </div>
+
+    <% if (stats.pending > 0) { %>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-dark opacity-75">Ausstehende Registrierungen</h6>
+                        <h2 class="mb-0"><%= stats.pending %></h2>
+                    </div>
+                    <i class="bi bi-person-exclamation fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="/admin/pending" class="text-dark text-decoration-none">
+                    Prüfen <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <% } %>
 </div>
 
 <div class="row g-4">

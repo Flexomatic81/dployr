@@ -1,0 +1,69 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+        <li class="breadcrumb-item active">Ausstehende Registrierungen</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-person-exclamation"></i> Ausstehende Registrierungen</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <% if (pendingUsers.length === 0) { %>
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle display-1 text-success"></i>
+                <p class="mt-3 text-muted">Keine ausstehenden Registrierungen vorhanden.</p>
+                <a href="/admin" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Zurück zum Admin-Bereich
+                </a>
+            </div>
+        <% } else { %>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong><%= pendingUsers.length %></strong> Registrierung(en) warten auf Freischaltung.
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Benutzername</th>
+                            <th>System-Username</th>
+                            <th>Registriert am</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% pendingUsers.forEach(u => { %>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-person-badge text-warning"></i>
+                                    <strong><%= u.username %></strong>
+                                </td>
+                                <td><code><%= u.system_username %></code></td>
+                                <td><%= new Date(u.created_at).toLocaleString('de-DE') %></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <form action="/admin/users/<%= u.id %>/approve" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-success" title="Freischalten">
+                                                <i class="bi bi-check-lg"></i> Freischalten
+                                            </button>
+                                        </form>
+                                        <form action="/admin/users/<%= u.id %>/reject" method="POST" class="d-inline"
+                                              onsubmit="return confirm('Registrierung von &quot;<%= u.username %>&quot; wirklich ablehnen? Der Account wird gelöscht.')">
+                                            <button type="submit" class="btn btn-danger" title="Ablehnen">
+                                                <i class="bi bi-x-lg"></i> Ablehnen
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>

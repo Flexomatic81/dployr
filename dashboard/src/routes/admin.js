@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
     try {
         const userCount = await userService.getUserCount();
         const adminCount = await userService.getAdminCount();
+        const pendingCount = await userService.getPendingCount();
 
         // Alle Projekte aller User zählen
         const users = await userService.getAllUsers();
@@ -28,13 +29,62 @@ router.get('/', async (req, res) => {
             stats: {
                 users: userCount,
                 admins: adminCount,
-                projects: totalProjects
+                projects: totalProjects,
+                pending: pendingCount
             }
         });
     } catch (error) {
         console.error('Fehler im Admin-Dashboard:', error);
         req.flash('error', 'Fehler beim Laden der Admin-Übersicht');
         res.redirect('/dashboard');
+    }
+});
+
+// Ausstehende Registrierungen anzeigen
+router.get('/pending', async (req, res) => {
+    try {
+        const pendingUsers = await userService.getPendingUsers();
+
+        res.render('admin/pending', {
+            title: 'Ausstehende Registrierungen',
+            pendingUsers
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der ausstehenden Registrierungen:', error);
+        req.flash('error', 'Fehler beim Laden der ausstehenden Registrierungen');
+        res.redirect('/admin');
+    }
+});
+
+// User freischalten
+router.post('/users/:id/approve', async (req, res) => {
+    try {
+        const user = await userService.approveUser(req.params.id);
+
+        if (user) {
+            req.flash('success', `User "${user.username}" wurde freigeschaltet`);
+        } else {
+            req.flash('error', 'User nicht gefunden');
+        }
+
+        res.redirect('/admin/pending');
+    } catch (error) {
+        console.error('Fehler beim Freischalten:', error);
+        req.flash('error', 'Fehler beim Freischalten: ' + error.message);
+        res.redirect('/admin/pending');
+    }
+});
+
+// User-Registrierung ablehnen
+router.post('/users/:id/reject', async (req, res) => {
+    try {
+        await userService.rejectUser(req.params.id);
+        req.flash('success', 'Registrierung wurde abgelehnt');
+        res.redirect('/admin/pending');
+    } catch (error) {
+        console.error('Fehler beim Ablehnen:', error);
+        req.flash('error', 'Fehler beim Ablehnen: ' + error.message);
+        res.redirect('/admin/pending');
     }
 });
 
@@ -94,7 +144,8 @@ router.post('/users', async (req, res) => {
             return res.redirect('/admin/users/create');
         }
 
-        await userService.createUser(username, password, system_username, is_admin === 'on');
+        // Admin-erstellte User werden automatisch freigeschaltet
+        await userService.createUser(username, password, system_username, is_admin === 'on', true);
 
         req.flash('success', `User "${username}" erfolgreich erstellt`);
         res.redirect('/admin/users');

@@ -27,6 +27,12 @@ router.post('/login', redirectIfAuth, async (req, res) => {
             return res.redirect('/login');
         }
 
+        // Prüfen ob User freigeschaltet ist
+        if (!user.approved) {
+            req.flash('warning', 'Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch einen Administrator.');
+            return res.redirect('/login');
+        }
+
         // Session erstellen
         req.session.user = {
             id: user.id,
@@ -86,10 +92,10 @@ router.post('/register', redirectIfAuth, async (req, res) => {
             return res.redirect('/register');
         }
 
-        // User erstellen
+        // User erstellen (noch nicht freigeschaltet)
         await userService.createUser(username, password, system_username, false);
 
-        req.flash('success', 'Registrierung erfolgreich! Bitte einloggen.');
+        req.flash('info', 'Registrierung eingegangen! Ein Administrator muss Ihr Konto noch freischalten.');
         res.redirect('/login');
     } catch (error) {
         console.error('Registrierungs-Fehler:', error);

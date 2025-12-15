@@ -44,6 +44,9 @@
                                     <% } else { %>
                                         <span class="badge bg-secondary">User</span>
                                     <% } %>
+                                    <% if (!u.approved) { %>
+                                        <span class="badge bg-warning text-dark">Ausstehend</span>
+                                    <% } %>
                                 </td>
                                 <td>
                                     <span class="badge bg-info"><%= u.projectCount %></span>

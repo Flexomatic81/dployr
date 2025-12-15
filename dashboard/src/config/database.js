@@ -59,9 +59,22 @@ async function initDatabase() {
                 password_hash VARCHAR(255) NOT NULL,
                 system_username VARCHAR(50) NOT NULL,
                 is_admin BOOLEAN DEFAULT FALSE,
+                approved BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Migration: approved-Spalte hinzufügen falls nicht vorhanden
+        try {
+            await connection.execute(`
+                ALTER TABLE dashboard_users ADD COLUMN approved BOOLEAN DEFAULT FALSE
+            `);
+            // Bestehende User automatisch freischalten
+            await connection.execute(`UPDATE dashboard_users SET approved = TRUE WHERE approved IS NULL OR id > 0`);
+            console.log('Migration: approved-Spalte hinzugefügt, bestehende User freigeschaltet');
+        } catch (e) {
+            // Spalte existiert bereits - ignorieren
+        }
 
         // Sessions Tabelle für express-session (optional, falls DB-Sessions gewünscht)
         await connection.execute(`
