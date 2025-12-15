@@ -392,7 +392,11 @@ networks:
 
 services:
   web:
-    image: php:8.2-apache
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM php:8.2-apache
+        RUN docker-php-ext-install pdo pdo_mysql
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     volumes:
