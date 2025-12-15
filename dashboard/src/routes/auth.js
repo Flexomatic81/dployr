@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
-const { pool } = require('../config/database');
+const userService = require('../services/user');
 const { redirectIfAuth, requireAuth } = require('../middleware/auth');
 
 // Login-Seite anzeigen
@@ -14,18 +13,14 @@ router.post('/login', redirectIfAuth, async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const [rows] = await pool.execute(
-            'SELECT * FROM dashboard_users WHERE username = ?',
-            [username]
-        );
+        const user = await userService.getUserByUsername(username);
 
-        if (rows.length === 0) {
+        if (!user) {
             req.flash('error', 'Ungültiger Benutzername oder Passwort');
             return res.redirect('/login');
         }
 
-        const user = rows[0];
-        const validPassword = await bcrypt.compare(password, user.password_hash);
+        const validPassword = await userService.verifyPassword(user, password);
 
         if (!validPassword) {
             req.flash('error', 'Ungültiger Benutzername oder Passwort');
@@ -86,24 +81,13 @@ router.post('/register', redirectIfAuth, async (req, res) => {
 
     try {
         // Prüfen ob Username bereits existiert
-        const [existing] = await pool.execute(
-            'SELECT id FROM dashboard_users WHERE username = ?',
-            [username]
-        );
-
-        if (existing.length > 0) {
-            req.flash('error', 'Benutzername bereits vergeben');
+        if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
+            req.flash('error', 'Benutzername oder System-Username bereits vergeben');
             return res.redirect('/register');
         }
 
-        // Passwort hashen
-        const password_hash = await bcrypt.hash(password, 12);
-
         // User erstellen
-        const [result] = await pool.execute(
-            'INSERT INTO dashboard_users (username, password_hash, system_username) VALUES (?, ?, ?)',
-            [username, password_hash, system_username]
-        );
+        await userService.createUser(username, password, system_username, false);
 
         req.flash('success', 'Registrierung erfolgreich! Bitte einloggen.');
         res.redirect('/login');

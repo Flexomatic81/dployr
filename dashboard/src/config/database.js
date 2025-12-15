@@ -1,20 +1,55 @@
 const mysql = require('mysql2/promise');
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'deployr-mariadb',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USERNAME || 'dashboard_user',
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE || 'dashboard',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+let pool = null;
+
+/**
+ * Erstellt den Connection Pool (Lazy Initialization)
+ */
+function getPool() {
+    if (!pool) {
+        pool = mysql.createPool({
+            host: process.env.DB_HOST || 'deployr-mariadb',
+            port: process.env.DB_PORT || 3306,
+            user: process.env.DB_USERNAME || 'dashboard_user',
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_DATABASE || 'dashboard',
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
+        });
+
+        // Error-Handler für Verbindungsprobleme
+        pool.on('error', (err) => {
+            console.error('Database pool error:', err);
+            if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNREFUSED') {
+                pool = null; // Pool zurücksetzen für Reconnect
+            }
+        });
+    }
+    return pool;
+}
+
+/**
+ * Proxy-Objekt das automatisch getPool() aufruft
+ * Erlaubt Zugriff auf pool.query() etc. ohne expliziten getPool() Aufruf
+ */
+const poolProxy = new Proxy({}, {
+    get(target, prop) {
+        const currentPool = getPool();
+        const value = currentPool[prop];
+        if (typeof value === 'function') {
+            return value.bind(currentPool);
+        }
+        return value;
+    }
 });
 
-// Datenbank-Schema initialisieren
+/**
+ * Datenbank-Schema initialisieren
+ */
 async function initDatabase() {
     try {
-        const connection = await pool.getConnection();
+        const connection = await getPool().getConnection();
 
         // Dashboard Users Tabelle erstellen
         await connection.execute(`
@@ -45,4 +80,34 @@ async function initDatabase() {
     }
 }
 
-module.exports = { pool, initDatabase };
+/**
+ * Testet die Datenbankverbindung
+ */
+async function testConnection() {
+    try {
+        const connection = await getPool().getConnection();
+        await connection.ping();
+        connection.release();
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Schließt den Pool (für graceful shutdown)
+ */
+async function closePool() {
+    if (pool) {
+        await pool.end();
+        pool = null;
+    }
+}
+
+module.exports = {
+    pool: poolProxy,  // Exportiert Proxy für Rückwärtskompatibilität
+    getPool,
+    initDatabase,
+    testConnection,
+    closePool
+};
