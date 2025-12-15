@@ -553,5 +553,6 @@ module.exports = {
     isValidGitUrl,
     getProjectPath,
     createProjectFromGit,
-    detectProjectType
+    detectProjectType,
+    generateDockerCompose
 };

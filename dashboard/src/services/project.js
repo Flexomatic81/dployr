@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 const dockerService = require('./docker');
+const { generateDockerCompose } = require('./git');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 const SCRIPTS_PATH = process.env.SCRIPTS_PATH || '/app/scripts';
@@ -288,6 +289,60 @@ async function deleteProject(systemUsername, projectName, deleteDatabase = false
     return { success: true };
 }
 
+// Projekttyp ändern
+async function changeProjectType(systemUsername, projectName, newType) {
+    const validTypes = ['static', 'php', 'nodejs'];
+    if (!validTypes.includes(newType)) {
+        throw new Error(`Ungültiger Projekttyp. Erlaubt: ${validTypes.join(', ')}`);
+    }
+
+    const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+
+    // Prüfen ob Projekt existiert
+    try {
+        await fs.access(projectPath);
+    } catch (error) {
+        throw new Error('Projekt nicht gefunden');
+    }
+
+    // Aktuellen Typ ermitteln
+    const oldType = await detectTemplateType(projectPath);
+
+    // .env lesen für Port und Projektname
+    const envPath = path.join(projectPath, '.env');
+    let envData = {};
+    try {
+        const envContent = await fs.readFile(envPath, 'utf8');
+        envData = parseEnvFile(envContent);
+    } catch (e) {
+        // .env existiert nicht
+    }
+
+    const port = parseInt(envData.EXPOSED_PORT) || 8001;
+    const containerName = envData.PROJECT_NAME || `${systemUsername}-${projectName}`;
+
+    // Container stoppen
+    try {
+        await dockerService.stopProject(projectPath);
+    } catch (error) {
+        console.error('Fehler beim Stoppen:', error);
+    }
+
+    // Neue docker-compose.yml generieren
+    const newCompose = generateDockerCompose(newType, containerName, port);
+    const composePath = path.join(projectPath, 'docker-compose.yml');
+    await fs.writeFile(composePath, newCompose);
+
+    // Container starten
+    await dockerService.startProject(projectPath);
+
+    return {
+        success: true,
+        oldType,
+        newType
+    };
+}
+
 module.exports = {
     getUserProjects,
     getProjectInfo,
@@ -295,5 +350,6 @@ module.exports = {
     getNextAvailablePort,
     createProject,
     deleteProject,
+    changeProjectType,
     parseEnvFile
 };

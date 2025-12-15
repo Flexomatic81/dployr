@@ -196,6 +196,33 @@ router.post('/:name/restart', requireAuth, async (req, res) => {
     }
 });
 
+// Projekttyp ändern
+router.post('/:name/change-type', requireAuth, async (req, res) => {
+    try {
+        const systemUsername = req.session.user.system_username;
+        const { type } = req.body;
+
+        const typeNames = {
+            static: 'Statische Website',
+            php: 'PHP Website',
+            nodejs: 'Node.js App'
+        };
+
+        if (!typeNames[type]) {
+            req.flash('error', 'Ungültiger Projekttyp');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const result = await projectService.changeProjectType(systemUsername, req.params.name, type);
+        req.flash('success', `Projekttyp auf "${typeNames[type]}" geändert. Container wurde neu gestartet.`);
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Fehler beim Ändern des Projekttyps:', error);
+        req.flash('error', 'Fehler beim Ändern: ' + error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
 // Projekt löschen
 router.delete('/:name', requireAuth, async (req, res) => {
     try {

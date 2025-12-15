@@ -133,6 +133,42 @@
     </div>
 </div>
 
+<!-- Projekteinstellungen -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-gear"></i> Projekteinstellungen</h5>
+    </div>
+    <div class="card-body">
+        <form action="/projects/<%= project.name %>/change-type" method="POST" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="projectType" class="form-label">Projekttyp</label>
+                <select name="type" id="projectType" class="form-select">
+                    <option value="static" <%= project.templateType === 'static-website' ? 'selected' : '' %>>
+                        Statische Website (nginx)
+                    </option>
+                    <option value="php" <%= project.templateType === 'php-website' ? 'selected' : '' %>>
+                        PHP Website (Apache + PHP)
+                    </option>
+                    <option value="nodejs" <%= project.templateType === 'nodejs-app' ? 'selected' : '' %>>
+                        Node.js App
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-arrow-repeat"></i> Typ ändern
+                </button>
+            </div>
+            <div class="col-12">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Beim Ändern des Typs wird die docker-compose.yml neu generiert und der Container neu gestartet.
+                </small>
+            </div>
+        </form>
+    </div>
+</div>
+
 <% if (gitStatus && gitStatus.connected) { %>
 <!-- Git Integration - nur anzeigen wenn verbunden -->
 <div class="card mb-4">
