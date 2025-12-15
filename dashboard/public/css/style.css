@@ -131,6 +131,17 @@ pre code {
     padding: 0;
 }
 
+/* Code Block für Dark Mode Support */
+.code-block {
+    background-color: var(--code-bg);
+    color: var(--bs-body-color);
+}
+
+.code-block code {
+    background-color: transparent;
+    color: inherit;
+}
+
 /* Accordion */
 .accordion-button:not(.collapsed) {
     background-color: #e7f1ff;
