@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Docker CLI und Compose Plugin installieren (für Container-Management)
-RUN apk add --no-cache docker-cli docker-cli-compose
+# Docker CLI, Compose Plugin und Git installieren
+RUN apk add --no-cache docker-cli docker-cli-compose git
 
 # Package files kopieren
 COPY package*.json ./

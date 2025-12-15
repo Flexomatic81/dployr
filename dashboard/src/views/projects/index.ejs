@@ -54,6 +54,15 @@
                                 <strong>Container:</strong>
                                 <%= project.runningContainers %>/<%= project.totalContainers %> aktiv
                             </li>
+                            <li>
+                                <i class="bi bi-git text-muted"></i>
+                                <strong>Git:</strong>
+                                <% if (project.gitConnected) { %>
+                                    <span class="text-success"><i class="bi bi-check-circle"></i> Verbunden</span>
+                                <% } else { %>
+                                    <span class="text-muted">Nicht verbunden</span>
+                                <% } %>
+                            </li>
                             <% if (project.hasDatabase) { %>
                                 <li>
                                     <i class="bi bi-database text-muted"></i>

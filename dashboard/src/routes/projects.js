@@ -3,12 +3,18 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const projectService = require('../services/project');
 const dockerService = require('../services/docker');
+const gitService = require('../services/git');
 
 // Alle Projekte anzeigen
 router.get('/', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
         const projects = await projectService.getUserProjects(systemUsername);
+
+        // Git-Status für jedes Projekt hinzufügen
+        for (const project of projects) {
+            project.gitConnected = gitService.isGitRepository(project.path);
+        }
 
         res.render('projects/index', {
             title: 'Projekte',
@@ -72,9 +78,13 @@ router.get('/:name', requireAuth, async (req, res) => {
             return res.redirect('/projects');
         }
 
+        // Git-Status abrufen
+        const gitStatus = gitService.getGitStatus(project.path);
+
         res.render('projects/show', {
             title: project.name,
-            project
+            project,
+            gitStatus
         });
     } catch (error) {
         console.error('Fehler beim Laden des Projekts:', error);
@@ -157,6 +167,85 @@ router.delete('/:name', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Fehler beim Löschen:', error);
         req.flash('error', 'Fehler beim Löschen: ' + error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Git Repository verbinden
+router.post('/:name/git/connect', requireAuth, async (req, res) => {
+    try {
+        const systemUsername = req.session.user.system_username;
+        const { repo_url, access_token } = req.body;
+        const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
+
+        // URL validieren
+        if (!gitService.isValidGitUrl(repo_url)) {
+            req.flash('error', 'Ungültige Repository-URL. Unterstützt werden GitHub, GitLab und Bitbucket HTTPS-URLs.');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        // Prüfen ob bereits verbunden
+        if (gitService.isGitRepository(projectPath)) {
+            req.flash('error', 'Projekt ist bereits mit einem Git-Repository verbunden. Bitte zuerst trennen.');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        // Repository klonen
+        await gitService.cloneRepository(projectPath, repo_url, access_token || null);
+
+        req.flash('success', 'Git-Repository erfolgreich verbunden!');
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Git connect error:', error);
+        req.flash('error', error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Git Pull durchführen
+router.post('/:name/git/pull', requireAuth, async (req, res) => {
+    try {
+        const systemUsername = req.session.user.system_username;
+        const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
+
+        if (!gitService.isGitRepository(projectPath)) {
+            req.flash('error', 'Kein Git-Repository verbunden');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const result = await gitService.pullChanges(projectPath);
+
+        if (result.hasChanges) {
+            req.flash('success', 'Änderungen erfolgreich gepullt! Neustart des Projekts empfohlen.');
+        } else {
+            req.flash('info', 'Keine neuen Änderungen vorhanden.');
+        }
+
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Git pull error:', error);
+        req.flash('error', error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Git Verbindung trennen
+router.post('/:name/git/disconnect', requireAuth, async (req, res) => {
+    try {
+        const systemUsername = req.session.user.system_username;
+        const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
+
+        if (!gitService.isGitRepository(projectPath)) {
+            req.flash('error', 'Kein Git-Repository verbunden');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        gitService.disconnectRepository(projectPath);
+        req.flash('success', 'Git-Verbindung getrennt');
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Git disconnect error:', error);
+        req.flash('error', error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });

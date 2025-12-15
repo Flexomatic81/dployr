@@ -133,6 +133,72 @@
     </div>
 </div>
 
+<!-- Git Integration -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-git"></i> Git Integration
+            <% if (gitStatus && gitStatus.connected) { %>
+                <span class="badge bg-success ms-2">Verbunden</span>
+            <% } %>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (gitStatus && gitStatus.connected) { %>
+            <!-- Verbundenes Repository -->
+            <% if (gitStatus.error) { %>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> <%= gitStatus.error %>
+                </div>
+            <% } else { %>
+                <table class="table table-borderless mb-3">
+                    <tr>
+                        <th width="25%">Repository:</th>
+                        <td>
+                            <a href="<%= gitStatus.remoteUrl %>" target="_blank">
+                                <%= gitStatus.remoteUrl %> <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Branch:</th>
+                        <td><span class="badge bg-primary"><%= gitStatus.branch %></span></td>
+                    </tr>
+                    <tr>
+                        <th>Letzter Commit:</th>
+                        <td><code><%= gitStatus.lastCommit %></code></td>
+                    </tr>
+                    <% if (gitStatus.hasLocalChanges) { %>
+                        <tr>
+                            <th>Status:</th>
+                            <td><span class="badge bg-warning text-dark">Lokale Änderungen vorhanden</span></td>
+                        </tr>
+                    <% } %>
+                </table>
+            <% } %>
+
+            <div class="d-flex gap-2">
+                <form action="/projects/<%= project.name %>/git/pull" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cloud-download"></i> Pull
+                    </button>
+                </form>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#gitDisconnectModal">
+                    <i class="bi bi-x-circle"></i> Trennen
+                </button>
+            </div>
+        <% } else { %>
+            <!-- Kein Repository verbunden -->
+            <p class="text-muted mb-3">
+                Verbinde dieses Projekt mit einem GitHub, GitLab oder Bitbucket Repository, um Änderungen zu deployen.
+            </p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#gitConnectModal">
+                <i class="bi bi-plug"></i> Repository verbinden
+            </button>
+        <% } %>
+    </div>
+</div>
+
 <!-- Gefahrenzone -->
 <div class="card border-danger">
     <div class="card-header bg-danger text-white">
@@ -178,6 +244,87 @@
                 <form action="/projects/<%= project.name %>?_method=DELETE" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-danger">
                         <i class="bi bi-trash"></i> Ja, löschen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Git Connect Modal -->
+<div class="modal fade" id="gitConnectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-git"></i> Git Repository verbinden
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/projects/<%= project.name %>/git/connect" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="repo_url" class="form-label">Repository URL</label>
+                        <input type="url" class="form-control" id="repo_url" name="repo_url" required
+                               placeholder="https://github.com/username/repository">
+                        <div class="form-text">
+                            HTTPS-URL von GitHub, GitLab oder Bitbucket
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="access_token" class="form-label">
+                            Access Token <span class="text-muted">(optional)</span>
+                        </label>
+                        <input type="password" class="form-control" id="access_token" name="access_token"
+                               placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                        <div class="form-text">
+                            Erforderlich für private Repositories.
+                            <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">
+                                GitHub Token erstellen <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Hinweis:</strong> Die Repository-Inhalte werden in das Projekt-Verzeichnis geklont.
+                        Bestehende Dateien (docker-compose.yml, nginx-Konfiguration) werden beibehalten.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plug"></i> Verbinden
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Git Disconnect Modal -->
+<div class="modal fade" id="gitDisconnectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="bi bi-x-circle"></i> Git-Verbindung trennen
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Möchtest du die Git-Verbindung wirklich trennen?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Hinweis:</strong> Die Projekt-Dateien bleiben erhalten, aber Git-Informationen und gespeicherte Zugangsdaten werden gelöscht.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <form action="/projects/<%= project.name %>/git/disconnect" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-x-circle"></i> Trennen
                     </button>
                 </form>
             </div>
