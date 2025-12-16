@@ -12,7 +12,7 @@
 - **OS**: (Betriebssystem eintragen)
 - **Docker**: (Version eintragen)
 - **Docker Compose**: (Version eintragen)
-- **Installation Pfad**: /opt/deployr
+- **Installation Pfad**: /opt/dployr
 
 ## Wichtige Zugangsdaten
 
@@ -24,7 +24,7 @@ Root User: root
 Root Passwort: (siehe infrastructure/.env)
 ```
 
-**Speicherort**: `/opt/deployr/infrastructure/.env`
+**Speicherort**: `/opt/dployr/infrastructure/.env`
 
 ### phpMyAdmin
 
@@ -41,8 +41,8 @@ Passwort: (siehe infrastructure/.env)
 
 ### Infrastruktur (permanent)
 
-- **deployr-mariadb**: MariaDB 11, Port 3306 (localhost)
-- **deployr-phpmyadmin**: phpMyAdmin, Port 8080 (localhost)
+- **dployr-mariadb**: MariaDB 11, Port 3306 (localhost)
+- **dployr-phpmyadmin**: phpMyAdmin, Port 8080 (localhost)
 
 ### User-Projekte
 
@@ -51,7 +51,7 @@ Passwort: (siehe infrastructure/.env)
 ## Verzeichnisstruktur
 
 ```
-/opt/deployr/
+/opt/dployr/
 ├── infrastructure/       # MariaDB + phpMyAdmin
 │   ├── .env             # MySQL Root-Passwort HIER!
 │   └── docker-compose.yml
@@ -71,7 +71,7 @@ Passwort: (siehe infrastructure/.env)
 ### Infrastruktur verwalten
 
 ```bash
-cd /opt/deployr
+cd /opt/dployr
 
 # Status aller Container
 docker ps
@@ -86,7 +86,7 @@ docker ps
 ### Neues Projekt erstellen
 
 ```bash
-cd /opt/deployr
+cd /opt/dployr
 
 # Projekt erstellen
 ./scripts/create-project.sh <username> <projektname> <template>
@@ -104,7 +104,7 @@ docker compose up -d
 ### Projekte auflisten
 
 ```bash
-cd /opt/deployr
+cd /opt/dployr
 ./scripts/list-projects.sh
 ```
 
@@ -137,7 +137,7 @@ Dieser Server steht hinter:
 **Ursache**: Falsche Datei-Permissions  
 **Lösung**: 
 ```bash
-cd /opt/deployr/users/<user>/<projekt>
+cd /opt/dployr/users/<user>/<projekt>
 chmod 755 html/
 chmod 644 html/*
 ```
@@ -149,8 +149,8 @@ chmod 644 html/*
 **Ursache**: Config-Dateien nicht lesbar  
 **Lösung**:
 ```bash
-chmod 755 /opt/deployr/infrastructure/mariadb/conf
-chmod 644 /opt/deployr/infrastructure/mariadb/conf/*
+chmod 755 /opt/dployr/infrastructure/mariadb/conf
+chmod 644 /opt/dployr/infrastructure/mariadb/conf/*
 ```
 
 ### Problem: docker-compose Befehl nicht gefunden
@@ -163,17 +163,17 @@ chmod 644 /opt/deployr/infrastructure/mariadb/conf/*
 
 ```bash
 # Alle Datenbanken
-docker exec deployr-mariadb mysqldump -uroot -p<PASSWORD> --all-databases > backup.sql
+docker exec dployr-mariadb mysqldump -uroot -p<PASSWORD> --all-databases > backup.sql
 
 # Einzelne Datenbank
-docker exec deployr-mariadb mysqldump -u<USER> -p<PASSWORD> <DB> > db_backup.sql
+docker exec dployr-mariadb mysqldump -u<USER> -p<PASSWORD> <DB> > db_backup.sql
 ```
 
 ### Projekt-Dateien
 
 ```bash
 # Komplettes Backup
-tar -czf deployr-backup-$(date +%Y%m%d).tar.gz /opt/deployr
+tar -czf dployr-backup-$(date +%Y%m%d).tar.gz /opt/dployr
 ```
 
 ## SSH-Zugang
@@ -191,7 +191,7 @@ ssh <USER>@<SERVER_IP>
 ### Docker Images aktualisieren
 
 ```bash
-cd /opt/deployr/infrastructure
+cd /opt/dployr/infrastructure
 docker compose pull
 docker compose up -d
 ```
@@ -205,10 +205,10 @@ sudo apt upgrade
 
 ## Support & Dokumentation
 
-- **Projekt-README**: `/opt/deployr/README.md`
-- **Setup-Guide**: `/opt/deployr/SETUP.md`
-- **Templates**: `/opt/deployr/templates/README.md`
-- **User-Guide**: `/opt/deployr/USER_GUIDE.md`
+- **Projekt-README**: `/opt/dployr/README.md`
+- **Setup-Guide**: `/opt/dployr/SETUP.md`
+- **Templates**: `/opt/dployr/templates/README.md`
+- **User-Guide**: `/opt/dployr/USER_GUIDE.md`
 
 ## Änderungshistorie
 

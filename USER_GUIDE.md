@@ -1,6 +1,6 @@
-# Deployr - Benutzerhandbuch
+# Dployr - Benutzerhandbuch
 
-Dieses Handbuch richtet sich an Benutzer des Deployr Web-Dashboards.
+Dieses Handbuch richtet sich an Benutzer des Dployr Web-Dashboards.
 
 ## Inhaltsverzeichnis
 
@@ -121,14 +121,14 @@ Für jede Datenbank siehst du:
 - **Datenbankname**: z.B. `<username>_meinprojekt`
 - **Benutzername**: z.B. `<username>_meinprojekt`
 - **Passwort**: Klicke auf das Auge-Symbol zum Anzeigen
-- **Host**: `deployr-mariadb:3306` (im Docker-Netzwerk)
+- **Host**: `dployr-mariadb:3306` (im Docker-Netzwerk)
 
 ### Datenbank in deiner App nutzen
 
 Füge diese Umgebungsvariablen in deine `.env` Datei ein:
 
 ```env
-DB_HOST=deployr-mariadb
+DB_HOST=dployr-mariadb
 DB_PORT=3306
 DB_DATABASE=<dein_datenbankname>
 DB_USERNAME=<dein_benutzername>
@@ -218,7 +218,7 @@ Klicke auf das **Sonnen-/Mond-Symbol** in der Navigationsleiste, um zwischen hel
 ### Mein PHP-Projekt kann sich nicht mit der Datenbank verbinden
 
 1. Prüfe die `.env` Datei in deinem Projekt
-2. Stelle sicher, dass `DB_HOST=deployr-mariadb` gesetzt ist
+2. Stelle sicher, dass `DB_HOST=dployr-mariadb` gesetzt ist
 3. Prüfe Benutzername und Passwort
 
 ### Wie kann ich Dateien bearbeiten?
@@ -226,7 +226,7 @@ Klicke auf das **Sonnen-/Mond-Symbol** in der Navigationsleiste, um zwischen hel
 **Option A: VS Code Remote SSH**
 1. Installiere die Extension "Remote - SSH" in VS Code
 2. Verbinde dich mit `<USER>@<SERVER-IP>`
-3. Öffne den Ordner `/opt/deployr/users/<DEIN-USER>/<PROJEKT>/html`
+3. Öffne den Ordner `/opt/dployr/users/<DEIN-USER>/<PROJEKT>/html`
 
 **Option B: SFTP/SCP**
 - Nutze einen SFTP-Client wie FileZilla

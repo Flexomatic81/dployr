@@ -12,7 +12,7 @@ app.use(express.static('public'));
 let pool;
 if (process.env.DB_DATABASE && process.env.DB_USERNAME) {
     pool = mysql.createPool({
-        host: process.env.DB_HOST || 'deployr-mariadb',
+        host: process.env.DB_HOST || 'dployr-mariadb',
         port: process.env.DB_PORT || 3306,
         database: process.env.DB_DATABASE,
         user: process.env.DB_USERNAME,

@@ -64,5 +64,5 @@ done
 echo "════════════════════════════════════════════"
 echo "Docker Container Übersicht:"
 echo "────────────────────────────────────────────"
-docker ps --filter "network=deployr-network" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker ps --filter "network=dployr-network" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 echo "════════════════════════════════════════════"

@@ -1,11 +1,11 @@
-# Deployr - Komplette Infrastruktur
+# Dployr - Komplette Infrastruktur
 # Startet alle Services mit: docker compose up -d
 
 services:
   # MariaDB Datenbank
   mariadb:
     image: mariadb:11
-    container_name: deployr-mariadb
+    container_name: dployr-mariadb
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD muss gesetzt sein}
@@ -16,7 +16,7 @@ services:
       - ./infrastructure/mariadb/init:/docker-entrypoint-initdb.d:ro
       - ./infrastructure/mariadb/conf:/etc/mysql/conf.d:ro
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "127.0.0.1:3306:3306"
     healthcheck:
@@ -28,14 +28,14 @@ services:
   # phpMyAdmin für Datenbank-Verwaltung
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: deployr-phpmyadmin
+    container_name: dployr-phpmyadmin
     restart: unless-stopped
     environment:
       PMA_HOST: mariadb
       PMA_PORT: 3306
       UPLOAD_LIMIT: 256M
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "${PHPMYADMIN_PORT:-8080}:80"
     depends_on:
@@ -45,7 +45,7 @@ services:
   # Web Dashboard
   dashboard:
     build: ./dashboard
-    container_name: deployr-dashboard
+    container_name: dployr-dashboard
     restart: unless-stopped
     ports:
       - "${DASHBOARD_PORT:-3000}:3000"
@@ -54,7 +54,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # User-Projekte (beide Pfade für Kompatibilität mit Docker-Socket)
       - ./users:/app/users
-      - ${HOST_USERS_PATH:-/opt/deployr/users}:${HOST_USERS_PATH:-/opt/deployr/users}
+      - ${HOST_USERS_PATH:-/opt/dployr/users}:${HOST_USERS_PATH:-/opt/dployr/users}
       # Scripts und Templates
       - ./scripts:/app/scripts:ro
       - ./templates:/app/templates:ro
@@ -70,20 +70,20 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SERVER_IP=${SERVER_IP:-localhost}
       - USERS_PATH=/app/users
-      - HOST_USERS_PATH=${HOST_USERS_PATH:-/opt/deployr/users}
+      - HOST_USERS_PATH=${HOST_USERS_PATH:-/opt/dployr/users}
       - SCRIPTS_PATH=/app/scripts
       - TEMPLATES_PATH=/app/templates
     networks:
-      - deployr-network
+      - dployr-network
     depends_on:
       mariadb:
         condition: service_healthy
 
 networks:
-  deployr-network:
-    name: deployr-network
+  dployr-network:
+    name: dployr-network
     driver: bridge
 
 volumes:
   mariadb_data:
-    name: deployr-mariadb-data
+    name: dployr-mariadb-data

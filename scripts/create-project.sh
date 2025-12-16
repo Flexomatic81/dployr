@@ -228,7 +228,7 @@ if [ "$CREATE_DATABASE" = "j" ]; then
     echo "→ Erstelle Datenbank..."
     
     # Prüfen ob MariaDB läuft
-    MARIADB_CONTAINER="deployr-mariadb"
+    MARIADB_CONTAINER="dployr-mariadb"
     if ! docker ps | grep -q "$MARIADB_CONTAINER"; then
         echo -e "${YELLOW}⚠${NC} Warnung: MariaDB Container läuft nicht!"
         echo "   Starte erst die Infrastruktur: cd infrastructure && docker compose up -d"
@@ -259,7 +259,7 @@ EOF
             if [ -f "$PROJECT_DIR/.env" ]; then
                 echo "" >> "$PROJECT_DIR/.env"
                 echo "# Datenbank-Zugangsdaten (automatisch generiert)" >> "$PROJECT_DIR/.env"
-                echo "DB_HOST=deployr-mariadb" >> "$PROJECT_DIR/.env"
+                echo "DB_HOST=dployr-mariadb" >> "$PROJECT_DIR/.env"
                 echo "DB_PORT=3306" >> "$PROJECT_DIR/.env"
                 echo "DB_DATABASE=$DB_NAME" >> "$PROJECT_DIR/.env"
                 echo "DB_USERNAME=$DB_USER" >> "$PROJECT_DIR/.env"
@@ -284,7 +284,7 @@ EOF
 Datenbank:  $DB_NAME
 User:       $DB_USER
 Passwort:   $DB_PASSWORD
-Host:       deployr-mariadb (im Docker Network)
+Host:       dployr-mariadb (im Docker Network)
             $SERVER_IP:$MARIADB_PORT (von außen)
 Port:       3306
 

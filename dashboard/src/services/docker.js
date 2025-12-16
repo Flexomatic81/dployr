@@ -2,7 +2,7 @@ const Docker = require('dockerode');
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
-const HOST_USERS_PATH = process.env.HOST_USERS_PATH || '/opt/deployr/users';
+const HOST_USERS_PATH = process.env.HOST_USERS_PATH || '/opt/dployr/users';
 
 // Konvertiert Container-Pfad zu Host-Pfad für Docker-Befehle
 function toHostPath(containerPath) {

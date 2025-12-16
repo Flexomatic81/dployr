@@ -94,7 +94,7 @@ else
 fi
 
 # 2. Datenbank löschen (optional)
-MARIADB_CONTAINER="deployr-mariadb"
+MARIADB_CONTAINER="dployr-mariadb"
 if [ -n "$PROJECT_DB" ] && docker ps | grep -q "$MARIADB_CONTAINER"; then
     echo "[2/3] Lösche Datenbank..."
 

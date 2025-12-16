@@ -414,14 +414,14 @@ services:
       - .:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "\${EXPOSED_PORT:-${port}}:80"
     environment:
       - TZ=Europe/Berlin
 
 networks:
-  deployr-network:
+  dployr-network:
     external: true`,
 
         php: `version: '3.8'
@@ -438,14 +438,14 @@ services:
     volumes:
       - .:/var/www/html
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "\${EXPOSED_PORT:-${port}}:80"
     environment:
       - TZ=Europe/Berlin
 
 networks:
-  deployr-network:
+  dployr-network:
     external: true`,
 
         nodejs: `version: '3.8'
@@ -459,7 +459,7 @@ services:
     volumes:
       - .:/app
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "\${EXPOSED_PORT:-${port}}:3000"
     environment:
@@ -468,7 +468,7 @@ services:
     command: sh -c "npm install && npm start"
 
 networks:
-  deployr-network:
+  dployr-network:
     external: true`,
 
         // Laravel/Symfony mit Composer
@@ -493,7 +493,7 @@ services:
     volumes:
       - .:/var/www/html
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "\${EXPOSED_PORT:-${port}}:80"
     environment:
@@ -502,7 +502,7 @@ services:
     command: sh -c "composer install --no-dev --optimize-autoloader && apache2-foreground"
 
 networks:
-  deployr-network:
+  dployr-network:
     external: true`,
 
         // React/Vue/Vite - Build zu statischen Dateien
@@ -526,14 +526,14 @@ services:
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "\${EXPOSED_PORT:-${port}}:80"
     environment:
       - TZ=Europe/Berlin
 
 networks:
-  deployr-network:
+  dployr-network:
     external: true`,
 
         // Next.js SSR
@@ -555,7 +555,7 @@ services:
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     networks:
-      - deployr-network
+      - dployr-network
     ports:
       - "\${EXPOSED_PORT:-${port}}:3000"
     environment:
@@ -563,7 +563,7 @@ services:
       - NODE_ENV=production
 
 networks:
-  deployr-network:
+  dployr-network:
     external: true`
     };
 

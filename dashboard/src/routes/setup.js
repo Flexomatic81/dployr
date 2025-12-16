@@ -95,7 +95,7 @@ async function checkDocker() {
 
 async function isInfrastructureRunning() {
     return new Promise((resolve) => {
-        exec('docker ps --filter "name=deployr-mariadb" -q', (error, stdout) => {
+        exec('docker ps --filter "name=dployr-mariadb" -q', (error, stdout) => {
             resolve(stdout.trim().length > 0);
         });
     });
@@ -113,7 +113,7 @@ async function markSetupComplete(serverIp, defaultUser) {
 
 async function createDockerNetwork() {
     return new Promise((resolve) => {
-        exec('docker network create deployr-network 2>/dev/null || true', (error, stdout, stderr) => {
+        exec('docker network create dployr-network 2>/dev/null || true', (error, stdout, stderr) => {
             resolve();
         });
     });
@@ -123,7 +123,7 @@ async function waitForMariaDB(mysqlRootPassword, maxAttempts = 30) {
     for (let i = 0; i < maxAttempts; i++) {
         const isReady = await new Promise((resolve) => {
             // MariaDB 11 verwendet 'mariadb' statt 'mysql' als Client
-            exec(`docker exec deployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
+            exec(`docker exec dployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
                 (error) => resolve(!error));
         });
 
@@ -144,7 +144,7 @@ async function createDashboardDatabase(mysqlRootPassword) {
             FLUSH PRIVILEGES;
         `;
 
-        exec(`docker exec -i deployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
+        exec(`docker exec -i dployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
             (error, stdout, stderr) => {
                 if (error) {
                     reject(new Error(stderr || error.message));

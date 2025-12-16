@@ -1,11 +1,11 @@
-# Deployr
+# Dployr
 
 **Docker-basierte Multi-User Hosting-Plattform für Webprojekte.**
 
-Deployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen Linux-Server zu betreiben. Mit Web-Dashboard, automatischer Datenbank-Erstellung und GitHub-Integration.
+Dployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen Linux-Server zu betreiben. Mit Web-Dashboard, automatischer Datenbank-Erstellung und GitHub-Integration.
 
 <p align="center">
-  <img src="docs/images/dashboard.png" alt="Deployr Dashboard" width="800">
+  <img src="docs/images/dashboard.png" alt="Dployr Dashboard" width="800">
 </p>
 
 ## Voraussetzungen
@@ -40,8 +40,8 @@ Ein Befehl - alles läuft:
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/dein-username/deployr.git /opt/deployr
-cd /opt/deployr
+git clone https://github.com/dein-username/dployr.git /opt/dployr
+cd /opt/dployr
 
 # 2. Konfiguration erstellen
 cp .env.example .env
@@ -64,7 +64,7 @@ Nach dem Setup-Wizard kannst du direkt loslegen!
 ## Verzeichnisstruktur
 
 ```
-deployr/
+dployr/
 ├── docker-compose.yml         # ⭐ Haupt-Datei - startet alles
 ├── .env                       # Konfiguration (aus .env.example)
 ├── .env.example               # Template für Konfiguration
@@ -127,7 +127,7 @@ deployr/
 ./scripts/delete-project.sh <username> <projektname>
 
 # Manuell
-cd /opt/deployr/users/<USER>/PROJEKTNAME
+cd /opt/dployr/users/<USER>/PROJEKTNAME
 docker compose down
 cd ..
 rm -rf PROJEKTNAME
@@ -163,7 +163,7 @@ docker compose up -d
 docker compose down
 
 # Status
-docker ps --filter network=deployr-network
+docker ps --filter network=dployr-network
 ```
 
 ### Einzelnes Projekt
@@ -189,7 +189,7 @@ git pull
 
 Nach dem Start verfügbar:
 
-- **MariaDB**: `<SERVER_IP>:3306` (oder `deployr-mariadb:3306` im Docker Network)
+- **MariaDB**: `<SERVER_IP>:3306` (oder `dployr-mariadb:3306` im Docker Network)
 - **phpMyAdmin**: `http://<SERVER_IP>:8080`
 
 ## VS Code Remote SSH
@@ -200,7 +200,7 @@ Die beste Methode um auf dem Server zu arbeiten:
 # 1. Extension Remote - SSH installieren
 # 2. Ctrl+Shift+P → Remote-SSH: Connect to Host
 # 3. <USER>@<SERVER_IP>
-# 4. Open Folder → /opt/deployr/users/<USER>/PROJEKTNAME/html
+# 4. Open Folder → /opt/dployr/users/<USER>/PROJEKTNAME/html
 # 5. Dateien bearbeiten → Speichern = LIVE!
 ```
 
@@ -228,7 +228,7 @@ Die beste Methode um auf dem Server zu arbeiten:
    VARIANTE C (Update bestehendes Git-Projekt):
    Dashboard → Projekt öffnen → "Pull" Button
    ODER: ssh <USER>@<SERVER_IP>
-   cd /opt/deployr/users/<USER>/PROJEKT
+   cd /opt/dployr/users/<USER>/PROJEKT
    git pull
 
    VARIANTE D (VS Code Remote SSH):
