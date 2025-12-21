@@ -141,6 +141,41 @@ Wenn der erkannte Projekttyp nicht mit dem konfigurierten übereinstimmt, zeigt 
 - Klicke auf den **Port-Link** in der Projektübersicht
 - Oder öffne manuell: `http://<SERVER-IP>:<PORT>`
 
+### Umgebungsvariablen (.env)
+
+Auf der Projekt-Detailseite findest du einen Editor für Umgebungsvariablen:
+
+1. Scrolle zu **"Umgebungsvariablen (.env)"**
+2. Bearbeite die Variablen im Textfeld
+3. Klicke **"Speichern"**
+4. **Starte den Container neu**, damit die Änderungen wirksam werden
+
+#### .env.example übernehmen
+
+Wenn dein Projekt eine `.env.example` (oder `.env.sample`, `.env.dist`) enthält:
+
+1. Das Dashboard zeigt automatisch einen Hinweis
+2. Klicke auf den Button mit dem Dateinamen (z.B. **".env.example"**)
+3. Die Vorlage wird kopiert und mit bestehenden Werten gemerged
+
+#### Datenbank-Credentials einfügen
+
+Wenn du Datenbanken erstellt hast:
+
+1. Klicke auf **"DB einfügen"** im Header der Umgebungsvariablen-Sektion
+2. Wähle die gewünschte Datenbank aus dem Dropdown
+3. Die Credentials werden automatisch am Ende der `.env` eingefügt:
+
+```env
+# === Dployr Datenbank-Credentials ===
+DB_CONNECTION=mysql
+DB_HOST=dployr-mariadb
+DB_PORT=3306
+DB_DATABASE=dein_datenbankname
+DB_USERNAME=dein_benutzername
+DB_PASSWORD=dein_passwort
+```
+
 ---
 
 ## Datenbanken

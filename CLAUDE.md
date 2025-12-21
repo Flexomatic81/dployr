@@ -178,11 +178,25 @@ The `detectProjectType()` function in `git.js` analyzes project files:
 
 The project detail page (`/projects/:name`) compares detected type with configured type and shows a warning if they mismatch, allowing one-click correction.
 
+## Environment Variables Editor
+
+The project detail page includes an `.env` editor with:
+
+- **Textarea editor**: Direct editing of `.env` file content
+- **`.env.example` detection**: Automatically finds `.env.example`, `.env.sample`, `.env.dist`, `.env.template`
+- **Copy example**: Merges example file with existing values (doesn't overwrite)
+- **DB credential injection**: Dropdown to insert database credentials from user's databases
+
+Routes:
+- `POST /projects/:name/env` - Save .env content
+- `POST /projects/:name/env/copy-example` - Copy .env.example to .env
+- `POST /projects/:name/env/add-db` - Append database credentials
+
 ## Key Services
 
 | Service | Purpose |
 |---------|---------|
-| `project.js` | Project CRUD, type changes with nginx config generation |
+| `project.js` | Project CRUD, type changes, .env management, DB credential handling |
 | `docker.js` | Container orchestration via dockerode |
 | `database.js` | Multi-DB provider delegation |
 | `git.js` | Git clone, type detection, docker-compose generation |

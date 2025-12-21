@@ -28,6 +28,7 @@ Dployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen 
 - 📁 **ZIP-Upload** - Projekte per ZIP-Datei hochladen (bis 100 MB)
 - 🎯 **Auto Port-Erkennung** - Findet automatisch freie Ports
 - 🔍 **Automatische Projekttyp-Erkennung** - Erkennt Static/PHP/Node.js/Laravel/Next.js automatisch
+- 📝 **Umgebungsvariablen-Editor** - .env im Browser bearbeiten mit DB-Credential-Injection
 - 🐳 **Docker-basierte Isolation** - Jedes Projekt läuft isoliert
 - 🗃️ **MariaDB + PostgreSQL** - Beide Datenbanken verfügbar mit phpMyAdmin & pgAdmin
 - 📋 **Fertige Templates** - Static, PHP, Node.js sofort einsatzbereit
@@ -153,6 +154,9 @@ Das Dashboard ist unter `http://<SERVER_IP>:3000` erreichbar und bietet:
   - Von Template (Static, PHP, Node.js)
 - **Automatische Projekttyp-Erkennung**: Static, PHP, Node.js, Laravel, Next.js
 - **Projekttyp-Empfehlung**: Warnung bei Typ-Mismatch mit One-Click-Korrektur
+- **Umgebungsvariablen-Editor**: .env direkt im Browser bearbeiten
+  - `.env.example` automatisch erkennen und übernehmen
+  - Datenbank-Credentials per Klick einfügen
 - Container starten, stoppen, neustarten, löschen
 - Container-Status und Logs anzeigen
 - Git Pull für verbundene Repositories
