@@ -3,65 +3,20 @@
         <!-- Tabs für Erstellungsmethode -->
         <ul class="nav nav-tabs mb-4" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="template-tab" data-bs-toggle="tab" data-bs-target="#template-content" type="button">
-                    <i class="bi bi-file-earmark-code"></i> Von Template
+                <button class="nav-link active" id="git-tab" data-bs-toggle="tab" data-bs-target="#git-content" type="button">
+                    <i class="bi bi-git"></i> Von Git-Repository
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="git-tab" data-bs-toggle="tab" data-bs-target="#git-content" type="button">
-                    <i class="bi bi-git"></i> Von Git-Repository
+                <button class="nav-link" id="template-tab" data-bs-toggle="tab" data-bs-target="#template-content" type="button">
+                    <i class="bi bi-file-earmark-code"></i> Von Template
                 </button>
             </li>
         </ul>
 
         <div class="tab-content">
-            <!-- Tab: Von Template -->
-            <div class="tab-pane fade show active" id="template-content" role="tabpanel">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0"><i class="bi bi-folder-plus"></i> Neues Projekt von Template</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="/projects">
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Projektname</label>
-                                <input type="text" class="form-control" id="name" name="name"
-                                       pattern="[a-z0-9-]+" required
-                                       placeholder="mein-projekt">
-                                <div class="form-text">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="template" class="form-label">Template</label>
-                                <select class="form-select" id="template" name="template" required>
-                                    <% templates.forEach(template => { %>
-                                        <option value="<%= template.name %>"><%= template.displayName %></option>
-                                    <% }) %>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="port" class="form-label">Port</label>
-                                <input type="number" class="form-control" id="port" name="port"
-                                       value="<%= nextPort %>" min="8001" max="9999" required>
-                                <div class="form-text">Nächster freier Port: <%= nextPort %></div>
-                            </div>
-
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-plus-lg"></i> Projekt erstellen
-                                </button>
-                                <a href="/projects" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-lg"></i> Abbrechen
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
             <!-- Tab: Von Git -->
-            <div class="tab-pane fade" id="git-content" role="tabpanel">
+            <div class="tab-pane fade show active" id="git-content" role="tabpanel">
                 <div class="card">
                     <div class="card-header">
                         <h4 class="mb-0"><i class="bi bi-git"></i> Neues Projekt von Git-Repository</h4>
@@ -126,10 +81,55 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tab: Von Template -->
+            <div class="tab-pane fade" id="template-content" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="bi bi-folder-plus"></i> Neues Projekt von Template</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/projects">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Projektname</label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                       pattern="[a-z0-9-]+" required
+                                       placeholder="mein-projekt">
+                                <div class="form-text">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="template" class="form-label">Template</label>
+                                <select class="form-select" id="template" name="template" required>
+                                    <% templates.forEach(template => { %>
+                                        <option value="<%= template.name %>"><%= template.displayName %></option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="port" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="port" name="port"
+                                       value="<%= nextPort %>" min="8001" max="9999" required>
+                                <div class="form-text">Nächster freier Port: <%= nextPort %></div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Projekt erstellen
+                                </button>
+                                <a href="/projects" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-lg"></i> Abbrechen
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Template Info (nur bei Template-Tab sichtbar) -->
-        <div class="card mt-4" id="template-info-card">
+        <div class="card mt-4" id="template-info-card" style="display: none;">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-info-circle"></i> Template-Informationen</h5>
             </div>
