@@ -6,10 +6,32 @@ const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
 /**
  * Prüft ob ein Projekt ein Git-Repository ist
+ * Git-Repos werden im html/ Unterordner geklont
  */
 function isGitRepository(projectPath) {
+    // Zuerst im html/ Unterordner prüfen (neue Struktur)
+    const gitDirHtml = path.join(projectPath, 'html', '.git');
+    if (fs.existsSync(gitDirHtml)) {
+        return true;
+    }
+    // Fallback: Direkt im Projektordner (alte Struktur, für Kompatibilität)
     const gitDir = path.join(projectPath, '.git');
     return fs.existsSync(gitDir);
+}
+
+/**
+ * Gibt den Pfad zum Git-Verzeichnis zurück (html/ oder root)
+ */
+function getGitPath(projectPath) {
+    const htmlPath = path.join(projectPath, 'html');
+    if (fs.existsSync(path.join(htmlPath, '.git'))) {
+        return htmlPath;
+    }
+    // Fallback für alte Projekte
+    if (fs.existsSync(path.join(projectPath, '.git'))) {
+        return projectPath;
+    }
+    return htmlPath; // Default für neue Projekte
 }
 
 /**
@@ -20,21 +42,23 @@ function getGitStatus(projectPath) {
         return null;
     }
 
+    const gitPath = getGitPath(projectPath);
+
     try {
         const remoteUrl = execSync('git config --get remote.origin.url', {
-            cwd: projectPath,
+            cwd: gitPath,
             encoding: 'utf-8',
             timeout: 5000
         }).trim();
 
         const branch = execSync('git rev-parse --abbrev-ref HEAD', {
-            cwd: projectPath,
+            cwd: gitPath,
             encoding: 'utf-8',
             timeout: 5000
         }).trim();
 
         const lastCommit = execSync('git log -1 --format="%h - %s (%ar)"', {
-            cwd: projectPath,
+            cwd: gitPath,
             encoding: 'utf-8',
             timeout: 5000
         }).trim();
@@ -43,7 +67,7 @@ function getGitStatus(projectPath) {
         let hasLocalChanges = false;
         try {
             execSync('git diff --quiet && git diff --cached --quiet', {
-                cwd: projectPath,
+                cwd: gitPath,
                 timeout: 5000
             });
         } catch {
@@ -205,7 +229,8 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
  * Speichert Credentials für ein Repository
  */
 function saveCredentials(projectPath, repoUrl, token) {
-    const credentialsPath = path.join(projectPath, '.git-credentials');
+    const gitPath = getGitPath(projectPath);
+    const credentialsPath = path.join(gitPath, '.git-credentials');
     const url = new URL(repoUrl);
     const credentialLine = `https://${token}@${url.host}${url.pathname}`;
 
@@ -213,7 +238,7 @@ function saveCredentials(projectPath, repoUrl, token) {
 
     // Git konfigurieren, diese Credentials zu nutzen
     execSync(`git config credential.helper "store --file=.git-credentials"`, {
-        cwd: projectPath
+        cwd: gitPath
     });
 }
 
@@ -283,9 +308,11 @@ async function pullChanges(projectPath) {
         throw new Error('Kein Git-Repository');
     }
 
+    const gitPath = getGitPath(projectPath);
+
     return new Promise((resolve, reject) => {
         exec('git pull', {
-            cwd: projectPath,
+            cwd: gitPath,
             timeout: 60000 // 1 Minute Timeout
         }, (error, stdout, stderr) => {
             if (error) {
@@ -311,8 +338,9 @@ async function pullChanges(projectPath) {
  * Entfernt die Git-Verbindung von einem Projekt
  */
 function disconnectRepository(projectPath) {
-    const gitDir = path.join(projectPath, '.git');
-    const credentialsFile = path.join(projectPath, '.git-credentials');
+    const gitPath = getGitPath(projectPath);
+    const gitDir = path.join(gitPath, '.git');
+    const credentialsFile = path.join(gitPath, '.git-credentials');
 
     if (fs.existsSync(gitDir)) {
         fs.rmSync(gitDir, { recursive: true, force: true });
@@ -400,6 +428,7 @@ function detectProjectType(projectPath) {
 
 /**
  * Generiert docker-compose.yml basierend auf Projekttyp
+ * Alle Volumes zeigen auf ./html/ da Git-Repos dort geklont werden
  */
 function generateDockerCompose(projectType, projectName, port) {
     const configs = {
@@ -411,7 +440,7 @@ services:
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     volumes:
-      - .:/usr/share/nginx/html:ro
+      - ./html:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - dployr-network
@@ -429,14 +458,14 @@ networks:
 services:
   web:
     build:
-      context: .
+      context: ./html
       dockerfile_inline: |
         FROM php:8.2-apache
         RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     volumes:
-      - .:/var/www/html
+      - ./html:/var/www/html
     networks:
       - dployr-network
     ports:
@@ -463,7 +492,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - .:/app
+      - ./html:/app
     networks:
       - dployr-network
     ports:
@@ -489,7 +518,7 @@ networks:
 services:
   web:
     build:
-      context: .
+      context: ./html
       dockerfile_inline: |
         FROM php:8.2-apache
         RUN apt-get update && apt-get install -y git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libpq-dev
@@ -503,7 +532,7 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      - .:/var/www/html
+      - ./html:/var/www/html
     networks:
       - dployr-network
     ports:
@@ -529,7 +558,7 @@ networks:
 services:
   web:
     build:
-      context: .
+      context: ./html
       dockerfile_inline: |
         FROM node:20-alpine AS builder
         WORKDIR /app
@@ -560,7 +589,7 @@ networks:
 services:
   app:
     build:
-      context: .
+      context: ./html
       dockerfile_inline: |
         FROM node:20-alpine
         WORKDIR /app
@@ -630,9 +659,11 @@ function generateNginxConfig() {
 
 /**
  * Erstellt ein neues Projekt direkt von einem Git-Repository
+ * Repository wird in html/ Unterordner geklont für konsistente Struktur
  */
 async function createProjectFromGit(systemUsername, projectName, repoUrl, token, port) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+    const htmlPath = path.join(projectPath, 'html');
 
     // Prüfen ob Projekt bereits existiert
     if (fs.existsSync(projectPath)) {
@@ -643,11 +674,14 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
     const userPath = path.join(USERS_PATH, systemUsername);
     fs.mkdirSync(userPath, { recursive: true });
 
+    // Projektverzeichnis erstellen
+    fs.mkdirSync(projectPath, { recursive: true });
+
     const authenticatedUrl = createAuthenticatedUrl(repoUrl, token);
 
     return new Promise((resolve, reject) => {
-        // Direkt ins Projektverzeichnis klonen
-        exec(`git clone "${authenticatedUrl}" "${projectPath}"`, {
+        // In html/ Unterordner klonen
+        exec(`git clone "${authenticatedUrl}" "${htmlPath}"`, {
             timeout: 120000
         }, (error, stdout, stderr) => {
             if (error) {
@@ -662,15 +696,15 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
             }
 
             try {
-                // Projekttyp erkennen
-                const projectType = detectProjectType(projectPath);
+                // Projekttyp erkennen (aus html/ Ordner)
+                const projectType = detectProjectType(htmlPath);
                 console.log(`Erkannter Projekttyp: ${projectType}`);
 
-                // docker-compose.yml generieren
+                // docker-compose.yml generieren (im Projektroot)
                 const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
                 fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
 
-                // .env generieren
+                // .env generieren (im Projektroot - nur Docker-Variablen)
                 const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
                 fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
@@ -681,9 +715,16 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
                     fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
                 }
 
-                // Credentials speichern falls Token vorhanden
+                // Credentials speichern falls Token vorhanden (im html/ Ordner)
                 if (token) {
-                    saveCredentials(projectPath, repoUrl, token);
+                    const credentialsPath = path.join(htmlPath, '.git-credentials');
+                    const url = new URL(repoUrl);
+                    const credentialLine = `https://${token}@${url.host}${url.pathname}`;
+                    fs.writeFileSync(credentialsPath, credentialLine + '\n', { mode: 0o600 });
+
+                    execSync(`git config credential.helper "store --file=.git-credentials"`, {
+                        cwd: htmlPath
+                    });
                 }
 
                 resolve({
@@ -706,6 +747,7 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
 module.exports = {
     isGitRepository,
     getGitStatus,
+    getGitPath,
     cloneRepository,
     pullChanges,
     disconnectRepository,
