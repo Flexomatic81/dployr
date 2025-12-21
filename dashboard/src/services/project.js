@@ -360,10 +360,24 @@ async function changeProjectType(systemUsername, projectName, newType) {
     };
 }
 
-// Umgebungsvariablen aus .env lesen
-async function readEnvFile(systemUsername, projectName) {
+// Ermitteln wo die App-.env Datei liegt (html/ oder Root)
+async function getAppEnvPath(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
-    const envPath = path.join(projectPath, '.env');
+    const htmlPath = path.join(projectPath, 'html');
+
+    // Prüfen ob html/ Ordner existiert (Git/ZIP Projekte)
+    try {
+        await fs.access(htmlPath);
+        return path.join(htmlPath, '.env');
+    } catch (e) {
+        // Kein html/ Ordner, nutze Projekt-Root
+        return path.join(projectPath, '.env');
+    }
+}
+
+// Umgebungsvariablen aus .env lesen (App-Ebene, nicht Docker-Ebene)
+async function readEnvFile(systemUsername, projectName) {
+    const envPath = await getAppEnvPath(systemUsername, projectName);
 
     try {
         const content = await fs.readFile(envPath, 'utf8');
@@ -376,10 +390,9 @@ async function readEnvFile(systemUsername, projectName) {
     }
 }
 
-// Umgebungsvariablen in .env schreiben
+// Umgebungsvariablen in .env schreiben (App-Ebene)
 async function writeEnvFile(systemUsername, projectName, content) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
-    const envPath = path.join(projectPath, '.env');
 
     // Prüfen ob Projekt existiert
     try {
@@ -388,6 +401,7 @@ async function writeEnvFile(systemUsername, projectName, content) {
         throw new Error('Projekt nicht gefunden');
     }
 
+    const envPath = await getAppEnvPath(systemUsername, projectName);
     await fs.writeFile(envPath, content, 'utf8');
     return { success: true };
 }
@@ -425,15 +439,15 @@ async function checkEnvExample(systemUsername, projectName) {
     return { exists: false, filename: null, content: null, inHtml: false };
 }
 
-// .env.example zu .env kopieren
+// .env.example zu .env kopieren (im gleichen Ordner wie .env.example)
 async function copyEnvExample(systemUsername, projectName) {
-    const projectPath = path.join(USERS_PATH, systemUsername, projectName);
-    const envPath = path.join(projectPath, '.env');
-
     const example = await checkEnvExample(systemUsername, projectName);
     if (!example.exists) {
         throw new Error('Keine .env.example Datei gefunden');
     }
+
+    // .env Pfad im gleichen Ordner wie .env.example
+    const envPath = await getAppEnvPath(systemUsername, projectName);
 
     // Existierenden .env Inhalt laden (falls vorhanden)
     let existingContent = '';
@@ -475,10 +489,9 @@ async function copyEnvExample(systemUsername, projectName) {
     return { success: true, filename: example.filename };
 }
 
-// Datenbank-Credentials zu .env hinzufügen
+// Datenbank-Credentials zu .env hinzufügen (App-Ebene)
 async function appendDbCredentials(systemUsername, projectName, dbCredentials) {
-    const projectPath = path.join(USERS_PATH, systemUsername, projectName);
-    const envPath = path.join(projectPath, '.env');
+    const envPath = await getAppEnvPath(systemUsername, projectName);
 
     let content = '';
     try {
