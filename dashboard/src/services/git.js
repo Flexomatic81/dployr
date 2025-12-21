@@ -489,12 +489,6 @@ services:
       - "\${EXPOSED_PORT:-${port}}:80"
     environment:
       - TZ=Europe/Berlin
-      - DB_TYPE=\${DB_TYPE:-mariadb}
-      - DB_HOST=\${DB_HOST:-dployr-mariadb}
-      - DB_PORT=\${DB_PORT:-3306}
-      - DB_DATABASE=\${DB_DATABASE}
-      - DB_USERNAME=\${DB_USERNAME}
-      - DB_PASSWORD=\${DB_PASSWORD}
 
 networks:
   dployr-network:
@@ -517,12 +511,6 @@ services:
     environment:
       - TZ=Europe/Berlin
       - NODE_ENV=production
-      - DB_TYPE=\${DB_TYPE:-mariadb}
-      - DB_HOST=\${DB_HOST:-dployr-mariadb}
-      - DB_PORT=\${DB_PORT:-3306}
-      - DB_DATABASE=\${DB_DATABASE}
-      - DB_USERNAME=\${DB_USERNAME}
-      - DB_PASSWORD=\${DB_PASSWORD}
     command: sh -c "npm install && npm start"
 
 networks:
@@ -557,12 +545,6 @@ services:
     environment:
       - TZ=Europe/Berlin
       - APP_ENV=production
-      - DB_CONNECTION=\${DB_TYPE:-mysql}
-      - DB_HOST=\${DB_HOST:-dployr-mariadb}
-      - DB_PORT=\${DB_PORT:-3306}
-      - DB_DATABASE=\${DB_DATABASE}
-      - DB_USERNAME=\${DB_USERNAME}
-      - DB_PASSWORD=\${DB_PASSWORD}
     command: sh -c "composer install --no-dev --optimize-autoloader && apache2-foreground"
 
 networks:
