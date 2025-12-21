@@ -336,7 +336,20 @@ async function changeProjectType(systemUsername, projectName, newType) {
     }
 
     // Neue docker-compose.yml generieren
-    const newCompose = generateDockerCompose(newType, containerName, port);
+    let newCompose = generateDockerCompose(newType, containerName, port);
+
+    // Bei alten Git-Projekten (Git im Root statt html/): Pfade anpassen
+    if (isGitRepository(projectPath)) {
+        const gitPath = getGitPath(projectPath);
+        if (gitPath === projectPath) {
+            // Altes Projekt: Git liegt im Root, nicht in html/
+            // Pfade von ./html auf . ändern
+            newCompose = newCompose
+                .replace(/\.\/html:/g, './:')
+                .replace(/context: \.\/html/g, 'context: .');
+        }
+    }
+
     const composePath = path.join(projectPath, 'docker-compose.yml');
     await fs.writeFile(composePath, newCompose);
 
