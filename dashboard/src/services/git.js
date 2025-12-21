@@ -371,17 +371,34 @@ function getProjectPath(systemUsername, projectName) {
 
 /**
  * Erkennt den Projekttyp anhand der Dateien im Verzeichnis
+ * Prüft zuerst html/ Unterordner, dann das Projekt-Root
  */
 function detectProjectType(projectPath) {
-    const hasIndexHtml = fs.existsSync(path.join(projectPath, 'index.html'));
-    const hasIndexPhp = fs.existsSync(path.join(projectPath, 'index.php'));
-    const hasPackageJson = fs.existsSync(path.join(projectPath, 'package.json'));
-    const hasComposerJson = fs.existsSync(path.join(projectPath, 'composer.json'));
+    // Ermittle den korrekten Pfad für die Dateien
+    // Bei neuen Projekten: html/, bei alten: projectPath selbst
+    let scanPath = projectPath;
+    const htmlPath = path.join(projectPath, 'html');
+
+    // Prüfe ob html/ existiert und App-Dateien enthält
+    if (fs.existsSync(htmlPath)) {
+        const htmlHasFiles = fs.existsSync(path.join(htmlPath, 'package.json')) ||
+                            fs.existsSync(path.join(htmlPath, 'composer.json')) ||
+                            fs.existsSync(path.join(htmlPath, 'index.html')) ||
+                            fs.existsSync(path.join(htmlPath, 'index.php'));
+        if (htmlHasFiles) {
+            scanPath = htmlPath;
+        }
+    }
+
+    const hasIndexHtml = fs.existsSync(path.join(scanPath, 'index.html'));
+    const hasIndexPhp = fs.existsSync(path.join(scanPath, 'index.php'));
+    const hasPackageJson = fs.existsSync(path.join(scanPath, 'package.json'));
+    const hasComposerJson = fs.existsSync(path.join(scanPath, 'composer.json'));
 
     // Node.js Projekte genauer analysieren
     if (hasPackageJson) {
         try {
-            const packageJson = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
+            const packageJson = JSON.parse(fs.readFileSync(path.join(scanPath, 'package.json'), 'utf8'));
             const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
 
             // Next.js erkennen
@@ -401,7 +418,7 @@ function detectProjectType(projectPath) {
     // PHP Projekte genauer analysieren
     if (hasComposerJson) {
         try {
-            const composerJson = JSON.parse(fs.readFileSync(path.join(projectPath, 'composer.json'), 'utf8'));
+            const composerJson = JSON.parse(fs.readFileSync(path.join(scanPath, 'composer.json'), 'utf8'));
             const deps = { ...composerJson.require, ...composerJson['require-dev'] };
 
             // Laravel/Symfony erkennen
