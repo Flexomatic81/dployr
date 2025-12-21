@@ -83,6 +83,26 @@ All services run on `dployr-network`. The dashboard container mounts:
 
 User projects are created under `/app/users/{systemUsername}/{projectname}/` with their own docker-compose.yml.
 
+### Project Structure
+
+All projects follow a consistent structure with app files in the `html/` subfolder:
+
+```
+/app/users/{username}/{projectname}/
+├── docker-compose.yml    # Docker configuration (references ./html)
+├── .env                  # Docker system variables (PROJECT_NAME, EXPOSED_PORT)
+├── nginx/                # Nginx config (for static projects)
+│   └── default.conf
+└── html/                 # App files (Git clone target, ZIP extract target)
+    ├── .git/             # Git repository (if from Git)
+    ├── .env              # App environment variables
+    ├── .env.example      # Template (if exists)
+    ├── package.json      # or composer.json, index.html, etc.
+    └── ...
+```
+
+**Note:** Legacy Git projects (cloned before this structure) may have Git in the project root instead of `html/`. The system automatically detects and handles both structures via `getGitPath()` and `isGitRepository()` functions.
+
 ### Path Mapping
 
 The dashboard runs in Docker and must translate paths:
@@ -148,9 +168,10 @@ Projects can be created via three methods:
 
 ### 1. Git Repository (`POST /projects/from-git`)
 The `git.js` service:
-- Clones repositories (supports private repos with access tokens)
-- Auto-detects project type from files
-- Generates appropriate docker-compose.yml
+- Clones repositories into `html/` subfolder for consistent structure
+- Supports private repos with access tokens
+- Auto-detects project type from files in `html/`
+- Generates appropriate docker-compose.yml with `./html` volume mounts
 - Sanitizes URLs to hide tokens in display
 
 ### 2. ZIP Upload (`POST /projects/from-zip`)
@@ -165,7 +186,7 @@ Creates empty project from predefined templates in `/templates/`.
 
 ## Project Type Detection
 
-The `detectProjectType()` function in `git.js` analyzes project files:
+The `detectProjectType()` function in `git.js` analyzes project files. It automatically checks the `html/` subfolder first (for new structure), then falls back to project root (for legacy projects).
 
 | Detection | Project Type |
 |-----------|--------------|
@@ -178,6 +199,14 @@ The `detectProjectType()` function in `git.js` analyzes project files:
 
 The project detail page (`/projects/:name`) compares detected type with configured type and shows a warning if they mismatch, allowing one-click correction.
 
+## Legacy Project Compatibility
+
+For Git projects created before the `html/` structure was introduced:
+- `isGitRepository()` checks both `html/.git` and project root `.git`
+- `getGitPath()` returns the correct path based on where `.git` exists
+- `changeProjectType()` adjusts docker-compose.yml paths (`.` instead of `./html`) for legacy projects
+- `.env` editor and `.env.example` detection use `getGitPath()` to find the correct location
+
 ## Environment Variables Editor
 
 The project detail page includes an `.env` editor with:
@@ -186,6 +215,8 @@ The project detail page includes an `.env` editor with:
 - **`.env.example` detection**: Automatically finds `.env.example`, `.env.sample`, `.env.dist`, `.env.template`
 - **Copy example**: Merges example file with existing values (doesn't overwrite)
 - **DB credential injection**: Dropdown to insert database credentials from user's databases
+
+**Important:** The `.env` editor edits the **app's** `.env` file (in `html/` or Git path), not the Docker system `.env` in the project root. System variables (PROJECT_NAME, EXPOSED_PORT) are managed separately.
 
 Routes:
 - `POST /projects/:name/env` - Save .env content
@@ -199,8 +230,8 @@ Routes:
 | `project.js` | Project CRUD, type changes, .env management, DB credential handling |
 | `docker.js` | Container orchestration via dockerode |
 | `database.js` | Multi-DB provider delegation |
-| `git.js` | Git clone, type detection, docker-compose generation |
-| `zip.js` | ZIP extraction, auto-flatten, project creation |
+| `git.js` | Git clone (to html/), type detection, docker-compose generation, path helpers (getGitPath, isGitRepository) |
+| `zip.js` | ZIP extraction (to html/), auto-flatten, project creation |
 
 ## Middleware
 

@@ -259,7 +259,7 @@ Die beste Methode um auf dem Server zu arbeiten:
    VARIANTE D (Update bestehendes Git-Projekt):
    Dashboard → Projekt öffnen → "Pull" Button
    ODER: ssh <USER>@<SERVER_IP>
-   cd /opt/dployr/users/<USER>/PROJEKT
+   cd /opt/dployr/users/<USER>/PROJEKT/html
    git pull
    ↓
 3. Fertig! Website ist aktualisiert
@@ -305,12 +305,14 @@ Bei Typ-Mismatch zeigt die Projektseite eine Warnung mit One-Click-Korrektur.
 
 ### Git & ZIP Integration
 - **Git**: Projekte direkt von GitHub/GitLab/Bitbucket erstellen
+  - Klont ins `html/` Unterverzeichnis für konsistente Struktur
   - Unterstützt private Repos mit Personal Access Token
   - Git Pull direkt im Dashboard
 - **ZIP-Upload**: Projekte per ZIP-Datei hochladen
   - Max. 100 MB Dateigröße
-  - Automatisches Entpacken (auch verschachtelte Ordner)
-- Projekttyp wird automatisch erkannt
+  - Automatisches Entpacken ins `html/` Verzeichnis
+  - Automatisches Flatten (auch verschachtelte Ordner)
+- Projekttyp wird automatisch erkannt (aus `html/` Ordner)
 - Passende Docker-Konfiguration wird generiert
 
 ## Quick Reference
