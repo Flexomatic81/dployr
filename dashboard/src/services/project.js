@@ -392,23 +392,37 @@ async function writeEnvFile(systemUsername, projectName, content) {
     return { success: true };
 }
 
-// Prüfen ob .env.example existiert
+// Prüfen ob .env.example existiert (im Projekt-Root oder html/ Unterordner)
 async function checkEnvExample(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+    const htmlPath = path.join(projectPath, 'html');
     const envExampleNames = ['.env.example', '.env.sample', '.env.dist', '.env.template'];
 
+    // Zuerst im html/ Unterordner suchen (Git/ZIP Projekte)
     for (const name of envExampleNames) {
-        const examplePath = path.join(projectPath, name);
+        const examplePath = path.join(htmlPath, name);
         try {
             await fs.access(examplePath);
             const content = await fs.readFile(examplePath, 'utf8');
-            return { exists: true, filename: name, content };
+            return { exists: true, filename: name, content, inHtml: true };
         } catch (e) {
             // Datei existiert nicht, weiter prüfen
         }
     }
 
-    return { exists: false, filename: null, content: null };
+    // Falls nicht gefunden, im Projekt-Root suchen
+    for (const name of envExampleNames) {
+        const examplePath = path.join(projectPath, name);
+        try {
+            await fs.access(examplePath);
+            const content = await fs.readFile(examplePath, 'utf8');
+            return { exists: true, filename: name, content, inHtml: false };
+        } catch (e) {
+            // Datei existiert nicht, weiter prüfen
+        }
+    }
+
+    return { exists: false, filename: null, content: null, inHtml: false };
 }
 
 // .env.example zu .env kopieren
