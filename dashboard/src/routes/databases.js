@@ -9,11 +9,19 @@ router.get('/', requireAuth, async (req, res) => {
         const systemUsername = req.session.user.system_username;
         const databases = await databaseService.getUserDatabases(systemUsername);
         const dbTypes = databaseService.getAvailableTypes();
+        const serverIp = process.env.SERVER_IP || 'localhost';
+
+        // Prüfen welche DB-Typen vorhanden sind
+        const hasMariaDB = databases.some(db => db.type !== 'postgresql');
+        const hasPostgreSQL = databases.some(db => db.type === 'postgresql');
 
         res.render('databases/index', {
             title: 'Datenbanken',
             databases,
-            dbTypes
+            dbTypes,
+            serverIp,
+            hasMariaDB,
+            hasPostgreSQL
         });
     } catch (error) {
         console.error('Fehler beim Laden der Datenbanken:', error);

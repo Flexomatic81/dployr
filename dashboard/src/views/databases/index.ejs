@@ -113,9 +113,10 @@
         </div>
     </div>
 
-    <!-- Verbindungs-Info -->
+    <!-- Verbindungs-Info - nur für vorhandene DB-Typen anzeigen -->
     <div class="row mt-4">
-        <div class="col-md-6">
+        <% if (hasMariaDB) { %>
+        <div class="<%= hasPostgreSQL ? 'col-md-6' : 'col-12' %>">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="bi bi-database"></i> MariaDB Verbindung</h5>
@@ -127,12 +128,14 @@ DB_DATABASE=&lt;datenbank&gt;
 DB_USERNAME=&lt;benutzer&gt;
 DB_PASSWORD=&lt;passwort&gt;</code></pre>
                     <p class="text-muted mt-2 mb-0">
-                        <i class="bi bi-tools"></i> Verwaltung: <a href="http://localhost:8080" target="_blank">phpMyAdmin</a>
+                        <i class="bi bi-tools"></i> Verwaltung: <a href="http://<%= serverIp %>:8080" target="_blank">phpMyAdmin</a>
                     </p>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        <% } %>
+        <% if (hasPostgreSQL) { %>
+        <div class="<%= hasMariaDB ? 'col-md-6' : 'col-12' %>">
             <div class="card h-100">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="bi bi-database-fill"></i> PostgreSQL Verbindung</h5>
@@ -144,11 +147,12 @@ DB_DATABASE=&lt;datenbank&gt;
 DB_USERNAME=&lt;benutzer&gt;
 DB_PASSWORD=&lt;passwort&gt;</code></pre>
                     <p class="text-muted mt-2 mb-0">
-                        <i class="bi bi-tools"></i> Verwaltung: <a href="http://localhost:5050" target="_blank">pgAdmin</a>
+                        <i class="bi bi-tools"></i> Verwaltung: <a href="http://<%= serverIp %>:5050" target="_blank">pgAdmin</a>
                     </p>
                 </div>
             </div>
         </div>
+        <% } %>
     </div>
 <% } %>
 
