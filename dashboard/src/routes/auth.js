@@ -57,10 +57,12 @@ router.get('/register', redirectIfAuth, (req, res) => {
 
 // Registrierung verarbeiten
 router.post('/register', redirectIfAuth, async (req, res) => {
-    const { username, password, password_confirm, system_username } = req.body;
+    const { username, password, password_confirm } = req.body;
+    // System-Username ist identisch mit dem Benutzernamen
+    const system_username = username;
 
     // Validierung
-    if (!username || !password || !system_username) {
+    if (!username || !password) {
         req.flash('error', 'Alle Felder müssen ausgefüllt werden');
         return res.redirect('/register');
     }
@@ -80,15 +82,10 @@ router.post('/register', redirectIfAuth, async (req, res) => {
         return res.redirect('/register');
     }
 
-    if (!/^[a-z0-9_-]+$/.test(system_username)) {
-        req.flash('error', 'System-Benutzername darf nur Kleinbuchstaben, Zahlen, - und _ enthalten');
-        return res.redirect('/register');
-    }
-
     try {
         // Prüfen ob Username bereits existiert
         if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
-            req.flash('error', 'Benutzername oder System-Username bereits vergeben');
+            req.flash('error', 'Benutzername bereits vergeben');
             return res.redirect('/register');
         }
 

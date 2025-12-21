@@ -87,16 +87,6 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="system_username" class="form-label">System-Benutzername</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-terminal"></i></span>
-                        <input type="text" class="form-control" id="system_username" name="system_username"
-                               required pattern="[a-z0-9_-]+" placeholder="admin">
-                    </div>
-                    <div class="form-text">Für Projekt-Verzeichnisse: /users/&lt;name&gt;/</div>
-                </div>
-
                 <div class="d-flex justify-content-between">
                     <button type="button" class="btn btn-outline-secondary" onclick="goToStep(1)">
                         <i class="bi bi-arrow-left"></i> Zurück
@@ -207,7 +197,7 @@
 
         setupData.admin_username = document.getElementById('admin_username').value;
         setupData.admin_password = password;
-        setupData.system_username = document.getElementById('system_username').value;
+        setupData.system_username = setupData.admin_username;
 
         goToStep(3);
         runSetup();
