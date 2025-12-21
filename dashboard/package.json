@@ -13,6 +13,7 @@
     "express-session": "^1.17.3",
     "express-ejs-layouts": "^2.5.1",
     "mysql2": "^3.6.5",
+    "pg": "^8.11.3",
     "bcrypt": "^5.1.1",
     "dockerode": "^4.0.0",
     "dotenv": "^16.3.1",

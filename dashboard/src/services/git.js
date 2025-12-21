@@ -432,7 +432,7 @@ services:
       context: .
       dockerfile_inline: |
         FROM php:8.2-apache
-        RUN docker-php-ext-install pdo pdo_mysql
+        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     volumes:
@@ -443,6 +443,12 @@ services:
       - "\${EXPOSED_PORT:-${port}}:80"
     environment:
       - TZ=Europe/Berlin
+      - DB_TYPE=\${DB_TYPE:-mariadb}
+      - DB_HOST=\${DB_HOST:-dployr-mariadb}
+      - DB_PORT=\${DB_PORT:-3306}
+      - DB_DATABASE=\${DB_DATABASE}
+      - DB_USERNAME=\${DB_USERNAME}
+      - DB_PASSWORD=\${DB_PASSWORD}
 
 networks:
   dployr-network:
@@ -465,6 +471,12 @@ services:
     environment:
       - TZ=Europe/Berlin
       - NODE_ENV=production
+      - DB_TYPE=\${DB_TYPE:-mariadb}
+      - DB_HOST=\${DB_HOST:-dployr-mariadb}
+      - DB_PORT=\${DB_PORT:-3306}
+      - DB_DATABASE=\${DB_DATABASE}
+      - DB_USERNAME=\${DB_USERNAME}
+      - DB_PASSWORD=\${DB_PASSWORD}
     command: sh -c "npm install && npm start"
 
 networks:
@@ -480,8 +492,8 @@ services:
       context: .
       dockerfile_inline: |
         FROM php:8.2-apache
-        RUN apt-get update && apt-get install -y git unzip libzip-dev libpng-dev libonig-dev libxml2-dev
-        RUN docker-php-ext-install pdo pdo_mysql mbstring zip gd xml
+        RUN apt-get update && apt-get install -y git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libpq-dev
+        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip gd xml
         RUN a2enmod rewrite
         COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
         ENV APACHE_DOCUMENT_ROOT /var/www/html/public
@@ -499,6 +511,12 @@ services:
     environment:
       - TZ=Europe/Berlin
       - APP_ENV=production
+      - DB_CONNECTION=\${DB_TYPE:-mysql}
+      - DB_HOST=\${DB_HOST:-dployr-mariadb}
+      - DB_PORT=\${DB_PORT:-3306}
+      - DB_DATABASE=\${DB_DATABASE}
+      - DB_USERNAME=\${DB_USERNAME}
+      - DB_PASSWORD=\${DB_PASSWORD}
     command: sh -c "composer install --no-dev --optimize-autoloader && apache2-foreground"
 
 networks:
@@ -561,6 +579,12 @@ services:
     environment:
       - TZ=Europe/Berlin
       - NODE_ENV=production
+      - DB_TYPE=\${DB_TYPE:-mariadb}
+      - DB_HOST=\${DB_HOST:-dployr-mariadb}
+      - DB_PORT=\${DB_PORT:-3306}
+      - DB_DATABASE=\${DB_DATABASE}
+      - DB_USERNAME=\${DB_USERNAME}
+      - DB_PASSWORD=\${DB_PASSWORD}
 
 networks:
   dployr-network:

@@ -17,9 +17,10 @@ services:
       - NODE_ENV=production
       - PORT=${APP_PORT:-3000}
       - TZ=Europe/Berlin
-      # Datenbank
-      - DB_HOST=dployr-mariadb
-      - DB_PORT=3306
+      # Datenbank (MariaDB oder PostgreSQL)
+      - DB_TYPE=${DB_TYPE:-mariadb}
+      - DB_HOST=${DB_HOST:-dployr-mariadb}
+      - DB_PORT=${DB_PORT:-3306}
       - DB_DATABASE=${DB_DATABASE}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}

@@ -24,6 +24,7 @@
                     <thead>
                         <tr>
                             <th>Datenbank</th>
+                            <th>Typ</th>
                             <th>Benutzer</th>
                             <th>Passwort</th>
                             <th>Host</th>
@@ -31,39 +32,54 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% databases.forEach(db => { %>
+                        <% databases.forEach(db => {
+                            const isPostgres = db.type === 'postgresql';
+                            const host = db.host || (isPostgres ? 'dployr-postgresql' : 'dployr-mariadb');
+                            const port = db.port || (isPostgres ? 5432 : 3306);
+                        %>
                             <tr>
                                 <td>
-                                    <i class="bi bi-database-fill text-info"></i>
+                                    <i class="bi bi-database-fill <%= isPostgres ? 'text-info' : 'text-primary' %>"></i>
                                     <strong><%= db.database %></strong>
+                                </td>
+                                <td>
+                                    <% if (isPostgres) { %>
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-database-fill"></i> PostgreSQL
+                                        </span>
+                                    <% } else { %>
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-database"></i> MariaDB
+                                        </span>
+                                    <% } %>
                                 </td>
                                 <td><code><%= db.username %></code></td>
                                 <td>
                                     <div class="input-group input-group-sm" style="width: 200px;">
                                         <input type="password" class="form-control form-control-sm"
                                                value="<%= db.password %>" readonly
-                                               id="pw-<%= db.database %>">
+                                               id="pw-<%= db.database.replace(/[^a-z0-9]/gi, '_') %>">
                                         <button class="btn btn-outline-secondary" type="button"
-                                                onclick="togglePassword('pw-<%= db.database %>')">
+                                                onclick="togglePassword('pw-<%= db.database.replace(/[^a-z0-9]/gi, '_') %>')">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                         <button class="btn btn-outline-secondary" type="button"
-                                                onclick="copyPassword('pw-<%= db.database %>')">
+                                                onclick="copyPassword('pw-<%= db.database.replace(/[^a-z0-9]/gi, '_') %>')">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
                                     </div>
                                 </td>
-                                <td><code>dployr-mariadb:3306</code></td>
+                                <td><code><%= host %>:<%= port %></code></td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
-                                            data-bs-toggle="modal" data-bs-target="#deleteModal-<%= db.database %>">
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal-<%= db.database.replace(/[^a-z0-9]/gi, '_') %>">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </td>
                             </tr>
 
                             <!-- Delete Modal -->
-                            <div class="modal fade" id="deleteModal-<%= db.database %>" tabindex="-1">
+                            <div class="modal fade" id="deleteModal-<%= db.database.replace(/[^a-z0-9]/gi, '_') %>" tabindex="-1">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header bg-danger text-white">
@@ -98,21 +114,40 @@
     </div>
 
     <!-- Verbindungs-Info -->
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Verbindungsinformationen</h5>
-        </div>
-        <div class="card-body">
-            <p>Verwende diese Einstellungen in deiner Anwendung:</p>
-            <pre class="code-block p-3 rounded"><code>DB_HOST=dployr-mariadb
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-database"></i> MariaDB Verbindung</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="code-block p-3 rounded mb-0"><code>DB_HOST=dployr-mariadb
 DB_PORT=3306
 DB_DATABASE=&lt;datenbank&gt;
 DB_USERNAME=&lt;benutzer&gt;
 DB_PASSWORD=&lt;passwort&gt;</code></pre>
-            <p class="text-muted mb-0">
-                <i class="bi bi-lightbulb"></i>
-                Im Docker-Netzwerk ist MariaDB unter <code>dployr-mariadb:3306</code> erreichbar.
-            </p>
+                    <p class="text-muted mt-2 mb-0">
+                        <i class="bi bi-tools"></i> Verwaltung: <a href="http://localhost:8080" target="_blank">phpMyAdmin</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-database-fill"></i> PostgreSQL Verbindung</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="code-block p-3 rounded mb-0"><code>DB_HOST=dployr-postgresql
+DB_PORT=5432
+DB_DATABASE=&lt;datenbank&gt;
+DB_USERNAME=&lt;benutzer&gt;
+DB_PASSWORD=&lt;passwort&gt;</code></pre>
+                    <p class="text-muted mt-2 mb-0">
+                        <i class="bi bi-tools"></i> Verwaltung: <a href="http://localhost:5050" target="_blank">pgAdmin</a>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 <% } %>

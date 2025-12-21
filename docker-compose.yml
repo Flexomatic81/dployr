@@ -42,6 +42,46 @@ services:
       mariadb:
         condition: service_healthy
 
+  # PostgreSQL Datenbank
+  postgresql:
+    image: postgres:16-alpine
+    container_name: dployr-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:?POSTGRES_ROOT_PASSWORD muss gesetzt sein}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - dployr-network
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin für PostgreSQL-Verwaltung
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: dployr-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@local.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD muss gesetzt sein}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - dployr-network
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
   # Web Dashboard
   dashboard:
     build: ./dashboard
@@ -68,6 +108,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-}
       - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET muss gesetzt sein}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - POSTGRES_ROOT_PASSWORD=${POSTGRES_ROOT_PASSWORD}
       - SERVER_IP=${SERVER_IP:-localhost}
       - USERS_PATH=/app/users
       - HOST_USERS_PATH=${HOST_USERS_PATH:-/opt/dployr/users}
@@ -87,3 +128,7 @@ networks:
 volumes:
   mariadb_data:
     name: dployr-mariadb-data
+  postgresql_data:
+    name: dployr-postgresql-data
+  pgadmin_data:
+    name: dployr-pgadmin-data

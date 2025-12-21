@@ -8,10 +8,12 @@ router.get('/', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
         const databases = await databaseService.getUserDatabases(systemUsername);
+        const dbTypes = databaseService.getAvailableTypes();
 
         res.render('databases/index', {
             title: 'Datenbanken',
-            databases
+            databases,
+            dbTypes
         });
     } catch (error) {
         console.error('Fehler beim Laden der Datenbanken:', error);
@@ -22,20 +24,23 @@ router.get('/', requireAuth, async (req, res) => {
 
 // Neue Datenbank erstellen - Formular
 router.get('/create', requireAuth, (req, res) => {
+    const dbTypes = databaseService.getAvailableTypes();
     res.render('databases/create', {
-        title: 'Neue Datenbank'
+        title: 'Neue Datenbank',
+        dbTypes
     });
 });
 
 // Neue Datenbank erstellen - Verarbeitung
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, type } = req.body;
         const systemUsername = req.session.user.system_username;
 
-        const dbInfo = await databaseService.createDatabase(systemUsername, name);
+        const dbInfo = await databaseService.createDatabase(systemUsername, name, type || 'mariadb');
 
-        req.flash('success', `Datenbank "${name}" erfolgreich erstellt!`);
+        const typeName = type === 'postgresql' ? 'PostgreSQL' : 'MariaDB';
+        req.flash('success', `${typeName}-Datenbank "${dbInfo.database}" erfolgreich erstellt!`);
         res.redirect('/databases');
     } catch (error) {
         console.error('Fehler beim Erstellen der Datenbank:', error);
