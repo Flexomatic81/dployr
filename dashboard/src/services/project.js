@@ -360,28 +360,53 @@ async function changeProjectType(systemUsername, projectName, newType) {
     };
 }
 
+// Docker-System-Variablen die nicht vom User geändert werden sollen
+const SYSTEM_ENV_VARS = ['PROJECT_NAME', 'EXPOSED_PORT'];
+
 // Ermitteln wo die App-.env Datei liegt (html/ oder Root)
 async function getAppEnvPath(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
     const htmlPath = path.join(projectPath, 'html');
 
-    // Prüfen ob html/ Ordner existiert (Git/ZIP Projekte)
+    // Prüfen ob html/ Ordner existiert (Git/ZIP Projekte mit html/ Struktur)
     try {
         await fs.access(htmlPath);
-        return path.join(htmlPath, '.env');
+        // html/ existiert, prüfen ob dort App-Dateien sind
+        const htmlFiles = await fs.readdir(htmlPath);
+        const hasAppFiles = htmlFiles.some(f =>
+            ['package.json', 'composer.json', 'index.php', 'index.html', 'artisan', '.env.example'].includes(f)
+        );
+        if (hasAppFiles) {
+            return path.join(htmlPath, '.env');
+        }
     } catch (e) {
-        // Kein html/ Ordner, nutze Projekt-Root
-        return path.join(projectPath, '.env');
+        // Kein html/ Ordner
     }
+
+    // Fallback: Projekt-Root
+    return path.join(projectPath, '.env');
 }
 
-// Umgebungsvariablen aus .env lesen (App-Ebene, nicht Docker-Ebene)
+// Umgebungsvariablen aus .env lesen (ohne Docker-System-Variablen)
 async function readEnvFile(systemUsername, projectName) {
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
     try {
         const content = await fs.readFile(envPath, 'utf8');
-        return content;
+
+        // System-Variablen herausfiltern für die Anzeige
+        const lines = content.split('\n');
+        const filteredLines = lines.filter(line => {
+            const trimmed = line.trim();
+            // Kommentare und leere Zeilen behalten
+            if (trimmed.startsWith('#') || trimmed === '') return true;
+            // System-Variablen ausschließen
+            const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
+            if (match && SYSTEM_ENV_VARS.includes(match[1])) return false;
+            return true;
+        });
+
+        return filteredLines.join('\n').trim();
     } catch (error) {
         if (error.code === 'ENOENT') {
             return ''; // Leere Datei wenn nicht vorhanden
@@ -390,7 +415,7 @@ async function readEnvFile(systemUsername, projectName) {
     }
 }
 
-// Umgebungsvariablen in .env schreiben (App-Ebene)
+// Umgebungsvariablen in .env schreiben (System-Variablen werden erhalten)
 async function writeEnvFile(systemUsername, projectName, content) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
@@ -402,7 +427,27 @@ async function writeEnvFile(systemUsername, projectName, content) {
     }
 
     const envPath = await getAppEnvPath(systemUsername, projectName);
-    await fs.writeFile(envPath, content, 'utf8');
+
+    // Existierende System-Variablen aus der aktuellen .env lesen
+    let systemVarsBlock = '';
+    try {
+        const existingContent = await fs.readFile(envPath, 'utf8');
+        const lines = existingContent.split('\n');
+        const systemLines = lines.filter(line => {
+            const trimmed = line.trim();
+            const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
+            return match && SYSTEM_ENV_VARS.includes(match[1]);
+        });
+        if (systemLines.length > 0) {
+            systemVarsBlock = systemLines.join('\n') + '\n\n';
+        }
+    } catch (e) {
+        // .env existiert nicht
+    }
+
+    // System-Variablen + User-Content zusammenführen
+    const finalContent = systemVarsBlock + content;
+    await fs.writeFile(envPath, finalContent, 'utf8');
     return { success: true };
 }
 
