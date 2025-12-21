@@ -25,12 +25,14 @@ Dployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen 
 - 🗄️ **Automatische Datenbank-Erstellung** - Optional beim Projekt-Setup
 - 🔐 **Sichere Credentials** - Automatisch generiert und in .env gespeichert
 - 📦 **GitHub Integration** - Repository direkt beim Setup klonen
+- 📁 **ZIP-Upload** - Projekte per ZIP-Datei hochladen (bis 100 MB)
 - 🎯 **Auto Port-Erkennung** - Findet automatisch freie Ports
+- 🔍 **Automatische Projekttyp-Erkennung** - Erkennt Static/PHP/Node.js/Laravel/Next.js automatisch
 - 🐳 **Docker-basierte Isolation** - Jedes Projekt läuft isoliert
 - 🗃️ **MariaDB + PostgreSQL** - Beide Datenbanken verfügbar mit phpMyAdmin & pgAdmin
 - 📋 **Fertige Templates** - Static, PHP, Node.js sofort einsatzbereit
 - 👥 **Multi-User mit Admin-Freischaltung** - Neue User müssen durch Admin genehmigt werden
-- 🔄 **Projekt-Typ änderbar** - Nachträglicher Wechsel zwischen Static/PHP/Node.js
+- 🔄 **Projekt-Typ änderbar** - Nachträglicher Wechsel mit Empfehlungs-Warnung
 
 ## Schnellstart
 
@@ -145,12 +147,16 @@ rm -rf PROJEKTNAME
 ### Web-Dashboard
 
 Das Dashboard ist unter `http://<SERVER_IP>:3000` erreichbar und bietet:
-- Projekte erstellen (von Template oder Git-Repository)
-- Git-Integration: Projekte direkt von GitHub/GitLab/Bitbucket erstellen
+- **Projekte erstellen** (drei Methoden):
+  - Von Git-Repository (GitHub, GitLab, Bitbucket)
+  - Per ZIP-Upload (bis 100 MB, automatisches Entpacken)
+  - Von Template (Static, PHP, Node.js)
+- **Automatische Projekttyp-Erkennung**: Static, PHP, Node.js, Laravel, Next.js
+- **Projekttyp-Empfehlung**: Warnung bei Typ-Mismatch mit One-Click-Korrektur
 - Container starten, stoppen, neustarten, löschen
 - Container-Status und Logs anzeigen
 - Git Pull für verbundene Repositories
-- Datenbanken verwalten (mit User-Prefix für Isolation)
+- Datenbanken verwalten (MariaDB & PostgreSQL)
 - Multi-User Login mit Admin-Freischaltung
 - Dark/Light Theme Toggle
 - Admin-Panel für Benutzerverwaltung
@@ -220,37 +226,39 @@ Die beste Methode um auf dem Server zu arbeiten:
 # 5. Dateien bearbeiten → Speichern = LIVE!
 ```
 
-## Workflow: Von GitHub bis Live
+## Workflow: Projekt deployen
 
 ```
 1. Lokal entwickeln in VS Code
    ↓
-2. git push zu GitHub
-   ↓
-3. Auf Server deployen:
+2. Deployment-Methode wählen:
 
-   VARIANTE A (Web-Dashboard - Empfohlen):
-   → Dashboard öffnen → Neues Projekt
-   → Tab "Von Git-Repository"
+   VARIANTE A (Git-Repository - Empfohlen für Versionierung):
+   → git push zu GitHub/GitLab
+   → Dashboard öffnen → Neues Projekt → Tab "Von Git-Repository"
    → Repository-URL eingeben (+ Token für private Repos)
    → Projekttyp wird automatisch erkannt
    → Projekt ist live!
 
-   VARIANTE B (CLI Script):
-   ./scripts/create-project.sh
-   → GitHub-URL eingeben
+   VARIANTE B (ZIP-Upload - Schnell & einfach):
+   → Projekt als ZIP packen
+   → Dashboard → Neues Projekt → Tab "ZIP-Upload"
+   → ZIP hochladen (max. 100 MB)
+   → Projekttyp wird automatisch erkannt
    → Projekt ist live!
 
-   VARIANTE C (Update bestehendes Git-Projekt):
+   VARIANTE C (Template - Leeres Projekt):
+   → Dashboard → Neues Projekt → Tab "Von Template"
+   → Typ auswählen (Static/PHP/Node.js)
+   → Dateien per VS Code Remote SSH bearbeiten
+
+   VARIANTE D (Update bestehendes Git-Projekt):
    Dashboard → Projekt öffnen → "Pull" Button
    ODER: ssh <USER>@<SERVER_IP>
    cd /opt/dployr/users/<USER>/PROJEKT
    git pull
-
-   VARIANTE D (VS Code Remote SSH):
-   VS Code → Server → Source Control → Pull
    ↓
-4. Fertig! Website ist aktualisiert
+3. Fertig! Website ist aktualisiert
 ```
 
 ## NPM Integration
@@ -277,14 +285,29 @@ Für jedes Projekt in Nginx Proxy Manager:
 - Automatisch korrekt gesetzt (755/644)
 - Kein 403 Forbidden mehr!
 
-### GitHub Integration
-- **Im Dashboard**: Projekt direkt von Git-Repository erstellen
-  - Automatische Projekttyp-Erkennung (Static/PHP/Node.js)
-  - Passende Docker-Konfiguration wird generiert
+### Projekttyp-Erkennung
+Beim Erstellen (Git/ZIP) und auf der Projektseite wird der Typ automatisch erkannt:
+
+| Erkannte Datei | Projekttyp |
+|----------------|------------|
+| `next.config.js` / `next.config.mjs` | Next.js (SSR) |
+| `package.json` mit Build-Script | React/Vue (Static Build) |
+| `package.json` | Node.js App |
+| `artisan` / `symfony.lock` | Laravel/Symfony |
+| `composer.json` / `*.php` | PHP Website |
+| `index.html` | Statische Website |
+
+Bei Typ-Mismatch zeigt die Projektseite eine Warnung mit One-Click-Korrektur.
+
+### Git & ZIP Integration
+- **Git**: Projekte direkt von GitHub/GitLab/Bitbucket erstellen
   - Unterstützt private Repos mit Personal Access Token
-- **Per Script**: Repository beim Projekt-Setup klonen
-- Git Pull direkt im Dashboard ausführen
-- Berechtigungen werden automatisch gesetzt
+  - Git Pull direkt im Dashboard
+- **ZIP-Upload**: Projekte per ZIP-Datei hochladen
+  - Max. 100 MB Dateigröße
+  - Automatisches Entpacken (auch verschachtelte Ordner)
+- Projekttyp wird automatisch erkannt
+- Passende Docker-Konfiguration wird generiert
 
 ## Quick Reference
 

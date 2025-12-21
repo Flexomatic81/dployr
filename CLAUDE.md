@@ -35,20 +35,23 @@ The dashboard uses a service-oriented architecture with clear separation:
 dashboard/src/
 ├── app.js              # Express app entry point
 ├── config/database.js  # MySQL connection pool
-├── middleware/auth.js  # Authentication middleware
+├── middleware/
+│   ├── auth.js         # Authentication middleware (requireAuth, requireAdmin)
+│   └── upload.js       # Multer config for ZIP uploads
 ├── routes/             # Express route handlers
 │   ├── auth.js         # Login, register, logout
 │   ├── dashboard.js    # Main dashboard
-│   ├── projects.js     # Project CRUD, Git deployment
+│   ├── projects.js     # Project CRUD, Git/ZIP deployment
 │   ├── databases.js    # Database CRUD with type selection
 │   ├── admin.js        # User management, approval workflow
 │   └── setup.js        # Initial configuration wizard
 ├── services/           # Business logic layer
-│   ├── project.js      # Project lifecycle, template detection
+│   ├── project.js      # Project lifecycle, type changes
 │   ├── docker.js       # Container orchestration via dockerode
 │   ├── database.js     # Multi-DB provider delegation
 │   ├── user.js         # Authentication, approval workflow
-│   ├── git.js          # Git operations, docker-compose generation
+│   ├── git.js          # Git ops, type detection, docker-compose generation
+│   ├── zip.js          # ZIP extraction, auto-flatten
 │   └── providers/      # Database-specific implementations
 │       ├── mariadb-provider.js
 │       └── postgresql-provider.js
@@ -94,9 +97,12 @@ This is handled in `docker.js` when executing docker-compose commands.
 |------|---------|
 | `docker-compose.yml` | Main infrastructure definition |
 | `.env` / `.env.example` | Environment configuration |
-| `dashboard/src/services/project.js` | Project creation, template detection |
+| `dashboard/src/services/project.js` | Project creation, type changes |
 | `dashboard/src/services/docker.js` | Container start/stop/logs via dockerode |
 | `dashboard/src/services/database.js` | Database CRUD with provider pattern |
+| `dashboard/src/services/git.js` | Git clone, type detection, docker-compose generation |
+| `dashboard/src/services/zip.js` | ZIP upload processing, auto-flatten |
+| `dashboard/src/middleware/upload.js` | Multer configuration for file uploads |
 | `scripts/create-project.sh` | CLI project creation (interactive) |
 | `templates/*/docker-compose.yml` | Template definitions |
 
@@ -136,9 +142,55 @@ PHPMYADMIN_PORT         # Default: 8080
 PGADMIN_PORT            # Default: 5050
 ```
 
-## Git Integration
+## Project Deployment Methods
 
-Projects can be created from Git repositories via the dashboard. The `git.js` service:
+Projects can be created via three methods:
+
+### 1. Git Repository (`POST /projects/from-git`)
+The `git.js` service:
 - Clones repositories (supports private repos with access tokens)
-- Generates appropriate docker-compose.yml based on detected project type
+- Auto-detects project type from files
+- Generates appropriate docker-compose.yml
 - Sanitizes URLs to hide tokens in display
+
+### 2. ZIP Upload (`POST /projects/from-zip`)
+The `zip.js` service:
+- Accepts ZIP files up to 100 MB via multer middleware
+- Auto-flattens nested folders (e.g., `projekt-main/` → project root)
+- Auto-detects project type from files
+- Generates docker-compose.yml and nginx config as needed
+
+### 3. Template (`POST /projects`)
+Creates empty project from predefined templates in `/templates/`.
+
+## Project Type Detection
+
+The `detectProjectType()` function in `git.js` analyzes project files:
+
+| Detection | Project Type |
+|-----------|--------------|
+| `next.config.js` or `next.config.mjs` | nextjs |
+| `package.json` with build script + static output | nodejs-static |
+| `package.json` | nodejs |
+| `artisan` or `symfony.lock` | laravel |
+| `composer.json` or `*.php` files | php |
+| `index.html` | static |
+
+The project detail page (`/projects/:name`) compares detected type with configured type and shows a warning if they mismatch, allowing one-click correction.
+
+## Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `project.js` | Project CRUD, type changes with nginx config generation |
+| `docker.js` | Container orchestration via dockerode |
+| `database.js` | Multi-DB provider delegation |
+| `git.js` | Git clone, type detection, docker-compose generation |
+| `zip.js` | ZIP extraction, auto-flatten, project creation |
+
+## Middleware
+
+| Middleware | Purpose |
+|------------|---------|
+| `auth.js` | `requireAuth`, `requireAdmin` route protection |
+| `upload.js` | Multer config for ZIP uploads (100 MB limit, `/tmp/dployr-uploads`)

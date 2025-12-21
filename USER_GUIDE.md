@@ -46,37 +46,66 @@ Nach dem Login siehst du:
 
 ### Neues Projekt erstellen
 
-Es gibt zwei Möglichkeiten:
+Es gibt drei Möglichkeiten:
 
-#### Option A: Von Template
+#### Option A: Von Git-Repository (Empfohlen für Versionierung)
+
+1. Klicke auf **"Neues Projekt"**
+2. Wähle Tab **"Von Git-Repository"** (Standard)
+3. Fülle aus:
+   - **Projektname**: z.B. `mein-repo`
+   - **Repository-URL**: `https://github.com/user/repo.git`
+   - **Access Token**: Nur für private Repositories nötig
+   - **Port**: Wird automatisch vorgeschlagen
+4. Der Projekttyp wird automatisch erkannt
+5. Klicke **"Projekt von Git erstellen"**
+
+#### Option B: Per ZIP-Upload (Schnell & einfach)
+
+1. Klicke auf **"Neues Projekt"**
+2. Wähle Tab **"ZIP-Upload"**
+3. Fülle aus:
+   - **Projektname**: z.B. `meine-website`
+   - **ZIP-Datei**: Wähle deine ZIP-Datei (max. 100 MB)
+   - **Port**: Wird automatisch vorgeschlagen
+4. Der Projekttyp wird automatisch erkannt
+5. Klicke **"Projekt hochladen"**
+
+> **Tipp**: Falls deine ZIP einen einzelnen Ordner enthält (z.B. `projekt-main/`), wird der Inhalt automatisch korrekt extrahiert.
+
+#### Option C: Von Template (Leeres Projekt)
 
 1. Klicke auf **"Neues Projekt"**
 2. Wähle Tab **"Von Template"**
 3. Fülle aus:
    - **Projektname**: z.B. `meine-website`
    - **Projekttyp**: Static, PHP oder Node.js
-   - **Datenbank erstellen**: Optional
+   - **Port**: Wird automatisch vorgeschlagen
 4. Klicke **"Projekt erstellen"**
-
-#### Option B: Von Git-Repository
-
-1. Klicke auf **"Neues Projekt"**
-2. Wähle Tab **"Von Git-Repository"**
-3. Fülle aus:
-   - **Projektname**: z.B. `mein-repo`
-   - **Repository-URL**: `https://github.com/user/repo.git`
-   - **Access Token**: Nur für private Repositories nötig
-   - **Datenbank erstellen**: Optional
-4. Der Projekttyp wird automatisch erkannt
-5. Klicke **"Projekt erstellen"**
 
 ### Projekttypen
 
 | Typ | Beschreibung | Verwendung |
 |-----|--------------|------------|
 | **Static** | HTML, CSS, JavaScript | Einfache Webseiten ohne Backend |
-| **PHP** | PHP 8 mit Nginx | WordPress, Laravel, eigene PHP-Apps |
-| **Node.js** | Node.js mit Express | React, Vue, Next.js, API-Server |
+| **PHP** | PHP 8 mit Apache | WordPress, eigene PHP-Apps |
+| **Node.js** | Node.js mit Express | API-Server, Backend-Apps |
+| **Laravel/Symfony** | PHP mit Composer | Laravel, Symfony Frameworks |
+| **React/Vue (Build)** | Node.js für Build, Nginx für Hosting | React, Vue, Vite Apps |
+| **Next.js (SSR)** | Node.js mit Next.js | Server-Side Rendering |
+
+### Automatische Projekttyp-Erkennung
+
+Bei Git- und ZIP-Projekten wird der Typ automatisch erkannt:
+
+| Erkannte Datei | Projekttyp |
+|----------------|------------|
+| `next.config.js` | Next.js (SSR) |
+| `package.json` mit Build-Script | React/Vue (Build) |
+| `package.json` | Node.js App |
+| `artisan` / `symfony.lock` | Laravel/Symfony |
+| `composer.json` / `*.php` | PHP Website |
+| `index.html` | Statische Website |
 
 ### Projekt verwalten
 
@@ -98,6 +127,14 @@ Falls du den Projekttyp nachträglich ändern musst:
 4. Klicke **"Typ ändern"**
 
 > **Hinweis**: Der Container wird neu erstellt. Deine Dateien bleiben erhalten.
+
+### Projekttyp-Empfehlung
+
+Wenn der erkannte Projekttyp nicht mit dem konfigurierten übereinstimmt, zeigt das Dashboard eine **gelbe Warnung** an:
+
+- Du siehst den aktuellen und empfohlenen Typ
+- Mit **"Typ anpassen"** kannst du den Typ mit einem Klick korrigieren
+- Bei Übereinstimmung siehst du ein grünes Häkchen
 
 ### Projekt aufrufen
 
