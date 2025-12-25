@@ -136,7 +136,16 @@
 
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center text-muted">
-            <small>Dployr &copy; <%= new Date().getFullYear() %></small>
+            <small>
+                Dployr &copy; <%= new Date().getFullYear() %>
+                <% if (version && version.hash) { %>
+                <span class="ms-2">|</span>
+                <span class="ms-2" title="Commit: <%= version.hash %>">
+                    <i class="bi bi-git"></i> <%= version.hash %>
+                </span>
+                <span class="ms-1">(<%= version.date %>)</span>
+                <% } %>
+            </small>
         </div>
     </footer>
 
