@@ -208,11 +208,20 @@
         <!-- Auto-Deploy Sektion -->
         <div class="border-top pt-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
+                <div class="d-flex align-items-center">
                     <strong><i class="bi bi-arrow-repeat"></i> Auto-Deploy</strong>
                     <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
                         <span class="badge bg-success ms-2">Aktiv</span>
-                        <small class="text-muted ms-2">Prueft alle 5 Minuten</small>
+                        <form action="/projects/<%= project.name %>/autodeploy/interval" method="POST" class="d-inline ms-2">
+                            <select name="interval" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
+                                <% const currentInterval = autoDeployConfig.interval_minutes || 5; %>
+                                <option value="5" <%= currentInterval === 5 ? 'selected' : '' %>>5 Min</option>
+                                <option value="10" <%= currentInterval === 10 ? 'selected' : '' %>>10 Min</option>
+                                <option value="15" <%= currentInterval === 15 ? 'selected' : '' %>>15 Min</option>
+                                <option value="30" <%= currentInterval === 30 ? 'selected' : '' %>>30 Min</option>
+                                <option value="60" <%= currentInterval === 60 ? 'selected' : '' %>>60 Min</option>
+                            </select>
+                        </form>
                     <% } else { %>
                         <span class="badge bg-secondary ms-2">Inaktiv</span>
                     <% } %>
