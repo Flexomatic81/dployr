@@ -133,6 +133,23 @@ async function initDatabase() {
             )
         `);
 
+        // Project Shares Tabelle für Projekt-Freigaben
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS project_shares (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                owner_id INT NOT NULL,
+                owner_system_username VARCHAR(50) NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+                shared_with_id INT NOT NULL,
+                permission ENUM('read', 'manage', 'full') DEFAULT 'read',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (owner_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                FOREIGN KEY (shared_with_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_share (owner_id, project_name, shared_with_id),
+                INDEX idx_shared_with (shared_with_id)
+            )
+        `);
+
         connection.release();
         console.log('Datenbank-Schema initialisiert');
     } catch (error) {

@@ -6,12 +6,98 @@ const dockerService = require('../services/docker');
 const gitService = require('../services/git');
 const zipService = require('../services/zip');
 const autoDeployService = require('../services/autodeploy');
+const sharingService = require('../services/sharing');
 const upload = require('../middleware/upload');
+
+/**
+ * Middleware: Prüft Projekt-Zugriff (eigenes oder geteiltes Projekt)
+ * Setzt req.projectAccess mit Berechtigungsinformationen
+ */
+async function getProjectAccess(req, res, next) {
+    const { name } = req.params;
+    const userId = req.session.user.id;
+    const systemUsername = req.session.user.system_username;
+
+    try {
+        // 1. Prüfen ob eigenes Projekt
+        const ownProject = await projectService.getProjectInfo(systemUsername, name);
+        if (ownProject) {
+            req.projectAccess = {
+                isOwner: true,
+                permission: 'owner',
+                project: ownProject,
+                systemUsername: systemUsername
+            };
+            return next();
+        }
+
+        // 2. Prüfen ob geteiltes Projekt
+        const shareInfo = await sharingService.getShareInfoByProjectName(userId, name);
+        if (shareInfo) {
+            const sharedProject = await projectService.getProjectInfo(
+                shareInfo.owner_system_username,
+                name
+            );
+            if (sharedProject) {
+                req.projectAccess = {
+                    isOwner: false,
+                    permission: shareInfo.permission,
+                    ownerSystemUsername: shareInfo.owner_system_username,
+                    ownerUsername: shareInfo.owner_username,
+                    ownerId: shareInfo.owner_id,
+                    project: sharedProject,
+                    systemUsername: shareInfo.owner_system_username
+                };
+                return next();
+            }
+        }
+
+        // 3. Kein Zugriff
+        req.flash('error', 'Projekt nicht gefunden');
+        return res.redirect('/projects');
+    } catch (error) {
+        console.error('Fehler bei Projektzugriffsprüfung:', error);
+        req.flash('error', 'Fehler beim Laden des Projekts');
+        return res.redirect('/projects');
+    }
+}
+
+/**
+ * Prüft ob User mindestens die angegebene Berechtigung hat
+ */
+function requirePermission(minLevel) {
+    return (req, res, next) => {
+        const access = req.projectAccess;
+        if (!access) {
+            req.flash('error', 'Kein Zugriff');
+            return res.redirect('/projects');
+        }
+
+        // Owner hat immer alle Rechte
+        if (access.isOwner) {
+            return next();
+        }
+
+        const levels = { read: 1, manage: 2, full: 3 };
+        const userLevel = levels[access.permission] || 0;
+        const requiredLevel = levels[minLevel] || 0;
+
+        if (userLevel >= requiredLevel) {
+            return next();
+        }
+
+        req.flash('error', 'Keine Berechtigung für diese Aktion');
+        return res.redirect(`/projects/${req.params.name}`);
+    };
+}
 
 // Alle Projekte anzeigen
 router.get('/', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
+        const userId = req.session.user.id;
+
+        // Eigene Projekte laden
         const projects = await projectService.getUserProjects(systemUsername);
 
         // Git-Status für jedes Projekt hinzufügen
@@ -19,9 +105,29 @@ router.get('/', requireAuth, async (req, res) => {
             project.gitConnected = gitService.isGitRepository(project.path);
         }
 
+        // Geteilte Projekte laden
+        const sharedProjectInfos = await sharingService.getSharedProjects(userId);
+        const sharedProjects = [];
+
+        for (const share of sharedProjectInfos) {
+            const project = await projectService.getProjectInfo(share.owner_system_username, share.project_name);
+            if (project) {
+                project.gitConnected = gitService.isGitRepository(project.path);
+                project.shareInfo = {
+                    permission: share.permission,
+                    permissionLabel: sharingService.getPermissionLabel(share.permission),
+                    permissionIcon: sharingService.getPermissionIcon(share.permission),
+                    ownerUsername: share.owner_username,
+                    ownerSystemUsername: share.owner_system_username
+                };
+                sharedProjects.push(project);
+            }
+        }
+
         res.render('projects/index', {
             title: 'Projekte',
-            projects
+            projects,
+            sharedProjects
         });
     } catch (error) {
         console.error('Fehler beim Laden der Projekte:', error);
@@ -157,15 +263,11 @@ router.post('/from-git', requireAuth, async (req, res) => {
 });
 
 // Einzelnes Projekt anzeigen
-router.get('/:name', requireAuth, async (req, res) => {
+router.get('/:name', requireAuth, getProjectAccess, async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
-        const project = await projectService.getProjectInfo(systemUsername, req.params.name);
-
-        if (!project) {
-            req.flash('error', 'Projekt nicht gefunden');
-            return res.redirect('/projects');
-        }
+        const access = req.projectAccess;
+        const project = access.project;
+        const systemUsername = access.systemUsername;
 
         // Git-Status abrufen
         const gitStatus = gitService.getGitStatus(project.path);
@@ -192,17 +294,31 @@ router.get('/:name', requireAuth, async (req, res) => {
         // .env.example prüfen
         const envExample = await projectService.checkEnvExample(systemUsername, req.params.name);
 
-        // Datenbanken des Users laden
-        const userDatabases = await projectService.getUserDbCredentials(systemUsername);
+        // Datenbanken des Users laden (nur für Besitzer oder manage/full)
+        let userDatabases = [];
+        if (access.isOwner || access.permission === 'manage' || access.permission === 'full') {
+            userDatabases = await projectService.getUserDbCredentials(req.session.user.system_username);
+        }
 
-        // Auto-Deploy Konfiguration laden (nur für Git-Projekte)
+        // Auto-Deploy Konfiguration laden (nur für Besitzer bei Git-Projekten)
         let autoDeployConfig = null;
         let deploymentHistory = [];
-        if (gitStatus && gitStatus.connected) {
+        if (access.isOwner && gitStatus && gitStatus.connected) {
             autoDeployConfig = await autoDeployService.getAutoDeployConfig(req.session.user.id, req.params.name);
             if (autoDeployConfig) {
                 deploymentHistory = await autoDeployService.getDeploymentHistory(req.session.user.id, req.params.name, 5);
             }
+        }
+
+        // Sharing-Informationen laden (nur für Besitzer)
+        let projectShares = [];
+        let availableUsers = [];
+        if (access.isOwner) {
+            projectShares = await sharingService.getProjectShares(req.session.user.id, req.params.name);
+            availableUsers = await sharingService.getAllUsersExcept(req.session.user.id);
+            // User die bereits Zugriff haben aus der Liste entfernen
+            const sharedUserIds = projectShares.map(s => s.shared_with_id);
+            availableUsers = availableUsers.filter(u => !sharedUserIds.includes(u.id));
         }
 
         res.render('projects/show', {
@@ -216,7 +332,16 @@ router.get('/:name', requireAuth, async (req, res) => {
             envExample,
             userDatabases,
             autoDeployConfig,
-            deploymentHistory
+            deploymentHistory,
+            // Sharing-Daten
+            projectAccess: access,
+            projectShares,
+            availableUsers,
+            permissionLabels: {
+                read: 'Ansehen',
+                manage: 'Verwalten',
+                full: 'Vollzugriff'
+            }
         });
     } catch (error) {
         console.error('Fehler beim Laden des Projekts:', error);
@@ -225,17 +350,10 @@ router.get('/:name', requireAuth, async (req, res) => {
     }
 });
 
-// Projekt starten
-router.post('/:name/start', requireAuth, async (req, res) => {
+// Projekt starten (manage oder höher)
+router.post('/:name/start', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
-        const project = await projectService.getProjectInfo(systemUsername, req.params.name);
-
-        if (!project) {
-            req.flash('error', 'Projekt nicht gefunden');
-            return res.redirect('/projects');
-        }
-
+        const project = req.projectAccess.project;
         await dockerService.startProject(project.path);
         req.flash('success', `Projekt "${req.params.name}" gestartet`);
         res.redirect(`/projects/${req.params.name}`);
@@ -246,17 +364,10 @@ router.post('/:name/start', requireAuth, async (req, res) => {
     }
 });
 
-// Projekt stoppen
-router.post('/:name/stop', requireAuth, async (req, res) => {
+// Projekt stoppen (manage oder höher)
+router.post('/:name/stop', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
-        const project = await projectService.getProjectInfo(systemUsername, req.params.name);
-
-        if (!project) {
-            req.flash('error', 'Projekt nicht gefunden');
-            return res.redirect('/projects');
-        }
-
+        const project = req.projectAccess.project;
         await dockerService.stopProject(project.path);
         req.flash('success', `Projekt "${req.params.name}" gestoppt`);
         res.redirect(`/projects/${req.params.name}`);
@@ -267,17 +378,10 @@ router.post('/:name/stop', requireAuth, async (req, res) => {
     }
 });
 
-// Projekt neustarten
-router.post('/:name/restart', requireAuth, async (req, res) => {
+// Projekt neustarten (manage oder höher)
+router.post('/:name/restart', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
-        const project = await projectService.getProjectInfo(systemUsername, req.params.name);
-
-        if (!project) {
-            req.flash('error', 'Projekt nicht gefunden');
-            return res.redirect('/projects');
-        }
-
+        const project = req.projectAccess.project;
         await dockerService.restartProject(project.path);
         req.flash('success', `Projekt "${req.params.name}" neugestartet`);
         res.redirect(`/projects/${req.params.name}`);
@@ -288,10 +392,10 @@ router.post('/:name/restart', requireAuth, async (req, res) => {
     }
 });
 
-// Projekttyp ändern
-router.post('/:name/change-type', requireAuth, async (req, res) => {
+// Projekttyp ändern (full oder Besitzer)
+router.post('/:name/change-type', requireAuth, getProjectAccess, requirePermission('full'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        const systemUsername = req.projectAccess.systemUsername;
         const { type } = req.body;
 
         const typeNames = {
@@ -318,10 +422,10 @@ router.post('/:name/change-type', requireAuth, async (req, res) => {
     }
 });
 
-// Umgebungsvariablen speichern
-router.post('/:name/env', requireAuth, async (req, res) => {
+// Umgebungsvariablen speichern (manage oder höher)
+router.post('/:name/env', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        const systemUsername = req.projectAccess.systemUsername;
         const { envContent } = req.body;
 
         await projectService.writeEnvFile(systemUsername, req.params.name, envContent);
@@ -334,10 +438,10 @@ router.post('/:name/env', requireAuth, async (req, res) => {
     }
 });
 
-// .env.example zu .env kopieren
-router.post('/:name/env/copy-example', requireAuth, async (req, res) => {
+// .env.example zu .env kopieren (manage oder höher)
+router.post('/:name/env/copy-example', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        const systemUsername = req.projectAccess.systemUsername;
 
         const result = await projectService.copyEnvExample(systemUsername, req.params.name);
         req.flash('success', `${result.filename} wurde zu .env kopiert. Container-Neustart empfohlen.`);
@@ -349,14 +453,14 @@ router.post('/:name/env/copy-example', requireAuth, async (req, res) => {
     }
 });
 
-// Datenbank-Credentials zu .env hinzufügen
-router.post('/:name/env/add-db', requireAuth, async (req, res) => {
+// Datenbank-Credentials zu .env hinzufügen (manage oder höher)
+router.post('/:name/env/add-db', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        const systemUsername = req.projectAccess.systemUsername;
         const { database } = req.body;
 
-        // Alle DB-Credentials des Users laden
-        const credentials = await projectService.getUserDbCredentials(systemUsername);
+        // Alle DB-Credentials des aktuellen Users laden
+        const credentials = await projectService.getUserDbCredentials(req.session.user.system_username);
         const dbCredentials = credentials.find(c => c.database === database);
 
         if (!dbCredentials) {
@@ -374,10 +478,19 @@ router.post('/:name/env/add-db', requireAuth, async (req, res) => {
     }
 });
 
-// Projekt löschen
-router.delete('/:name', requireAuth, async (req, res) => {
+// Projekt löschen (nur Besitzer)
+router.delete('/:name', requireAuth, getProjectAccess, async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        // Nur Besitzer darf löschen
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann das Projekt löschen');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const systemUsername = req.projectAccess.systemUsername;
+
+        // Alle Shares für dieses Projekt löschen
+        await sharingService.deleteAllSharesForProject(req.session.user.id, req.params.name);
 
         // Auto-Deploy Daten löschen
         await autoDeployService.deleteAutoDeploy(req.session.user.id, req.params.name);
@@ -392,10 +505,10 @@ router.delete('/:name', requireAuth, async (req, res) => {
     }
 });
 
-// Git Pull durchführen
-router.post('/:name/git/pull', requireAuth, async (req, res) => {
+// Git Pull durchführen (manage oder höher)
+router.post('/:name/git/pull', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        const systemUsername = req.projectAccess.systemUsername;
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
@@ -419,10 +532,16 @@ router.post('/:name/git/pull', requireAuth, async (req, res) => {
     }
 });
 
-// Git Verbindung trennen
-router.post('/:name/git/disconnect', requireAuth, async (req, res) => {
+// Git Verbindung trennen (nur Besitzer)
+router.post('/:name/git/disconnect', requireAuth, getProjectAccess, async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        // Nur Besitzer darf Git trennen
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann die Git-Verbindung trennen');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const systemUsername = req.projectAccess.systemUsername;
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
@@ -443,10 +562,16 @@ router.post('/:name/git/disconnect', requireAuth, async (req, res) => {
     }
 });
 
-// Auto-Deploy aktivieren
-router.post('/:name/autodeploy/enable', requireAuth, async (req, res) => {
+// Auto-Deploy aktivieren (nur Besitzer)
+router.post('/:name/autodeploy/enable', requireAuth, getProjectAccess, async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        // Nur Besitzer darf Auto-Deploy konfigurieren
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann Auto-Deploy konfigurieren');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const systemUsername = req.projectAccess.systemUsername;
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
@@ -468,9 +593,14 @@ router.post('/:name/autodeploy/enable', requireAuth, async (req, res) => {
     }
 });
 
-// Auto-Deploy deaktivieren
-router.post('/:name/autodeploy/disable', requireAuth, async (req, res) => {
+// Auto-Deploy deaktivieren (nur Besitzer)
+router.post('/:name/autodeploy/disable', requireAuth, getProjectAccess, async (req, res) => {
     try {
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann Auto-Deploy konfigurieren');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
         await autoDeployService.disableAutoDeploy(req.session.user.id, req.params.name);
         req.flash('success', 'Auto-Deploy deaktiviert');
         res.redirect(`/projects/${req.params.name}`);
@@ -481,9 +611,14 @@ router.post('/:name/autodeploy/disable', requireAuth, async (req, res) => {
     }
 });
 
-// Auto-Deploy Intervall ändern
-router.post('/:name/autodeploy/interval', requireAuth, async (req, res) => {
+// Auto-Deploy Intervall ändern (nur Besitzer)
+router.post('/:name/autodeploy/interval', requireAuth, getProjectAccess, async (req, res) => {
     try {
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann Auto-Deploy konfigurieren');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
         const interval = parseInt(req.body.interval);
         await autoDeployService.updateInterval(req.session.user.id, req.params.name, interval);
         req.flash('success', `Intervall auf ${interval} Minuten gesetzt`);
@@ -495,10 +630,10 @@ router.post('/:name/autodeploy/interval', requireAuth, async (req, res) => {
     }
 });
 
-// Auto-Deploy manuell triggern
-router.post('/:name/autodeploy/trigger', requireAuth, async (req, res) => {
+// Auto-Deploy manuell triggern (manage oder höher - auch für geteilte User)
+router.post('/:name/autodeploy/trigger', requireAuth, getProjectAccess, requirePermission('manage'), async (req, res) => {
     try {
-        const systemUsername = req.session.user.system_username;
+        const systemUsername = req.projectAccess.systemUsername;
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
@@ -506,8 +641,11 @@ router.post('/:name/autodeploy/trigger', requireAuth, async (req, res) => {
             return res.redirect(`/projects/${req.params.name}`);
         }
 
+        // Für geteilte Projekte: Owner-ID verwenden
+        const ownerId = req.projectAccess.isOwner ? req.session.user.id : req.projectAccess.ownerId;
+
         const result = await autoDeployService.executeDeploy(
-            req.session.user.id,
+            ownerId,
             systemUsername,
             req.params.name,
             'manual'
@@ -533,11 +671,12 @@ router.post('/:name/autodeploy/trigger', requireAuth, async (req, res) => {
     }
 });
 
-// Deployment-Historie abrufen (JSON API)
-router.get('/:name/autodeploy/history', requireAuth, async (req, res) => {
+// Deployment-Historie abrufen (JSON API) - read oder höher
+router.get('/:name/autodeploy/history', requireAuth, getProjectAccess, async (req, res) => {
     try {
+        const ownerId = req.projectAccess.isOwner ? req.session.user.id : req.projectAccess.ownerId;
         const history = await autoDeployService.getDeploymentHistory(
-            req.session.user.id,
+            ownerId,
             req.params.name,
             parseInt(req.query.limit) || 10
         );
@@ -545,6 +684,100 @@ router.get('/:name/autodeploy/history', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Deployment history error:', error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================
+// PROJEKT-SHARING ENDPUNKTE
+// ============================
+
+// Projekt teilen - Neuen Share erstellen (nur Besitzer)
+router.post('/:name/shares', requireAuth, getProjectAccess, async (req, res) => {
+    try {
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann das Projekt teilen');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const { userId, permission } = req.body;
+        const sharedWithId = parseInt(userId);
+
+        if (!sharedWithId || !['read', 'manage', 'full'].includes(permission)) {
+            req.flash('error', 'Ungültige Eingabe');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        await sharingService.shareProject(
+            req.session.user.id,
+            req.session.user.system_username,
+            req.params.name,
+            sharedWithId,
+            permission
+        );
+
+        req.flash('success', 'Projekt erfolgreich geteilt');
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Share error:', error);
+        req.flash('error', error.message || 'Fehler beim Teilen');
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Share-Berechtigung ändern (nur Besitzer)
+router.post('/:name/shares/:userId/update', requireAuth, getProjectAccess, async (req, res) => {
+    try {
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann Berechtigungen ändern');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const { permission } = req.body;
+        const sharedWithId = parseInt(req.params.userId);
+
+        if (!['read', 'manage', 'full'].includes(permission)) {
+            req.flash('error', 'Ungültige Berechtigung');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        await sharingService.updateSharePermission(
+            req.session.user.id,
+            req.params.name,
+            sharedWithId,
+            permission
+        );
+
+        req.flash('success', 'Berechtigung aktualisiert');
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Update share error:', error);
+        req.flash('error', error.message || 'Fehler beim Aktualisieren');
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Share entfernen (nur Besitzer)
+router.post('/:name/shares/:userId/delete', requireAuth, getProjectAccess, async (req, res) => {
+    try {
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', 'Nur der Besitzer kann Freigaben entfernen');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const sharedWithId = parseInt(req.params.userId);
+
+        await sharingService.unshareProject(
+            req.session.user.id,
+            req.params.name,
+            sharedWithId
+        );
+
+        req.flash('success', 'Freigabe entfernt');
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Delete share error:', error);
+        req.flash('error', error.message || 'Fehler beim Entfernen');
+        res.redirect(`/projects/${req.params.name}`);
     }
 });
 

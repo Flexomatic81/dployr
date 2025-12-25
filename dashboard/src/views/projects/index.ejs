@@ -5,6 +5,30 @@
     </a>
 </div>
 
+<% const hasSharedProjects = sharedProjects && sharedProjects.length > 0; %>
+
+<% if (hasSharedProjects) { %>
+<!-- Tabs für Meine/Geteilte Projekte -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="my-projects-tab" data-bs-toggle="tab" data-bs-target="#my-projects" type="button" role="tab">
+            <i class="bi bi-folder-fill"></i> Meine Projekte
+            <span class="badge bg-primary ms-1"><%= projects.length %></span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="shared-projects-tab" data-bs-toggle="tab" data-bs-target="#shared-projects" type="button" role="tab">
+            <i class="bi bi-share-fill"></i> Geteilte Projekte
+            <span class="badge bg-info ms-1"><%= sharedProjects.length %></span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Meine Projekte Tab -->
+    <div class="tab-pane fade show active" id="my-projects" role="tabpanel">
+<% } %>
+
 <% if (projects.length === 0) { %>
     <div class="card">
         <div class="card-body text-center py-5">
@@ -98,4 +122,106 @@
             </div>
         <% }) %>
     </div>
+<% } %>
+
+<% if (hasSharedProjects) { %>
+    </div><!-- Ende my-projects tab-pane -->
+
+    <!-- Geteilte Projekte Tab -->
+    <div class="tab-pane fade" id="shared-projects" role="tabpanel">
+        <div class="row">
+            <% sharedProjects.forEach(project => { %>
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 border-info">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-folder-fill text-info"></i>
+                                <%= project.name %>
+                            </h5>
+                            <div>
+                                <% if (project.status === 'running') { %>
+                                    <span class="badge bg-success">Läuft</span>
+                                <% } else { %>
+                                    <span class="badge bg-secondary">Gestoppt</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Sharing-Info -->
+                            <div class="alert alert-info py-2 mb-3">
+                                <small>
+                                    <i class="bi bi-person"></i>
+                                    <strong>Besitzer:</strong> <%= project.shareInfo.ownerUsername %>
+                                    <span class="float-end">
+                                        <span class="badge <%= project.shareInfo.permission === 'full' ? 'bg-success' : project.shareInfo.permission === 'manage' ? 'bg-primary' : 'bg-secondary' %>">
+                                            <i class="bi <%= project.shareInfo.permissionIcon %>"></i>
+                                            <%= project.shareInfo.permissionLabel %>
+                                        </span>
+                                    </span>
+                                </small>
+                            </div>
+                            <ul class="list-unstyled mb-3">
+                                <li>
+                                    <i class="bi bi-code-slash text-muted"></i>
+                                    <strong>Typ:</strong>
+                                    <% if (project.templateType === 'php-website') { %>
+                                        PHP Website
+                                    <% } else if (project.templateType === 'nodejs-app') { %>
+                                        Node.js App
+                                    <% } else { %>
+                                        Statische Website
+                                    <% } %>
+                                </li>
+                                <li>
+                                    <i class="bi bi-hdd-network text-muted"></i>
+                                    <strong>Port:</strong> <%= project.port %>
+                                </li>
+                                <li>
+                                    <i class="bi bi-box text-muted"></i>
+                                    <strong>Container:</strong>
+                                    <%= project.runningContainers %>/<%= project.totalContainers %> aktiv
+                                </li>
+                                <li>
+                                    <i class="bi bi-git text-muted"></i>
+                                    <strong>Git:</strong>
+                                    <% if (project.gitConnected) { %>
+                                        <span class="text-success"><i class="bi bi-check-circle"></i> Verbunden</span>
+                                    <% } else { %>
+                                        <span class="text-muted">Nicht verbunden</span>
+                                    <% } %>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <% const canManage = project.shareInfo.permission === 'manage' || project.shareInfo.permission === 'full'; %>
+                            <div class="btn-group w-100" role="group">
+                                <a href="/projects/<%= project.name %>" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Details
+                                </a>
+                                <% if (canManage) { %>
+                                    <% if (project.status === 'running') { %>
+                                        <form action="/projects/<%= project.name %>/stop" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="bi bi-stop-fill"></i> Stop
+                                            </button>
+                                        </form>
+                                    <% } else { %>
+                                        <form action="/projects/<%= project.name %>/start" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-success">
+                                                <i class="bi bi-play-fill"></i> Start
+                                            </button>
+                                        </form>
+                                    <% } %>
+                                <% } %>
+                                <a href="/logs/<%= project.name %>" class="btn btn-outline-info">
+                                    <i class="bi bi-terminal"></i> Logs
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div><!-- Ende shared-projects tab-pane -->
+</div><!-- Ende tab-content -->
 <% } %>
