@@ -37,12 +37,14 @@ dashboard/src/
 ├── config/database.js  # MySQL connection pool
 ├── middleware/
 │   ├── auth.js         # Authentication middleware (requireAuth, requireAdmin)
+│   ├── projectAccess.js # Project access control (getProjectAccess, requirePermission)
 │   └── upload.js       # Multer config for ZIP uploads
 ├── routes/             # Express route handlers
 │   ├── auth.js         # Login, register, logout
 │   ├── dashboard.js    # Main dashboard
 │   ├── projects.js     # Project CRUD, Git/ZIP deployment, sharing
 │   ├── databases.js    # Database CRUD with type selection
+│   ├── logs.js         # Container logs viewer
 │   ├── admin.js        # User management, approval workflow
 │   ├── setup.js        # Initial configuration wizard
 │   └── help.js         # Help/documentation page
@@ -54,9 +56,13 @@ dashboard/src/
 │   ├── git.js          # Git ops, type detection, docker-compose generation
 │   ├── zip.js          # ZIP extraction, auto-flatten
 │   ├── sharing.js      # Project sharing, permission management
-│   └── providers/      # Database-specific implementations
-│       ├── mariadb-provider.js
-│       └── postgresql-provider.js
+│   ├── autodeploy.js   # Auto-deploy polling, deployment execution
+│   ├── providers/      # Database-specific implementations
+│   │   ├── mariadb-provider.js
+│   │   └── postgresql-provider.js
+│   └── utils/          # Shared utility functions
+│       ├── nginx.js    # Nginx config generation
+│       └── crypto.js   # Password generation
 └── views/              # EJS templates with express-ejs-layouts
 ```
 
@@ -134,6 +140,9 @@ Templates in `/templates/` define project scaffolding:
 - **static-website**: Nginx serving HTML/CSS/JS
 - **php-website**: PHP-FPM + Nginx with PDO extensions
 - **nodejs-app**: Node.js with npm start
+- **laravel**: PHP with Composer, Apache, Laravel-optimized config
+- **nodejs-static**: Node.js build step + Nginx for static output (React, Vue, Vite)
+- **nextjs**: Next.js with SSR support
 
 Template type is auto-detected from docker-compose.yml content in existing projects.
 
@@ -185,21 +194,6 @@ The `zip.js` service:
 
 ### 3. Template (`POST /projects`)
 Creates empty project from predefined templates in `/templates/`.
-
-## Project Type Detection
-
-The `detectProjectType()` function in `git.js` analyzes project files. It automatically checks the `html/` subfolder first (for new structure), then falls back to project root (for legacy projects).
-
-| Detection | Project Type |
-|-----------|--------------|
-| `next.config.js` or `next.config.mjs` | nextjs |
-| `package.json` with build script + static output | nodejs-static |
-| `package.json` | nodejs |
-| `artisan` or `symfony.lock` | laravel |
-| `composer.json` or `*.php` files | php |
-| `index.html` | static |
-
-The project detail page (`/projects/:name`) compares detected type with configured type and shows a warning if they mismatch, allowing one-click correction.
 
 ## Legacy Project Compatibility
 
@@ -286,4 +280,23 @@ Projekte können mit anderen Benutzern geteilt werden.
 | Middleware | Purpose |
 |------------|---------|
 | `auth.js` | `requireAuth`, `requireAdmin` route protection |
+| `projectAccess.js` | `getProjectAccess()`, `requirePermission()` for project access control |
 | `upload.js` | Multer config for ZIP uploads (100 MB limit, `/tmp/dployr-uploads`)
+
+## Utility Modules
+
+| Module | Purpose |
+|--------|---------|
+| `utils/nginx.js` | `generateNginxConfig()` for static website nginx config |
+| `utils/crypto.js` | `generatePassword()` for secure password generation |
+
+## Project Type Detection
+
+There are two different type detection functions:
+
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `detectProjectType()` | `git.js` | Analyzes source files (package.json, composer.json, etc.) to detect type |
+| `detectTemplateType()` | `project.js` | Reads configured type from docker-compose.yml |
+
+The project detail page compares both to detect mismatches and offers one-click correction.
