@@ -85,6 +85,43 @@ async function initDatabase() {
             )
         `);
 
+        // Auto-Deploy Konfiguration Tabelle
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS project_autodeploy (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+                enabled BOOLEAN DEFAULT TRUE,
+                branch VARCHAR(100) DEFAULT 'main',
+                last_check TIMESTAMP NULL,
+                last_commit_hash VARCHAR(40) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_project (user_id, project_name)
+            )
+        `);
+
+        // Deployment-Logs Tabelle
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS deployment_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+                trigger_type ENUM('auto', 'manual') DEFAULT 'auto',
+                old_commit_hash VARCHAR(40) NULL,
+                new_commit_hash VARCHAR(40) NULL,
+                commit_message TEXT NULL,
+                status ENUM('pending', 'pulling', 'restarting', 'success', 'failed') NOT NULL,
+                error_message TEXT NULL,
+                duration_ms INT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                INDEX idx_project (user_id, project_name),
+                INDEX idx_created (created_at)
+            )
+        `);
+
         connection.release();
         console.log('Datenbank-Schema initialisiert');
     } catch (error) {

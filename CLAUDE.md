@@ -223,6 +223,27 @@ Routes:
 - `POST /projects/:name/env/copy-example` - Copy .env.example to .env
 - `POST /projects/:name/env/add-db` - Append database credentials
 
+## Auto-Deploy
+
+Git-Projekte können automatisch aktualisiert werden, wenn neue Commits gepusht werden.
+
+**Funktionsweise:**
+- Polling-basiert: Alle 5 Minuten prüft der Server auf neue Commits
+- Bei Änderungen: automatischer `git pull` + Container-Restart
+- Deployment-Historie wird in der Datenbank gespeichert
+
+**Datenbank-Tabellen:**
+- `project_autodeploy` - Konfiguration (user_id, project_name, branch, enabled, last_check)
+- `deployment_logs` - Historie (trigger_type, commit_hashes, status, duration_ms)
+
+**Routes:**
+- `POST /projects/:name/autodeploy/enable` - Auto-Deploy aktivieren
+- `POST /projects/:name/autodeploy/disable` - Auto-Deploy deaktivieren
+- `POST /projects/:name/autodeploy/trigger` - Manuelles Deployment auslösen
+- `GET /projects/:name/autodeploy/history` - Deployment-Historie (JSON API)
+
+**Service:** `autodeploy.js` - Polling-Logik, Deployment-Ausführung, Historie-Logging
+
 ## Key Services
 
 | Service | Purpose |
@@ -232,6 +253,7 @@ Routes:
 | `database.js` | Multi-DB provider delegation |
 | `git.js` | Git clone (to html/), type detection, docker-compose generation, path helpers (getGitPath, isGitRepository) |
 | `zip.js` | ZIP extraction (to html/), auto-flatten, project creation |
+| `autodeploy.js` | Auto-deploy polling, deployment execution, history logging |
 
 ## Middleware
 

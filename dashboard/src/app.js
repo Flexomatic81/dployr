@@ -9,6 +9,7 @@ const path = require('path');
 
 const { initDatabase } = require('./config/database');
 const { setUserLocals } = require('./middleware/auth');
+const autoDeployService = require('./services/autodeploy');
 
 // Routes importieren
 const authRoutes = require('./routes/auth');
@@ -147,6 +148,28 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Auto-Deploy Polling Intervall (5 Minuten)
+const AUTO_DEPLOY_INTERVAL = 5 * 60 * 1000;
+let autoDeployInterval = null;
+
+function startAutoDeployPolling() {
+    if (autoDeployInterval) {
+        clearInterval(autoDeployInterval);
+    }
+
+    console.log('[AutoDeploy] Polling-Service gestartet (Intervall: 5 Minuten)');
+
+    // Erster Zyklus nach 30 Sekunden (um Server-Start abzuwarten)
+    setTimeout(() => {
+        autoDeployService.runPollingCycle();
+    }, 30000);
+
+    // Dann alle 5 Minuten
+    autoDeployInterval = setInterval(() => {
+        autoDeployService.runPollingCycle();
+    }, AUTO_DEPLOY_INTERVAL);
+}
+
 // Server starten
 async function start() {
     try {
@@ -158,6 +181,9 @@ async function start() {
             // Datenbank initialisieren nur wenn Setup fertig
             await initDatabase();
             console.log('Setup bereits abgeschlossen - Normalmodus');
+
+            // Auto-Deploy Polling starten
+            startAutoDeployPolling();
         } else {
             console.log('Setup noch nicht abgeschlossen - Setup-Wizard aktiv');
         }

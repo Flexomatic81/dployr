@@ -5,6 +5,7 @@ const projectService = require('../services/project');
 const dockerService = require('../services/docker');
 const gitService = require('../services/git');
 const zipService = require('../services/zip');
+const autoDeployService = require('../services/autodeploy');
 const upload = require('../middleware/upload');
 
 // Alle Projekte anzeigen
@@ -194,6 +195,16 @@ router.get('/:name', requireAuth, async (req, res) => {
         // Datenbanken des Users laden
         const userDatabases = await projectService.getUserDbCredentials(systemUsername);
 
+        // Auto-Deploy Konfiguration laden (nur für Git-Projekte)
+        let autoDeployConfig = null;
+        let deploymentHistory = [];
+        if (gitStatus && gitStatus.connected) {
+            autoDeployConfig = await autoDeployService.getAutoDeployConfig(req.session.user.id, req.params.name);
+            if (autoDeployConfig) {
+                deploymentHistory = await autoDeployService.getDeploymentHistory(req.session.user.id, req.params.name, 5);
+            }
+        }
+
         res.render('projects/show', {
             title: project.name,
             project,
@@ -203,7 +214,9 @@ router.get('/:name', requireAuth, async (req, res) => {
             typeMismatch,
             envContent,
             envExample,
-            userDatabases
+            userDatabases,
+            autoDeployConfig,
+            deploymentHistory
         });
     } catch (error) {
         console.error('Fehler beim Laden des Projekts:', error);
@@ -366,6 +379,9 @@ router.delete('/:name', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
 
+        // Auto-Deploy Daten löschen
+        await autoDeployService.deleteAutoDeploy(req.session.user.id, req.params.name);
+
         await projectService.deleteProject(systemUsername, req.params.name);
         req.flash('success', `Projekt "${req.params.name}" gelöscht`);
         res.redirect('/projects');
@@ -414,6 +430,9 @@ router.post('/:name/git/disconnect', requireAuth, async (req, res) => {
             return res.redirect(`/projects/${req.params.name}`);
         }
 
+        // Auto-Deploy deaktivieren wenn Git getrennt wird
+        await autoDeployService.deleteAutoDeploy(req.session.user.id, req.params.name);
+
         gitService.disconnectRepository(projectPath);
         req.flash('success', 'Git-Verbindung getrennt');
         res.redirect(`/projects/${req.params.name}`);
@@ -421,6 +440,97 @@ router.post('/:name/git/disconnect', requireAuth, async (req, res) => {
         console.error('Git disconnect error:', error);
         req.flash('error', error.message);
         res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Auto-Deploy aktivieren
+router.post('/:name/autodeploy/enable', requireAuth, async (req, res) => {
+    try {
+        const systemUsername = req.session.user.system_username;
+        const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
+
+        if (!gitService.isGitRepository(projectPath)) {
+            req.flash('error', 'Auto-Deploy ist nur für Git-Projekte verfügbar');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        // Branch aus Git-Status holen
+        const gitStatus = gitService.getGitStatus(projectPath);
+        const branch = gitStatus?.branch || 'main';
+
+        await autoDeployService.enableAutoDeploy(req.session.user.id, req.params.name, branch);
+        req.flash('success', `Auto-Deploy aktiviert. Prüft alle 5 Minuten auf Updates.`);
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Auto-Deploy enable error:', error);
+        req.flash('error', 'Fehler beim Aktivieren: ' + error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Auto-Deploy deaktivieren
+router.post('/:name/autodeploy/disable', requireAuth, async (req, res) => {
+    try {
+        await autoDeployService.disableAutoDeploy(req.session.user.id, req.params.name);
+        req.flash('success', 'Auto-Deploy deaktiviert');
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Auto-Deploy disable error:', error);
+        req.flash('error', 'Fehler beim Deaktivieren: ' + error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Auto-Deploy manuell triggern
+router.post('/:name/autodeploy/trigger', requireAuth, async (req, res) => {
+    try {
+        const systemUsername = req.session.user.system_username;
+        const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
+
+        if (!gitService.isGitRepository(projectPath)) {
+            req.flash('error', 'Kein Git-Repository verbunden');
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const result = await autoDeployService.executeDeploy(
+            req.session.user.id,
+            systemUsername,
+            req.params.name,
+            'manual'
+        );
+
+        if (result.skipped) {
+            req.flash('info', 'Ein Deployment läuft bereits');
+        } else if (result.success) {
+            if (result.hasChanges) {
+                req.flash('success', `Deployment erfolgreich: ${result.oldCommit} → ${result.newCommit}`);
+            } else {
+                req.flash('info', 'Keine Änderungen vorhanden');
+            }
+        } else {
+            req.flash('error', 'Deployment fehlgeschlagen: ' + result.error);
+        }
+
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Auto-Deploy trigger error:', error);
+        req.flash('error', 'Fehler: ' + error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Deployment-Historie abrufen (JSON API)
+router.get('/:name/autodeploy/history', requireAuth, async (req, res) => {
+    try {
+        const history = await autoDeployService.getDeploymentHistory(
+            req.session.user.id,
+            req.params.name,
+            parseInt(req.query.limit) || 10
+        );
+        res.json(history);
+    } catch (error) {
+        console.error('Deployment history error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 

@@ -343,6 +343,153 @@
         </div>
     </div>
 </div>
+
+<!-- Auto-Deploy -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-arrow-repeat"></i> Auto-Deploy
+            <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
+                <span class="badge bg-success ms-2">Aktiv</span>
+            <% } else { %>
+                <span class="badge bg-secondary ms-2">Inaktiv</span>
+            <% } %>
+        </h5>
+        <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
+            <form action="/projects/<%= project.name %>/autodeploy/disable" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-pause-circle"></i> Deaktivieren
+                </button>
+            </form>
+        <% } else { %>
+            <form action="/projects/<%= project.name %>/autodeploy/enable" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="bi bi-play-circle"></i> Aktivieren
+                </button>
+            </form>
+        <% } %>
+    </div>
+    <div class="card-body">
+        <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <table class="table table-borderless table-sm mb-0">
+                        <tr>
+                            <th width="40%">Branch:</th>
+                            <td><span class="badge bg-primary"><%= autoDeployConfig.branch %></span></td>
+                        </tr>
+                        <tr>
+                            <th>Intervall:</th>
+                            <td>Alle 5 Minuten</td>
+                        </tr>
+                        <tr>
+                            <th>Letzte Pruefung:</th>
+                            <td>
+                                <% if (autoDeployConfig.last_check) { %>
+                                    <%= new Date(autoDeployConfig.last_check).toLocaleString('de-DE') %>
+                                <% } else { %>
+                                    <span class="text-muted">Noch nicht geprueft</span>
+                                <% } %>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6 d-flex align-items-center justify-content-end">
+                    <form action="/projects/<%= project.name %>/autodeploy/trigger" method="POST">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-lightning"></i> Jetzt deployen
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <% if (deploymentHistory && deploymentHistory.length > 0) { %>
+                <h6 class="border-top pt-3 mb-3">Deployment-Historie</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Zeitpunkt</th>
+                                <th>Typ</th>
+                                <th>Commit</th>
+                                <th>Status</th>
+                                <th>Dauer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% deploymentHistory.forEach(log => { %>
+                                <tr>
+                                    <td>
+                                        <small><%= new Date(log.created_at).toLocaleString('de-DE') %></small>
+                                    </td>
+                                    <td>
+                                        <% if (log.trigger_type === 'auto') { %>
+                                            <span class="badge bg-info">Auto</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">Manuell</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (log.old_commit_hash && log.new_commit_hash && log.old_commit_hash !== log.new_commit_hash) { %>
+                                            <code><%= log.old_commit_hash.substring(0, 7) %></code>
+                                            <i class="bi bi-arrow-right"></i>
+                                            <code><%= log.new_commit_hash.substring(0, 7) %></code>
+                                        <% } else if (log.new_commit_hash) { %>
+                                            <code><%= log.new_commit_hash.substring(0, 7) %></code>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                        <% if (log.commit_message && log.commit_message !== 'Keine Aenderungen') { %>
+                                            <br><small class="text-muted" title="<%= log.commit_message %>">
+                                                <%= log.commit_message.length > 40 ? log.commit_message.substring(0, 40) + '...' : log.commit_message %>
+                                            </small>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (log.status === 'success') { %>
+                                            <span class="badge bg-success">Erfolgreich</span>
+                                        <% } else if (log.status === 'failed') { %>
+                                            <span class="badge bg-danger" title="<%= log.error_message %>">Fehlgeschlagen</span>
+                                        <% } else if (log.status === 'pulling') { %>
+                                            <span class="badge bg-info">Pulling...</span>
+                                        <% } else if (log.status === 'restarting') { %>
+                                            <span class="badge bg-warning">Neustart...</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><%= log.status %></span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (log.duration_ms) { %>
+                                            <small><%= (log.duration_ms / 1000).toFixed(1) %>s</small>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="text-muted text-center py-3">
+                    <i class="bi bi-clock-history"></i> Noch keine Deployments
+                </div>
+            <% } %>
+        <% } else { %>
+            <div class="text-center py-3">
+                <p class="text-muted mb-3">
+                    <i class="bi bi-info-circle"></i>
+                    Auto-Deploy prueft alle 5 Minuten auf neue Commits und aktualisiert automatisch dein Projekt.
+                </p>
+                <form action="/projects/<%= project.name %>/autodeploy/enable" method="POST">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-play-circle"></i> Auto-Deploy aktivieren
+                    </button>
+                </form>
+            </div>
+        <% } %>
+    </div>
+</div>
 <% } %>
 
 <!-- Gefahrenzone -->
