@@ -35,3 +35,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Code Review (internal)
+CODE_REVIEW.md
