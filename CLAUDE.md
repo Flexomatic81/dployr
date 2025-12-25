@@ -228,17 +228,19 @@ Routes:
 Git-Projekte können automatisch aktualisiert werden, wenn neue Commits gepusht werden.
 
 **Funktionsweise:**
-- Polling-basiert: Alle 5 Minuten prüft der Server auf neue Commits
+- Polling-basiert: Server prüft regelmäßig auf neue Commits
+- Konfigurierbares Intervall: 5, 10, 15, 30 oder 60 Minuten (pro Projekt einstellbar)
 - Bei Änderungen: automatischer `git pull` + Container-Restart
 - Deployment-Historie wird in der Datenbank gespeichert
 
 **Datenbank-Tabellen:**
-- `project_autodeploy` - Konfiguration (user_id, project_name, branch, enabled, last_check)
+- `project_autodeploy` - Konfiguration (user_id, project_name, branch, enabled, interval_minutes, last_check)
 - `deployment_logs` - Historie (trigger_type, commit_hashes, status, duration_ms)
 
 **Routes:**
 - `POST /projects/:name/autodeploy/enable` - Auto-Deploy aktivieren
 - `POST /projects/:name/autodeploy/disable` - Auto-Deploy deaktivieren
+- `POST /projects/:name/autodeploy/interval` - Polling-Intervall ändern (5, 10, 15, 30, 60 Min)
 - `POST /projects/:name/autodeploy/trigger` - Manuelles Deployment auslösen
 - `GET /projects/:name/autodeploy/history` - Deployment-Historie (JSON API)
 

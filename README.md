@@ -34,6 +34,7 @@ Dployr ermöglicht mehreren Usern, isolierte Web-Projekte auf einem gemeinsamen 
 - 📋 **Fertige Templates** - Static, PHP, Node.js sofort einsatzbereit
 - 👥 **Multi-User mit Admin-Freischaltung** - Neue User müssen durch Admin genehmigt werden
 - 🔄 **Projekt-Typ änderbar** - Nachträglicher Wechsel mit Empfehlungs-Warnung
+- ⚡ **Auto-Deploy** - Automatische Updates bei Git-Commits (konfigurierbares Intervall: 5-60 Min)
 
 ## Schnellstart
 
@@ -261,6 +262,11 @@ Die beste Methode um auf dem Server zu arbeiten:
    ODER: ssh <USER>@<SERVER_IP>
    cd /opt/dployr/users/<USER>/PROJEKT/html
    git pull
+
+   VARIANTE E (Auto-Deploy - Automatisch):
+   → Einmal aktivieren auf der Projekt-Detailseite
+   → Intervall wählen (5, 10, 15, 30 oder 60 Minuten)
+   → Bei jedem git push wird automatisch deployed!
    ↓
 3. Fertig! Website ist aktualisiert
 ```

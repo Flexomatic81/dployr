@@ -8,6 +8,7 @@ Dieses Handbuch richtet sich an Benutzer des Dployr Web-Dashboards.
 2. [Projekte](#projekte)
 3. [Datenbanken](#datenbanken)
 4. [Git-Integration](#git-integration)
+   - [Auto-Deploy](#auto-deploy)
 5. [Einstellungen](#einstellungen)
 6. [FAQ](#faq)
 
@@ -279,6 +280,50 @@ Wenn dein Projekt mit Git verbunden ist:
 1. Öffne die Projekt-Detailseite
 2. Klicke auf **"Git trennen"**
 3. Das Projekt wird zu einem normalen Template-Projekt
+
+### Auto-Deploy
+
+Mit Auto-Deploy werden Änderungen aus dem Git-Repository automatisch auf den Server übertragen.
+
+#### Auto-Deploy aktivieren
+
+1. Öffne die Projekt-Detailseite eines Git-Projekts
+2. Im Bereich **"GitHub"** findest du die Auto-Deploy Sektion
+3. Klicke auf **"Aktivieren"**
+4. Der Server prüft nun regelmäßig auf neue Commits
+
+#### Polling-Intervall einstellen
+
+Du kannst wählen, wie oft auf Updates geprüft wird:
+
+1. Bei aktiviertem Auto-Deploy siehst du ein Dropdown-Menü
+2. Wähle das gewünschte Intervall: **5, 10, 15, 30 oder 60 Minuten**
+3. Die Änderung wird sofort übernommen
+
+> **Tipp**: Für aktive Entwicklung wähle 5 Minuten, für stabile Projekte reichen 30-60 Minuten.
+
+#### Manuelles Deployment
+
+Auch bei aktivem Auto-Deploy kannst du jederzeit manuell deployen:
+
+1. Klicke auf den **"Deploy"** Button (Blitz-Symbol)
+2. Es wird ein `git pull` ausgeführt und der Container neugestartet
+
+#### Deployment-Historie
+
+Die letzten Deployments werden angezeigt:
+
+- **Zeitpunkt**: Wann wurde deployed
+- **Typ**: Auto oder Manuell
+- **Commit**: Alter → Neuer Commit-Hash
+- **Status**: Erfolgreich, Fehlgeschlagen, etc.
+- **Dauer**: Wie lange das Deployment gedauert hat
+
+#### Auto-Deploy deaktivieren
+
+1. Klicke auf **"Deaktivieren"**
+2. Der Server prüft nicht mehr auf Updates
+3. Manuelle Pulls sind weiterhin möglich
 
 ---
 
