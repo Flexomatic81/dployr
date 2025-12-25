@@ -1,0 +1,549 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-question-circle"></i> Hilfe</h1>
+</div>
+
+<div class="row">
+    <!-- Seitennavigation -->
+    <div class="col-md-3">
+        <div class="list-group sticky-top" style="top: 20px;">
+            <a href="#getting-started" class="list-group-item list-group-item-action">
+                <i class="bi bi-rocket-takeoff"></i> Erste Schritte
+            </a>
+            <a href="#projects" class="list-group-item list-group-item-action">
+                <i class="bi bi-folder"></i> Projekte
+            </a>
+            <a href="#project-types" class="list-group-item list-group-item-action">
+                <i class="bi bi-code-slash"></i> Projekttypen
+            </a>
+            <a href="#git" class="list-group-item list-group-item-action">
+                <i class="bi bi-git"></i> Git-Integration
+            </a>
+            <a href="#autodeploy" class="list-group-item list-group-item-action">
+                <i class="bi bi-arrow-repeat"></i> Auto-Deploy
+            </a>
+            <a href="#databases" class="list-group-item list-group-item-action">
+                <i class="bi bi-database"></i> Datenbanken
+            </a>
+            <a href="#sharing" class="list-group-item list-group-item-action">
+                <i class="bi bi-share"></i> Projekt-Sharing
+            </a>
+            <a href="#env" class="list-group-item list-group-item-action">
+                <i class="bi bi-file-earmark-code"></i> Umgebungsvariablen
+            </a>
+            <% if (user && user.is_admin) { %>
+            <a href="#admin" class="list-group-item list-group-item-action">
+                <i class="bi bi-shield-lock"></i> Administration
+            </a>
+            <% } %>
+            <a href="#faq" class="list-group-item list-group-item-action">
+                <i class="bi bi-chat-dots"></i> FAQ
+            </a>
+        </div>
+    </div>
+
+    <!-- Inhalt -->
+    <div class="col-md-9">
+        <!-- Erste Schritte -->
+        <section id="getting-started" class="mb-5">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-rocket-takeoff"></i> Erste Schritte</h4>
+                </div>
+                <div class="card-body">
+                    <p>Willkommen bei Dployr! Mit dieser Plattform kannst du einfach Webprojekte deployen und verwalten.</p>
+
+                    <h5>Schnellstart</h5>
+                    <ol>
+                        <li><strong>Projekt erstellen:</strong> Gehe zu <a href="/projects/create">Projekte &rarr; Neues Projekt</a></li>
+                        <li><strong>Methode wählen:</strong> Git-Repository, ZIP-Upload oder leeres Template</li>
+                        <li><strong>Projekt starten:</strong> Klicke auf "Starten" in der Projektansicht</li>
+                        <li><strong>Zugreifen:</strong> Dein Projekt läuft unter <code>http://SERVER-IP:PORT</code></li>
+                    </ol>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Tipp:</strong> Für Git-Projekte wird der Projekttyp automatisch erkannt!
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projekte -->
+        <section id="projects" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-folder"></i> Projekte</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Projekt erstellen</h5>
+                    <p>Es gibt drei Wege, ein Projekt zu erstellen:</p>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-git display-4 text-primary"></i>
+                                    <h6 class="mt-2">Git-Repository</h6>
+                                    <small class="text-muted">Klone ein Repository von GitHub, GitLab, etc.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-file-earmark-zip display-4 text-success"></i>
+                                    <h6 class="mt-2">ZIP-Upload</h6>
+                                    <small class="text-muted">Lade eine ZIP-Datei mit deinem Projekt hoch.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-file-earmark-plus display-4 text-warning"></i>
+                                    <h6 class="mt-2">Leeres Template</h6>
+                                    <small class="text-muted">Starte mit einem leeren Projekt.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4">Projekt-Aktionen</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><span class="badge bg-success"><i class="bi bi-play-fill"></i> Start</span></td>
+                            <td>Startet alle Container des Projekts</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-danger"><i class="bi bi-stop-fill"></i> Stop</span></td>
+                            <td>Stoppt alle Container</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-warning"><i class="bi bi-arrow-clockwise"></i> Neustart</span></td>
+                            <td>Startet die Container neu (z.B. nach Code-Änderungen)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-info"><i class="bi bi-terminal"></i> Logs</span></td>
+                            <td>Zeigt die Container-Logs an</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projekttypen -->
+        <section id="project-types" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-code-slash"></i> Projekttypen</h4>
+                </div>
+                <div class="card-body">
+                    <p>Dployr unterstützt verschiedene Projekttypen:</p>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Typ</th>
+                                <th>Beschreibung</th>
+                                <th>Erkennung</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Statisch</strong></td>
+                                <td>HTML, CSS, JavaScript - wird mit Nginx ausgeliefert</td>
+                                <td><code>index.html</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>PHP</strong></td>
+                                <td>PHP-Anwendungen mit PHP-FPM und Nginx</td>
+                                <td><code>*.php</code> oder <code>composer.json</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Node.js</strong></td>
+                                <td>Node.js-Apps mit <code>npm start</code></td>
+                                <td><code>package.json</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Laravel/Symfony</strong></td>
+                                <td>PHP-Frameworks mit Artisan/Console</td>
+                                <td><code>artisan</code> oder <code>symfony.lock</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>React/Vue (Static)</strong></td>
+                                <td>Frontend-Apps die zu statischen Dateien gebaut werden</td>
+                                <td><code>package.json</code> mit Build-Script + <code>dist/</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Next.js</strong></td>
+                                <td>Next.js-Anwendungen</td>
+                                <td><code>next.config.js</code> oder <code>next.config.mjs</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Typ-Erkennung:</strong> Wenn der falsche Typ erkannt wurde, kannst du ihn in den Projekteinstellungen ändern.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Git-Integration -->
+        <section id="git" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-git"></i> Git-Integration</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Repository verbinden</h5>
+                    <p>Beim Erstellen eines Git-Projekts:</p>
+                    <ol>
+                        <li>Gib die Repository-URL ein (HTTPS)</li>
+                        <li>Für private Repos: Füge einen Access Token hinzu</li>
+                        <li>Das Repository wird automatisch geklont</li>
+                    </ol>
+
+                    <h5 class="mt-4">Private Repositories</h5>
+                    <p>Für private Repos brauchst du einen Personal Access Token:</p>
+                    <ul>
+                        <li><strong>GitHub:</strong> Settings &rarr; Developer settings &rarr; Personal access tokens</li>
+                        <li><strong>GitLab:</strong> Preferences &rarr; Access Tokens</li>
+                    </ul>
+                    <p>Der Token wird sicher gespeichert und für Pull-Operationen verwendet.</p>
+
+                    <h5 class="mt-4">Git-Aktionen</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><span class="badge bg-primary"><i class="bi bi-cloud-download"></i> Pull</span></td>
+                            <td>Holt die neuesten Änderungen vom Remote</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-primary"><i class="bi bi-lightning"></i> Deploy</span></td>
+                            <td>Pull + Container-Neustart in einem Schritt</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Auto-Deploy -->
+        <section id="autodeploy" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-arrow-repeat"></i> Auto-Deploy</h4>
+                </div>
+                <div class="card-body">
+                    <p>Auto-Deploy prüft automatisch auf neue Commits und deployed sie.</p>
+
+                    <h5>Funktionsweise</h5>
+                    <ol>
+                        <li>Dployr prüft regelmäßig das Repository (konfigurierbar: 5-60 Min)</li>
+                        <li>Bei neuen Commits: Automatischer Pull</li>
+                        <li>Container werden neu gestartet</li>
+                        <li>Deployment wird in der Historie protokolliert</li>
+                    </ol>
+
+                    <h5 class="mt-4">Aktivieren</h5>
+                    <p>In der Projektansicht unter "Git-Verbindung" auf <strong>Aktivieren</strong> klicken.</p>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Hinweis:</strong> Auto-Deploy ist nur für Git-Projekte verfügbar und kann nur vom Projektbesitzer konfiguriert werden.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Datenbanken -->
+        <section id="databases" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-database"></i> Datenbanken</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Unterstützte Datenbanken</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-database text-primary"></i> MariaDB</h6>
+                                    <small class="text-muted">MySQL-kompatibel, ideal für PHP/Laravel</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-database text-info"></i> PostgreSQL</h6>
+                                    <small class="text-muted">Erweiterte Features, ideal für komplexe Anwendungen</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5>Datenbank erstellen</h5>
+                    <ol>
+                        <li>Gehe zu <a href="/databases">Datenbanken</a></li>
+                        <li>Klicke auf "Neue Datenbank"</li>
+                        <li>Wähle den Typ (MariaDB oder PostgreSQL)</li>
+                        <li>Vergib einen Namen</li>
+                    </ol>
+                    <p>Die Zugangsdaten werden automatisch generiert und gespeichert.</p>
+
+                    <h5 class="mt-4">Datenbank mit Projekt verbinden</h5>
+                    <p>In der Projektansicht unter "Umgebungsvariablen":</p>
+                    <ol>
+                        <li>Wähle eine Datenbank aus dem Dropdown</li>
+                        <li>Klicke auf "Hinzufügen"</li>
+                        <li>Die Credentials werden zur <code>.env</code> hinzugefügt</li>
+                        <li>Starte den Container neu</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projekt-Sharing -->
+        <section id="sharing" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-share"></i> Projekt-Sharing</h4>
+                </div>
+                <div class="card-body">
+                    <p>Teile Projekte mit anderen Benutzern und verwalte ihre Berechtigungen.</p>
+
+                    <h5>Berechtigungsstufen</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Stufe</th>
+                                <th>Beschreibung</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-secondary"><i class="bi bi-eye"></i> Ansehen</span></td>
+                                <td>Nur lesen</td>
+                                <td>Status, Logs, Projektinfos ansehen</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary"><i class="bi bi-gear"></i> Verwalten</span></td>
+                                <td>Operationen erlaubt</td>
+                                <td>+ Start/Stop, Pull, Deploy, .env bearbeiten</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-success"><i class="bi bi-star"></i> Vollzugriff</span></td>
+                                <td>Fast alle Rechte</td>
+                                <td>+ Projekttyp ändern</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Nur der Besitzer kann:</strong> Projekt löschen, Git-Verbindung trennen, Auto-Deploy konfigurieren, Freigaben verwalten
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Umgebungsvariablen -->
+        <section id="env" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-file-earmark-code"></i> Umgebungsvariablen</h4>
+                </div>
+                <div class="card-body">
+                    <p>Umgebungsvariablen werden in der <code>.env</code>-Datei deines Projekts gespeichert.</p>
+
+                    <h5>Bearbeiten</h5>
+                    <p>In der Projektansicht findest du einen Editor für die <code>.env</code>-Datei. Änderungen werden nach dem Speichern übernommen.</p>
+
+                    <h5 class="mt-4">.env.example kopieren</h5>
+                    <p>Wenn dein Projekt eine <code>.env.example</code> enthält, kannst du diese als Vorlage nutzen:</p>
+                    <ol>
+                        <li>Klicke auf den Button mit dem Dateinamen</li>
+                        <li>Die Werte werden zur <code>.env</code> hinzugefügt</li>
+                        <li>Bereits vorhandene Werte bleiben erhalten</li>
+                    </ol>
+
+                    <h5 class="mt-4">Datenbank-Credentials</h5>
+                    <p>Über das Dropdown kannst du Datenbank-Zugangsdaten automatisch einfügen lassen.</p>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Wichtig:</strong> Nach Änderungen an der <code>.env</code> muss der Container neu gestartet werden!
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <% if (user && user.is_admin) { %>
+        <!-- Administration -->
+        <section id="admin" class="mb-5">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-shield-lock"></i> Administration</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Benutzerverwaltung</h5>
+                    <p>Als Admin kannst du:</p>
+                    <ul>
+                        <li><strong>Registrierungen freigeben:</strong> Neue Benutzer müssen von einem Admin genehmigt werden</li>
+                        <li><strong>Benutzer verwalten:</strong> Rechte ändern, Benutzer löschen</li>
+                        <li><strong>Admin-Rechte vergeben:</strong> Andere Benutzer zu Admins machen</li>
+                    </ul>
+
+                    <h5 class="mt-4">Ausstehende Registrierungen</h5>
+                    <p>Im Admin-Bereich siehst du alle ausstehenden Registrierungen und kannst sie genehmigen oder ablehnen.</p>
+                </div>
+            </div>
+        </section>
+        <% } %>
+
+        <!-- FAQ -->
+        <section id="faq" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-chat-dots"></i> Häufige Fragen</h4>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    Mein Projekt startet nicht - was tun?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Prüfe die <strong>Logs</strong> auf Fehlermeldungen</li>
+                                        <li>Stelle sicher, dass der <strong>Projekttyp</strong> korrekt ist</li>
+                                        <li>Prüfe die <strong>.env</strong>-Datei auf fehlende Variablen</li>
+                                        <li>Bei Node.js: Ist eine <code>package.json</code> mit <code>start</code>-Script vorhanden?</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Wie verbinde ich meine App mit der Datenbank?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Erstelle eine Datenbank unter <a href="/databases">Datenbanken</a></li>
+                                        <li>Gehe zur Projektansicht</li>
+                                        <li>Wähle die Datenbank im Dropdown und klicke "Hinzufügen"</li>
+                                        <li>Die Credentials werden zu deiner <code>.env</code> hinzugefügt</li>
+                                        <li>Starte den Container neu</li>
+                                    </ol>
+                                    <p class="mt-2"><strong>Hosts:</strong></p>
+                                    <ul>
+                                        <li>MariaDB: <code>dployr-mariadb</code></li>
+                                        <li>PostgreSQL: <code>dployr-postgresql</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Warum sehe ich meine Änderungen nicht?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ul>
+                                        <li><strong>Git-Projekte:</strong> Hast du einen <strong>Pull</strong> gemacht?</li>
+                                        <li><strong>Nach Pull:</strong> Container mit <strong>Neustart</strong> aktualisieren</li>
+                                        <li><strong>.env-Änderungen:</strong> Erfordern einen Container-Neustart</li>
+                                        <li><strong>Browser-Cache:</strong> Versuche einen Hard-Refresh (Ctrl+Shift+R)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    Wie erreiche ich mein Projekt von außen?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p>Jedes Projekt bekommt einen eigenen Port. Die URL ist:</p>
+                                    <code>http://&lt;SERVER-IP&gt;:&lt;PORT&gt;</code>
+                                    <p class="mt-2">Den Port findest du in den Projekt-Details.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    Kann ich SSH/SFTP auf mein Projekt zugreifen?
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p>Aktuell wird kein direkter SSH/SFTP-Zugang angeboten. Optionen:</p>
+                                    <ul>
+                                        <li><strong>Git:</strong> Änderungen über Git-Repository pushen</li>
+                                        <li><strong>ZIP-Upload:</strong> Dateien als ZIP hochladen</li>
+                                        <li><strong>.env-Editor:</strong> Umgebungsvariablen direkt im Dashboard bearbeiten</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+    section {
+        scroll-margin-top: 20px;
+    }
+    .list-group-item.active {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+</style>
+
+<script>
+    // Aktiven Abschnitt in der Navigation hervorheben
+    document.addEventListener('DOMContentLoaded', function() {
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.list-group-item');
+
+        function updateActiveNav() {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveNav);
+        updateActiveNav();
+    });
+</script>
