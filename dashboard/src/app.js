@@ -68,6 +68,25 @@ async function getServerIp() {
     return cachedServerIp;
 }
 
+// Git-Versionsinformationen laden (einmalig beim Start)
+let versionInfo = { hash: null, date: null };
+function loadVersionInfo() {
+    try {
+        const { execSync } = require('child_process');
+        const hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8', cwd: '/app' }).trim();
+        const dateStr = execSync('git log -1 --format=%ci', { encoding: 'utf8', cwd: '/app' }).trim();
+        const date = new Date(dateStr);
+        versionInfo = {
+            hash,
+            date: date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        };
+        console.log(`Version: ${versionInfo.hash} (${versionInfo.date})`);
+    } catch (error) {
+        console.log('Git-Versionsinformationen nicht verfügbar');
+    }
+}
+loadVersionInfo();
+
 // Flash Messages und globale Variablen für Views verfügbar machen
 app.use(async (req, res, next) => {
     res.locals.success = req.flash('success');
@@ -75,6 +94,7 @@ app.use(async (req, res, next) => {
     res.locals.warning = req.flash('warning');
     res.locals.info = req.flash('info');
     res.locals.serverIp = await getServerIp();
+    res.locals.version = versionInfo;
     next();
 });
 
