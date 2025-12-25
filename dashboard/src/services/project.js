@@ -40,6 +40,9 @@ async function getProjectInfo(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
     try {
+        // Prüfen ob Projektverzeichnis existiert
+        await fs.access(projectPath);
+
         // .env Datei lesen
         const envPath = path.join(projectPath, '.env');
         let envData = {};
