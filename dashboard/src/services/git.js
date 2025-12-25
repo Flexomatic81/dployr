@@ -371,8 +371,11 @@ function getProjectPath(systemUsername, projectName) {
 }
 
 /**
- * Erkennt den Projekttyp anhand der Dateien im Verzeichnis
+ * Erkennt den Projekttyp anhand der Quelldateien im Verzeichnis
  * Prüft zuerst html/ Unterordner, dann das Projekt-Root
+ *
+ * Unterschied zu project.js detectTemplateType(): Diese Funktion analysiert die Quelldateien,
+ * während detectTemplateType() den konfigurierten Typ aus docker-compose.yml liest
  */
 function detectProjectType(projectPath) {
     // Ermittle den korrekten Pfad für die Dateien

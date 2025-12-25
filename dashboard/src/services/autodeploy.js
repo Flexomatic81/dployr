@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const gitService = require('./git');
 const dockerService = require('./docker');
+const { VALID_INTERVALS } = require('../config/constants');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -38,8 +39,6 @@ async function disableAutoDeploy(userId, projectName) {
 /**
  * Aktualisiert das Polling-Intervall für ein Projekt
  */
-const VALID_INTERVALS = [5, 10, 15, 30, 60];
-
 async function updateInterval(userId, projectName, intervalMinutes) {
     // Validierung: nur erlaubte Werte
     const interval = VALID_INTERVALS.includes(intervalMinutes) ? intervalMinutes : 5;

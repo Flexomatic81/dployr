@@ -1,11 +1,5 @@
 const { pool } = require('../config/database');
-
-// Berechtigungsstufen (aufsteigend)
-const PERMISSION_LEVELS = {
-    read: 1,
-    manage: 2,
-    full: 3
-};
+const { PERMISSION_LEVELS } = require('../config/constants');
 
 /**
  * Teilt ein Projekt mit einem anderen User

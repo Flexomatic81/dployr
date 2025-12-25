@@ -26,7 +26,7 @@ router.get('/', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Fehler beim Laden der Datenbanken:', error);
         req.flash('error', 'Fehler beim Laden der Datenbanken');
-        res.redirect('/dashboard');
+        return res.redirect('/dashboard');
     }
 });
 
@@ -49,11 +49,11 @@ router.post('/', requireAuth, async (req, res) => {
 
         const typeName = type === 'postgresql' ? 'PostgreSQL' : 'MariaDB';
         req.flash('success', `${typeName}-Datenbank "${dbInfo.database}" erfolgreich erstellt!`);
-        res.redirect('/databases');
+        return res.redirect('/databases');
     } catch (error) {
         console.error('Fehler beim Erstellen der Datenbank:', error);
         req.flash('error', error.message || 'Fehler beim Erstellen der Datenbank');
-        res.redirect('/databases/create');
+        return res.redirect('/databases/create');
     }
 });
 
@@ -64,11 +64,11 @@ router.delete('/:name', requireAuth, async (req, res) => {
 
         await databaseService.deleteDatabase(systemUsername, req.params.name);
         req.flash('success', `Datenbank "${req.params.name}" gelöscht`);
-        res.redirect('/databases');
+        return res.redirect('/databases');
     } catch (error) {
         console.error('Fehler beim Löschen:', error);
         req.flash('error', 'Fehler beim Löschen: ' + error.message);
-        res.redirect('/databases');
+        return res.redirect('/databases');
     }
 });
 

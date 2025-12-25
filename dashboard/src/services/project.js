@@ -83,7 +83,9 @@ async function getProjectInfo(systemUsername, projectName) {
     }
 }
 
-// Template-Typ erkennen
+// Template-Typ aus docker-compose.yml erkennen (konfigurierter Typ)
+// Unterschied zu git.js detectProjectType(): Diese Funktion liest den konfigurierten Typ,
+// während detectProjectType() den Typ anhand der Quelldateien erkennt
 async function detectTemplateType(projectPath) {
     try {
         const composePath = path.join(projectPath, 'docker-compose.yml');
