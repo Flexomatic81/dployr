@@ -84,7 +84,11 @@ services:
 
   # Web Dashboard
   dashboard:
-    build: ./dashboard
+    build:
+      context: ./dashboard
+      args:
+        GIT_HASH: ${GIT_HASH:-unknown}
+        GIT_DATE: ${GIT_DATE:-unknown}
     container_name: dployr-dashboard
     restart: unless-stopped
     ports:

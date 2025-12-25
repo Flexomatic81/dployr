@@ -14,6 +14,11 @@ RUN npm install --production
 # App-Code kopieren
 COPY . .
 
+# Version-Info als Build-Argument (wird beim Build übergeben)
+ARG GIT_HASH=unknown
+ARG GIT_DATE=unknown
+RUN echo "{\"hash\":\"${GIT_HASH}\",\"date\":\"${GIT_DATE}\"}" > /app/version.json
+
 # Port freigeben
 EXPOSE 3000
 

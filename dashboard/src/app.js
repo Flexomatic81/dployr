@@ -68,21 +68,21 @@ async function getServerIp() {
     return cachedServerIp;
 }
 
-// Git-Versionsinformationen laden (einmalig beim Start)
+// Versionsinformationen laden (aus version.json, erstellt beim Docker-Build)
 let versionInfo = { hash: null, date: null };
 function loadVersionInfo() {
     try {
-        const { execSync } = require('child_process');
-        const hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8', cwd: '/app' }).trim();
-        const dateStr = execSync('git log -1 --format=%ci', { encoding: 'utf8', cwd: '/app' }).trim();
-        const date = new Date(dateStr);
-        versionInfo = {
-            hash,
-            date: date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        };
-        console.log(`Version: ${versionInfo.hash} (${versionInfo.date})`);
+        const fs = require('fs');
+        const versionPath = path.join(__dirname, '..', 'version.json');
+        if (fs.existsSync(versionPath)) {
+            const data = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+            if (data.hash && data.hash !== 'unknown') {
+                versionInfo = data;
+                console.log(`Version: ${versionInfo.hash} (${versionInfo.date})`);
+            }
+        }
     } catch (error) {
-        console.log('Git-Versionsinformationen nicht verfügbar');
+        console.log('Versionsinformationen nicht verfügbar');
     }
 }
 loadVersionInfo();
