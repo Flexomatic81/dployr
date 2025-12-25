@@ -467,7 +467,12 @@
 <% if (canManage) { %>
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-file-earmark-code"></i> Umgebungsvariablen (.env)</h5>
+        <h5 class="mb-0">
+            <i class="bi bi-file-earmark-code"></i> Umgebungsvariablen (.env)
+            <% if (userDatabases && userDatabases.length > 0) { %>
+            <small class="text-muted ms-2">& Datenbank-Verbindung</small>
+            <% } %>
+        </h5>
         <div class="btn-group btn-group-sm">
             <% if (envExample && envExample.exists) { %>
             <form action="/projects/<%= project.name %>/env/copy-example" method="POST" class="d-inline">
