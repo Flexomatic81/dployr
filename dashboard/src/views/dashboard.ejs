@@ -68,10 +68,10 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Datenbanken</h6>
-                        <h2 class="mb-0"><%= stats.totalDatabases %></h2>
+                        <h6 class="card-title">Geteilt</h6>
+                        <h2 class="mb-0"><%= stats.sharedProjects %></h2>
                     </div>
-                    <i class="bi bi-database display-4 opacity-50"></i>
+                    <i class="bi bi-share display-4 opacity-50"></i>
                 </div>
             </div>
         </div>
@@ -167,6 +167,82 @@
         <% } %>
     </div>
 </div>
+
+<% if (sharedProjects && sharedProjects.length > 0) { %>
+<!-- Geteilte Projekte -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-share"></i> Geteilte Projekte</h5>
+        <a href="/projects" class="btn btn-sm btn-outline-info">Alle anzeigen</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Besitzer</th>
+                        <th>Berechtigung</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% sharedProjects.forEach(project => { %>
+                        <tr>
+                            <td>
+                                <a href="/projects/<%= project.name %>">
+                                    <i class="bi bi-folder-fill text-info"></i>
+                                    <%= project.name %>
+                                </a>
+                            </td>
+                            <td><%= project.shareInfo.ownerUsername %></td>
+                            <td>
+                                <span class="badge <%= project.shareInfo.permission === 'full' ? 'bg-success' : project.shareInfo.permission === 'manage' ? 'bg-primary' : 'bg-secondary' %>">
+                                    <i class="bi <%= project.shareInfo.permissionIcon %>"></i>
+                                    <%= project.shareInfo.permissionLabel %>
+                                </span>
+                            </td>
+                            <td>
+                                <% if (project.status === 'running') { %>
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Läuft
+                                    </span>
+                                <% } else { %>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-stop-circle"></i> Gestoppt
+                                    </span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% const canManage = project.shareInfo.permission === 'manage' || project.shareInfo.permission === 'full'; %>
+                                <% if (canManage) { %>
+                                    <% if (project.status === 'running') { %>
+                                        <form action="/projects/<%= project.name %>/stop" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Stoppen">
+                                                <i class="bi bi-stop-fill"></i>
+                                            </button>
+                                        </form>
+                                    <% } else { %>
+                                        <form action="/projects/<%= project.name %>/start" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Starten">
+                                                <i class="bi bi-play-fill"></i>
+                                            </button>
+                                        </form>
+                                    <% } %>
+                                <% } %>
+                                <a href="/logs/<%= project.name %>" class="btn btn-sm btn-outline-info" title="Logs">
+                                    <i class="bi bi-terminal"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<% } %>
 
 <!-- Datenbanken -->
 <div class="card">
