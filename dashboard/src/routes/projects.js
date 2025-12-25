@@ -481,6 +481,20 @@ router.post('/:name/autodeploy/disable', requireAuth, async (req, res) => {
     }
 });
 
+// Auto-Deploy Intervall ändern
+router.post('/:name/autodeploy/interval', requireAuth, async (req, res) => {
+    try {
+        const interval = parseInt(req.body.interval);
+        await autoDeployService.updateInterval(req.session.user.id, req.params.name, interval);
+        req.flash('success', `Intervall auf ${interval} Minuten gesetzt`);
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        console.error('Auto-Deploy interval error:', error);
+        req.flash('error', 'Fehler beim Ändern des Intervalls: ' + error.message);
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
 // Auto-Deploy manuell triggern
 router.post('/:name/autodeploy/trigger', requireAuth, async (req, res) => {
     try {

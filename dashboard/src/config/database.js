@@ -93,6 +93,7 @@ async function initDatabase() {
                 project_name VARCHAR(100) NOT NULL,
                 enabled BOOLEAN DEFAULT TRUE,
                 branch VARCHAR(100) DEFAULT 'main',
+                interval_minutes INT DEFAULT 5,
                 last_check TIMESTAMP NULL,
                 last_commit_hash VARCHAR(40) NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -101,6 +102,16 @@ async function initDatabase() {
                 UNIQUE KEY unique_project (user_id, project_name)
             )
         `);
+
+        // Migration: interval_minutes Spalte hinzufügen falls nicht vorhanden
+        try {
+            await connection.execute(`
+                ALTER TABLE project_autodeploy ADD COLUMN interval_minutes INT DEFAULT 5
+            `);
+            console.log('Migration: interval_minutes-Spalte hinzugefuegt');
+        } catch (e) {
+            // Spalte existiert bereits - ignorieren
+        }
 
         // Deployment-Logs Tabelle
         await connection.execute(`

@@ -36,6 +36,23 @@ async function disableAutoDeploy(userId, projectName) {
 }
 
 /**
+ * Aktualisiert das Polling-Intervall für ein Projekt
+ */
+const VALID_INTERVALS = [5, 10, 15, 30, 60];
+
+async function updateInterval(userId, projectName, intervalMinutes) {
+    // Validierung: nur erlaubte Werte
+    const interval = VALID_INTERVALS.includes(intervalMinutes) ? intervalMinutes : 5;
+
+    const [result] = await pool.execute(
+        `UPDATE project_autodeploy SET interval_minutes = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ? AND project_name = ?`,
+        [interval, userId, projectName]
+    );
+    return result;
+}
+
+/**
  * Löscht Auto-Deploy Konfiguration für ein Projekt
  */
 async function deleteAutoDeploy(userId, projectName) {
@@ -326,6 +343,17 @@ async function runPollingCycle() {
                     continue;
                 }
 
+                // Prüfen ob das Intervall abgelaufen ist
+                const intervalMinutes = config.interval_minutes || 5;
+                if (config.last_check) {
+                    const lastCheck = new Date(config.last_check);
+                    const nextCheck = new Date(lastCheck.getTime() + intervalMinutes * 60 * 1000);
+                    if (new Date() < nextCheck) {
+                        // Noch nicht Zeit für dieses Projekt
+                        continue;
+                    }
+                }
+
                 // Prüfen ob es Updates gibt
                 const updateCheck = await checkForUpdates(
                     config.system_username,
@@ -362,6 +390,7 @@ async function runPollingCycle() {
 module.exports = {
     enableAutoDeploy,
     disableAutoDeploy,
+    updateInterval,
     deleteAutoDeploy,
     getAutoDeployConfig,
     getAllActiveAutoDeployConfigs,
@@ -369,5 +398,6 @@ module.exports = {
     executeDeploy,
     getDeploymentHistory,
     getLastSuccessfulDeployment,
-    runPollingCycle
+    runPollingCycle,
+    VALID_INTERVALS
 };
