@@ -1,9 +1,11 @@
 /**
- * Zentrale Hilfe-Texte für Inline-Tooltips und Popovers
+ * Central help texts for inline tooltips and popovers
  *
  * Format:
- * - tooltip: Kurzer Text (1-2 Sätze) für einfache Tooltips
- * - popover: Längerer Text mit HTML für komplexere Erklärungen
+ * - tooltip: Short text (1-2 sentences) for simple tooltips
+ * - popover: Longer text with HTML for more complex explanations
+ *
+ * Note: The actual tooltip texts are in German as the UI is German
  */
 
 const helpTexts = {
@@ -23,7 +25,7 @@ const helpTexts = {
         }
     },
 
-    // Projekt erstellen
+    // Project creation
     project: {
         name: {
             tooltip: 'Der Projektname wird als Ordnername und Container-Präfix verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt.'
@@ -45,7 +47,7 @@ const helpTexts = {
         }
     },
 
-    // Projekt-Detail
+    // Project detail
     projectDetail: {
         autoDeploy: {
             tooltip: 'Aktiviere Auto-Deploy, um automatisch bei neuen Commits im Repository zu deployen. Der Server prüft regelmäßig auf Änderungen.'
@@ -67,7 +69,7 @@ const helpTexts = {
         }
     },
 
-    // Projekt teilen
+    // Project sharing
     sharing: {
         permissionRead: {
             tooltip: 'Kann Projekt-Status, Container-Infos und Logs einsehen, aber keine Änderungen vornehmen.'
@@ -80,7 +82,7 @@ const helpTexts = {
         }
     },
 
-    // Datenbanken
+    // Databases
     database: {
         type: {
             tooltip: 'MariaDB für PHP/WordPress-Projekte, PostgreSQL für moderne Anwendungen wie Django oder Rails.'

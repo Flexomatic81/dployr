@@ -1,11 +1,11 @@
 <%#
-  Hilfe-Icon Component
+  Help Icon Component
 
-  Verwendung:
-  <%- include('partials/help-icon', { text: 'Hilfetext hier' }) %>
+  Usage:
+  <%- include('partials/help-icon', { text: 'Help text here' }) %>
 
-  Für Popovers mit HTML:
-  <%- include('partials/help-icon', { text: 'Kurzer Titel', popover: '<p>Längerer HTML-Text</p>' }) %>
+  For popovers with HTML:
+  <%- include('partials/help-icon', { text: 'Short title', popover: '<p>Longer HTML text</p>' }) %>
 -%>
 <% if (typeof text !== 'undefined' && text) { %>
 <i class="bi bi-question-circle text-muted ms-1"

@@ -5,7 +5,7 @@ function initCsrfProtection() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
     if (!csrfToken) return;
 
-    // Füge CSRF-Token zu allen bestehenden Formularen hinzu
+    // Add CSRF token to all existing forms
     document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(form => {
         if (!form.querySelector('input[name="_csrf"]')) {
             const input = document.createElement('input');
@@ -16,12 +16,12 @@ function initCsrfProtection() {
         }
     });
 
-    // MutationObserver für dynamisch hinzugefügte Formulare
+    // MutationObserver for dynamically added forms
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
                 if (node.nodeType === Node.ELEMENT_NODE) {
-                    // Prüfe ob das hinzugefügte Element ein Formular ist
+                    // Check if the added element is a form
                     if (node.tagName === 'FORM' && (node.method === 'post' || node.method === 'POST')) {
                         if (!node.querySelector('input[name="_csrf"]')) {
                             const input = document.createElement('input');
@@ -31,7 +31,7 @@ function initCsrfProtection() {
                             node.appendChild(input);
                         }
                     }
-                    // Prüfe auch verschachtelte Formulare
+                    // Also check nested forms
                     node.querySelectorAll?.('form[method="POST"], form[method="post"]').forEach(form => {
                         if (!form.querySelector('input[name="_csrf"]')) {
                             const input = document.createElement('input');
@@ -48,7 +48,7 @@ function initCsrfProtection() {
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Füge CSRF-Header zu fetch-Requests hinzu
+    // Add CSRF header to fetch requests
     const originalFetch = window.fetch;
     window.fetch = function(url, options = {}) {
         if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
@@ -70,7 +70,7 @@ function initTheme() {
 
     if (!themeToggle || !themeIcon) return;
 
-    // Aktuelles Theme aus localStorage oder default
+    // Get current theme from localStorage or default
     const currentTheme = localStorage.getItem('theme') || 'light';
     updateThemeIcon(themeIcon, currentTheme);
 
@@ -94,11 +94,12 @@ function updateThemeIcon(iconElement, theme) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // CSRF Protection initialisieren (muss vor anderen Form-Handlern laufen)
+    // Initialize CSRF protection (must run before other form handlers)
     initCsrfProtection();
 
-    // Theme initialisieren
+    // Initialize theme
     initTheme();
+
     // Auto-dismiss alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert-dismissible');
     alerts.forEach(alert => {
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dangerForms = document.querySelectorAll('form[data-confirm]');
     dangerForms.forEach(form => {
         form.addEventListener('submit', function(e) {
-            const message = this.dataset.confirm || 'Bist du sicher?';
+            const message = this.dataset.confirm || 'Are you sure?';
             if (!confirm(message)) {
                 e.preventDefault();
             }
@@ -127,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (submitBtn && !submitBtn.dataset.noLoading) {
                 submitBtn.disabled = true;
                 const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Laden...';
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Loading...';
 
                 // Re-enable after 10 seconds (fallback)
                 setTimeout(() => {
@@ -142,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 
-    // Popovers (für längere Hilfetexte)
+    // Popovers (for longer help texts)
     const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
     popoverTriggerList.forEach(el => new bootstrap.Popover(el));
 });
@@ -151,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function copyToClipboard(text) {
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-            showToast('In Zwischenablage kopiert!');
+            showToast('Copied to clipboard!');
         });
     } else {
         // Fallback
@@ -161,7 +162,7 @@ function copyToClipboard(text) {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
-        showToast('In Zwischenablage kopiert!');
+        showToast('Copied to clipboard!');
     }
 }
 
