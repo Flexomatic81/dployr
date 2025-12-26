@@ -23,7 +23,7 @@ USERNAME=$1
 if [ -z "$USERNAME" ]; then
     echo "Usage: $0 <username>"
     echo ""
-    echo "Example: $0 mehmed"
+    echo "Example: $0 max"
     echo ""
     echo "WARNING: This will delete ALL projects and databases of the user!"
     exit 1

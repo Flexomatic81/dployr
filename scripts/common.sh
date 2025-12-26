@@ -76,7 +76,7 @@ load_config() {
 
     # Fallback values
     SERVER_IP="${SERVER_IP:-192.168.2.125}"
-    DEFAULT_USER="${DEFAULT_USER:-mehmed}"
+    DEFAULT_USER="${DEFAULT_USER:-max}"
     PHPMYADMIN_PORT="${PHPMYADMIN_PORT:-8080}"
     MARIADB_PORT="${MARIADB_PORT:-3306}"
 }

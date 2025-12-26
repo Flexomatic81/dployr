@@ -24,7 +24,7 @@ PROJECT_NAME=$2
 if [ -z "$USERNAME" ] || [ -z "$PROJECT_NAME" ]; then
     echo "Usage: $0 <username> <projectname>"
     echo ""
-    echo "Example: $0 mehmed my-project"
+    echo "Example: $0 max my-project"
     exit 1
 fi
 
