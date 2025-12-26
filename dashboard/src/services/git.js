@@ -643,8 +643,8 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
         const git = simpleGit({ timeout: { block: 120000 } });
         await git.clone(authenticatedUrl, htmlPath);
 
-        // Detect project type (from html/ folder)
-        const projectType = detectProjectType(htmlPath);
+        // Detect project type (from project folder - detectProjectType checks html/ internally)
+        const projectType = detectProjectType(projectPath);
         logger.info('Project type detected', { projectType });
 
         // Generate docker-compose.yml (in project root)
