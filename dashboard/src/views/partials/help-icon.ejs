@@ -1,0 +1,26 @@
+<%#
+  Hilfe-Icon Component
+
+  Verwendung:
+  <%- include('partials/help-icon', { text: 'Hilfetext hier' }) %>
+
+  Für Popovers mit HTML:
+  <%- include('partials/help-icon', { text: 'Kurzer Titel', popover: '<p>Längerer HTML-Text</p>' }) %>
+-%>
+<% if (typeof text !== 'undefined' && text) { %>
+<i class="bi bi-question-circle text-muted ms-1"
+   style="cursor: help; font-size: 0.85em;"
+   <% if (typeof popover !== 'undefined' && popover) { %>
+   data-bs-toggle="popover"
+   data-bs-trigger="hover focus"
+   data-bs-placement="top"
+   data-bs-html="true"
+   data-bs-title="<%= text %>"
+   data-bs-content="<%= popover %>"
+   <% } else { %>
+   data-bs-toggle="tooltip"
+   data-bs-placement="top"
+   data-bs-title="<%= text %>"
+   <% } %>
+></i>
+<% } %>

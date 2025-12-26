@@ -19,7 +19,10 @@
 
             <form id="configForm">
                 <div class="mb-3">
-                    <label for="server_ip" class="form-label">Server IP-Adresse</label>
+                    <label for="server_ip" class="form-label">
+                        Server IP-Adresse
+                        <%- include('../partials/help-icon', { text: 'Die IP-Adresse oder der Hostname, unter dem der Server von anderen Geräten erreichbar ist.' }) %>
+                    </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-hdd-network"></i></span>
                         <input type="text" class="form-control" id="server_ip" name="server_ip"
@@ -31,7 +34,10 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="mysql_root_password" class="form-label">MySQL Root Passwort</label>
+                    <label for="mysql_root_password" class="form-label">
+                        MySQL Root Passwort
+                        <%- include('../partials/help-icon', { text: 'Das Master-Passwort für die MariaDB-Datenbank. Wird für administrative Aufgaben benötigt.' }) %>
+                    </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-key"></i></span>
                         <input type="password" class="form-control" id="mysql_root_password" name="mysql_root_password"
@@ -57,7 +63,10 @@
 
             <form id="adminForm">
                 <div class="mb-3">
-                    <label for="admin_username" class="form-label">Admin Benutzername</label>
+                    <label for="admin_username" class="form-label">
+                        Admin Benutzername
+                        <%- include('../partials/help-icon', { text: 'Der Benutzername für den ersten Admin-Account. Wird auch als System-Benutzername für Projektordner verwendet.' }) %>
+                    </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
                         <input type="text" class="form-control" id="admin_username" name="admin_username"

@@ -243,10 +243,12 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center">
                     <strong><i class="bi bi-arrow-repeat"></i> Auto-Deploy</strong>
+                    <%- include('../partials/help-icon', { text: 'Aktiviere Auto-Deploy, um automatisch bei neuen Commits im Repository zu deployen. Der Server prüft regelmäßig auf Änderungen.' }) %>
                     <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
                         <span class="badge bg-success ms-2">Aktiv</span>
                         <form action="/projects/<%= project.name %>/autodeploy/interval" method="POST" class="d-inline ms-2">
-                            <select name="interval" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
+                            <select name="interval" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Wie oft der Server das Repository auf neue Commits prüft">
                                 <% const currentInterval = autoDeployConfig.interval_minutes || 5; %>
                                 <option value="5" <%= currentInterval === 5 ? 'selected' : '' %>>5 Min</option>
                                 <option value="10" <%= currentInterval === 10 ? 'selected' : '' %>>10 Min</option>
@@ -414,7 +416,10 @@
     <div class="card-body">
         <form action="/projects/<%= project.name %>/change-type" method="POST" class="row g-3 align-items-end">
             <div class="col-md-6">
-                <label for="projectType" class="form-label">Projekttyp</label>
+                <label for="projectType" class="form-label">
+                    Projekttyp
+                    <%- include('../partials/help-icon', { text: 'Der Projekttyp bestimmt die Docker-Konfiguration (Webserver, Runtime, etc.). Bei Änderung wird der Container neu erstellt.' }) %>
+                </label>
                 <select name="type" id="projectType" class="form-select">
                     <optgroup label="Einfache Projekte">
                         <option value="static" <%= project.templateType === 'static-website' ? 'selected' : '' %>>
@@ -469,6 +474,7 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             <i class="bi bi-file-earmark-code"></i> Umgebungsvariablen (.env)
+            <%- include('../partials/help-icon', { text: 'Bearbeite die .env-Datei des Projekts. Änderungen werden erst nach einem Container-Neustart wirksam.' }) %>
             <% if (userDatabases && userDatabases.length > 0) { %>
             <small class="text-muted ms-2">& Datenbank-Verbindung</small>
             <% } %>
@@ -476,6 +482,7 @@
         <% if (userDatabases && userDatabases.length > 0) { %>
         <div class="btn-group btn-group-sm">
             <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                data-bs-toggle-second="tooltip" data-bs-placement="top"
                 title="<%= envExample && envExample.exists ? 'Nutzt ' + envExample.filename + ' als Vorlage und ersetzt DB-Variablen' : 'Fügt DB-Credentials ein und ersetzt bekannte Variablen' %>">
                 <i class="bi bi-database-add"></i> DB einrichten
             </button>
@@ -606,7 +613,10 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <label for="sharePermission" class="form-label">Berechtigung</label>
+                <label for="sharePermission" class="form-label">
+                    Berechtigung
+                    <%- include('../partials/help-icon', { text: 'Ansehen: Nur Status/Logs. Verwalten: + Start/Stop, Pull, .env. Vollzugriff: + Typ ändern.' }) %>
+                </label>
                 <select name="permission" id="sharePermission" class="form-select" required>
                     <option value="read">Ansehen</option>
                     <option value="manage" selected>Verwalten</option>

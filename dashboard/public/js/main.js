@@ -141,6 +141,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tooltips
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+
+    // Popovers (für längere Hilfetexte)
+    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+    popoverTriggerList.forEach(el => new bootstrap.Popover(el));
 });
 
 // Utility functions

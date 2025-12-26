@@ -7,7 +7,10 @@
             <div class="card-body">
                 <form method="POST" action="/databases">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Datenbankname</label>
+                        <label for="name" class="form-label">
+                            Datenbankname
+                            <%- include('../partials/help-icon', { text: 'Der Datenbankname wird mit deinem System-Benutzernamen als Präfix versehen (z.B. max_blog).' }) %>
+                        </label>
                         <input type="text" class="form-control" id="name" name="name"
                                pattern="[a-z0-9_]+" required
                                placeholder="meine_datenbank">
@@ -15,7 +18,10 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Datenbanktyp</label>
+                        <label class="form-label">
+                            Datenbanktyp
+                            <%- include('../partials/help-icon', { text: 'MariaDB für PHP/WordPress-Projekte, PostgreSQL für moderne Anwendungen wie Django oder Rails.' }) %>
+                        </label>
                         <div class="row g-3">
                             <% dbTypes.forEach((dbType, index) => { %>
                                 <div class="col-md-6">

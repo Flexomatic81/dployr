@@ -29,7 +29,10 @@
                     <div class="card-body">
                         <form method="POST" action="/projects/from-git">
                             <div class="mb-3">
-                                <label for="git_name" class="form-label">Projektname</label>
+                                <label for="git_name" class="form-label">
+                                    Projektname
+                                    <%- include('../partials/help-icon', { text: 'Der Projektname wird als Ordnername und Container-Präfix verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt.' }) %>
+                                </label>
                                 <input type="text" class="form-control" id="git_name" name="name"
                                        pattern="[a-z0-9-]+" required
                                        placeholder="mein-projekt">
@@ -37,7 +40,10 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="repo_url" class="form-label">Repository URL</label>
+                                <label for="repo_url" class="form-label">
+                                    Repository URL
+                                    <%- include('../partials/help-icon', { text: 'Die HTTPS-URL des Git-Repositories. SSH-URLs werden nicht unterstützt.' }) %>
+                                </label>
                                 <input type="url" class="form-control" id="repo_url" name="repo_url" required
                                        placeholder="https://github.com/username/repository">
                                 <div class="form-text">HTTPS-URL von GitHub, GitLab oder Bitbucket</div>
@@ -46,6 +52,7 @@
                             <div class="mb-3">
                                 <label for="access_token" class="form-label">
                                     Access Token <span class="text-muted">(optional)</span>
+                                    <%- include('../partials/help-icon', { text: 'Personal Access Token für private Repositories. Bei GitHub unter Settings → Developer settings → Personal access tokens erstellen.' }) %>
                                 </label>
                                 <input type="password" class="form-control" id="access_token" name="access_token"
                                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
@@ -58,7 +65,10 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="git_port" class="form-label">Port</label>
+                                <label for="git_port" class="form-label">
+                                    Port
+                                    <%- include('../partials/help-icon', { text: 'Der HTTP-Port, unter dem das Projekt erreichbar sein wird. Jedes Projekt benötigt einen eindeutigen Port.' }) %>
+                                </label>
                                 <input type="number" class="form-control" id="git_port" name="port"
                                        value="<%= nextPort %>" min="8001" max="9999" required>
                                 <div class="form-text">Nächster freier Port: <%= nextPort %></div>
@@ -104,7 +114,10 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="zipfile" class="form-label">ZIP-Datei</label>
+                                <label for="zipfile" class="form-label">
+                                    ZIP-Datei
+                                    <%- include('../partials/help-icon', { text: 'ZIP-Datei mit den Projektdateien. Verschachtelte Ordner (z.B. projekt-main/) werden automatisch entpackt.' }) %>
+                                </label>
                                 <input type="file" class="form-control" id="zipfile" name="zipfile"
                                        accept=".zip,application/zip" required>
                                 <div class="form-text">Maximale Dateigröße: 100 MB</div>
@@ -163,7 +176,10 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="template" class="form-label">Template</label>
+                                <label for="template" class="form-label">
+                                    Template
+                                    <%- include('../partials/help-icon', { text: 'Wähle eine Vorlage basierend auf der Technologie deines Projekts. Der Typ kann später geändert werden.' }) %>
+                                </label>
                                 <select class="form-select" id="template" name="template" required>
                                     <% templates.forEach(template => { %>
                                         <option value="<%= template.name %>"><%= template.displayName %></option>
