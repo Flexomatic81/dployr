@@ -27,9 +27,6 @@
             <a href="#sharing" class="list-group-item list-group-item-action">
                 <i class="bi bi-share"></i> Projekt-Sharing
             </a>
-            <a href="#env" class="list-group-item list-group-item-action">
-                <i class="bi bi-file-earmark-code"></i> Umgebungsvariablen
-            </a>
             <% if (user && user.is_admin) { %>
             <a href="#admin" class="list-group-item list-group-item-action">
                 <i class="bi bi-shield-lock"></i> Administration
@@ -381,6 +378,7 @@ DB_NAME=deine_db</code></pre>
                     <div class="alert alert-secondary">
                         <i class="bi bi-info-circle"></i>
                         Der Button erscheint nur, wenn du mindestens eine Datenbank erstellt hast.
+                        Du kannst die <code>.env</code>-Datei auch jederzeit manuell im Editor bearbeiten.
                     </div>
                 </div>
             </div>
@@ -426,41 +424,6 @@ DB_NAME=deine_db</code></pre>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
                         <strong>Nur der Besitzer kann:</strong> Projekt löschen, Git-Verbindung trennen, Auto-Deploy konfigurieren, Freigaben verwalten
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Umgebungsvariablen -->
-        <section id="env" class="mb-5">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0"><i class="bi bi-file-earmark-code"></i> Umgebungsvariablen</h4>
-                </div>
-                <div class="card-body">
-                    <p>Umgebungsvariablen werden in der <code>.env</code>-Datei deines Projekts gespeichert.</p>
-
-                    <h5>Bearbeiten</h5>
-                    <p>In der Projektansicht findest du einen Editor für die <code>.env</code>-Datei. Änderungen werden nach dem Speichern übernommen.</p>
-
-                    <h5 class="mt-4">.env.example als Vorlage</h5>
-                    <p>Wenn dein Projekt eine <code>.env.example</code> enthält:</p>
-                    <ul>
-                        <li><strong>Mit Datenbank:</strong> Klicke auf <i class="bi bi-database-add"></i> <strong>DB einrichten</strong> - die Vorlage wird automatisch verwendet und die DB-Variablen werden ersetzt</li>
-                        <li><strong>Ohne Datenbank:</strong> Klicke auf den Button "Als Vorlage verwenden" im Hinweis</li>
-                    </ul>
-
-                    <h5 class="mt-4">Datenbank-Credentials</h5>
-                    <p>Der Button <i class="bi bi-database-add"></i> <strong>DB einrichten</strong> fügt Datenbank-Zugangsdaten intelligent ein:</p>
-                    <ul>
-                        <li>Erkennt verschiedene Variablennamen (DB_USER, MYSQL_USER, etc.)</li>
-                        <li>Ersetzt nur die DB-relevanten Variablen</li>
-                        <li>Behält alle anderen Werte unverändert</li>
-                    </ul>
-
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Wichtig:</strong> Nach Änderungen an der <code>.env</code> muss der Container neu gestartet werden!
                     </div>
                 </div>
             </div>
