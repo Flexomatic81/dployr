@@ -81,7 +81,7 @@ Database operations are abstracted through providers. Each provider implements:
 
 Credentials are stored in `/app/users/{systemUsername}/.db-credentials` with format:
 ```
-# Datenbank: username_mydb (erstellt: 2024-01-15T12:00:00.000Z, typ: postgresql)
+# Database: username_mydb (created: 2024-01-15T12:00:00.000Z, type: postgresql)
 DB_TYPE=postgresql
 DB_HOST=dployr-postgresql
 DB_PORT=5432
@@ -187,21 +187,21 @@ logger.error('Error', { error: error.message });
 Admins can view system logs and deployment history via the admin panel:
 
 **Routes:**
-- `GET /admin/logs` - System-Logs anzeigen (combined.log, error.log)
-- `GET /admin/logs/api` - JSON-API für Live-Refresh
-- `GET /admin/deployments` - Deployment-Historie aller Benutzer
+- `GET /admin/logs` - View system logs (combined.log, error.log)
+- `GET /admin/logs/api` - JSON API for live refresh
+- `GET /admin/deployments` - Deployment history for all users
 
 **Features:**
-- Log-Level-Filter (error, warn, info, debug)
-- Log-Datei-Auswahl (combined.log oder error.log)
-- Deployment-Statistiken (letzte 24h)
-- Expandierbare Meta-Daten und Fehlermeldungen
+- Log level filter (error, warn, info, debug)
+- Log file selection (combined.log or error.log)
+- Deployment statistics (last 24h)
+- Expandable metadata and error messages
 
-**Deployment Trigger-Types:**
-- `auto` - Automatisches Deployment durch Polling
-- `manual` - Manuell ausgelöstes Deployment (Button)
-- `clone` - Initiales Git-Clone beim Projekt erstellen
-- `pull` - Manueller Git-Pull
+**Deployment Trigger Types:**
+- `auto` - Automatic deployment via polling
+- `manual` - Manually triggered deployment (button)
+- `clone` - Initial Git clone when creating project
+- `pull` - Manual Git pull
 
 Log files in `dashboard/logs/`:
 - `combined.log` - All logs
@@ -285,15 +285,15 @@ Routes:
 
 ## Smart DB Credentials Merge
 
-The "DB einrichten" button intelligently merges database credentials into `.env` files:
+The "Configure DB" button intelligently merges database credentials into `.env` files:
 
-**Funktionsweise:**
-1. Nutzt `.env.example` als Vorlage (falls vorhanden)
-2. Erkennt bekannte DB-Variablen-Aliase und ersetzt deren Werte
-3. Behält nicht-DB-Variablen aus bestehender `.env` bei
-4. Hängt fehlende Credentials am Ende an
+**How it works:**
+1. Uses `.env.example` as template (if available)
+2. Detects known DB variable aliases and replaces their values
+3. Preserves non-DB variables from existing `.env`
+4. Appends missing credentials at the end
 
-**Bekannte DB-Variablen-Aliase** (in `config/constants.js`):
+**Known DB Variable Aliases** (in `config/constants.js`):
 ```javascript
 DB_VARIABLE_ALIASES = {
     host: ['DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST', 'POSTGRES_HOST', ...],
@@ -304,58 +304,58 @@ DB_VARIABLE_ALIASES = {
 }
 ```
 
-**Beispiel:**
-- `.env.example` enthält `DB_USER=root` und `DB_NAME=myapp`
-- User wählt Datenbank `max_blog` aus Dployr
-- Ergebnis: `DB_USER=max_blog` und `DB_NAME=max_blog`
+**Example:**
+- `.env.example` contains `DB_USER=root` and `DB_NAME=myapp`
+- User selects database `john_blog` from Dployr
+- Result: `DB_USER=john_blog` and `DB_NAME=john_blog`
 
-**Service-Funktion:** `mergeDbCredentials()` in `project.js`
+**Service Function:** `mergeDbCredentials()` in `project.js`
 
 ## Auto-Deploy
 
-Git-Projekte können automatisch aktualisiert werden, wenn neue Commits gepusht werden.
+Git projects can be automatically updated when new commits are pushed.
 
-**Funktionsweise:**
-- Polling-basiert: Server prüft regelmäßig auf neue Commits
-- Konfigurierbares Intervall: 5, 10, 15, 30 oder 60 Minuten (pro Projekt einstellbar)
-- Bei Änderungen: automatischer `git pull` + Container-Restart
-- Deployment-Historie wird in der Datenbank gespeichert
+**How it works:**
+- Polling-based: Server checks regularly for new commits
+- Configurable interval: 5, 10, 15, 30, or 60 minutes (per project)
+- On changes: automatic `git pull` + container restart
+- Deployment history is stored in the database
 
-**Datenbank-Tabellen:**
-- `project_autodeploy` - Konfiguration (user_id, project_name, branch, enabled, interval_minutes, last_check)
-- `deployment_logs` - Historie (trigger_type, commit_hashes, status, duration_ms)
+**Database Tables:**
+- `project_autodeploy` - Configuration (user_id, project_name, branch, enabled, interval_minutes, last_check)
+- `deployment_logs` - History (trigger_type, commit_hashes, status, duration_ms)
 
 **Routes:**
-- `POST /projects/:name/autodeploy/enable` - Auto-Deploy aktivieren
-- `POST /projects/:name/autodeploy/disable` - Auto-Deploy deaktivieren
-- `POST /projects/:name/autodeploy/interval` - Polling-Intervall ändern (5, 10, 15, 30, 60 Min)
-- `POST /projects/:name/autodeploy/trigger` - Manuelles Deployment auslösen
-- `GET /projects/:name/autodeploy/history` - Deployment-Historie (JSON API)
+- `POST /projects/:name/autodeploy/enable` - Enable auto-deploy
+- `POST /projects/:name/autodeploy/disable` - Disable auto-deploy
+- `POST /projects/:name/autodeploy/interval` - Change polling interval (5, 10, 15, 30, 60 min)
+- `POST /projects/:name/autodeploy/trigger` - Trigger manual deployment
+- `GET /projects/:name/autodeploy/history` - Deployment history (JSON API)
 
-**Service:** `autodeploy.js` - Polling-Logik, Deployment-Ausführung, Historie-Logging
+**Service:** `autodeploy.js` - Polling logic, deployment execution, history logging
 
-**Logging-Funktion:** `logDeployment(userId, projectName, triggerType, data)` - Wiederverwendbare Funktion zum Loggen aller Deployment-Typen (auto, manual, clone, pull)
+**Logging Function:** `logDeployment(userId, projectName, triggerType, data)` - Reusable function for logging all deployment types (auto, manual, clone, pull)
 
 ## Project Sharing
 
-Projekte können mit anderen Benutzern geteilt werden.
+Projects can be shared with other users.
 
-**Berechtigungsstufen:**
-- `read` - Nur Ansehen (Status, Logs, Projektinfos)
-- `manage` - Operationen erlaubt (Start/Stop, Pull, Deploy, .env bearbeiten)
-- `full` - Fast alle Rechte (+ Projekttyp ändern)
+**Permission Levels:**
+- `read` - View only (status, logs, project info)
+- `manage` - Operations allowed (start/stop, pull, deploy, edit .env)
+- `full` - Almost all rights (+ change project type)
 
-**Nur der Besitzer kann:** Projekt löschen, Git-Verbindung trennen, Auto-Deploy konfigurieren, Freigaben verwalten
+**Only the owner can:** Delete project, disconnect Git, configure auto-deploy, manage shares
 
-**Datenbank-Tabelle:** `project_shares` (owner_id, project_name, shared_with_id, permission)
+**Database Table:** `project_shares` (owner_id, project_name, shared_with_id, permission)
 
 **Routes:**
-- `GET /projects/:name/shares` - Liste aller Shares (nur Besitzer)
-- `POST /projects/:name/shares` - Neuen Share erstellen
-- `PUT /projects/:name/shares/:userId` - Berechtigung ändern
-- `DELETE /projects/:name/shares/:userId` - Share entfernen
+- `GET /projects/:name/shares` - List all shares (owner only)
+- `POST /projects/:name/shares` - Create new share
+- `PUT /projects/:name/shares/:userId` - Change permission
+- `DELETE /projects/:name/shares/:userId` - Remove share
 
-**Service:** `sharing.js` - Share-Verwaltung, Berechtigungsprüfung, Permission-Helper
+**Service:** `sharing.js` - Share management, permission checking, permission helpers
 
 ## Key Services
 
