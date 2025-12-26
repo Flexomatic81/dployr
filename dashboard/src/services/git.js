@@ -1,4 +1,3 @@
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const simpleGit = require('simple-git');
@@ -40,7 +39,7 @@ function getGitPath(projectPath) {
 /**
  * Holt Git-Status-Informationen für ein Projekt
  */
-function getGitStatus(projectPath) {
+async function getGitStatus(projectPath) {
     if (!isGitRepository(projectPath)) {
         return null;
     }
@@ -48,34 +47,27 @@ function getGitStatus(projectPath) {
     const gitPath = getGitPath(projectPath);
 
     try {
-        const remoteUrl = execSync('git config --get remote.origin.url', {
-            cwd: gitPath,
-            encoding: 'utf-8',
-            timeout: 5000
-        }).trim();
+        const git = simpleGit(gitPath);
 
-        const branch = execSync('git rev-parse --abbrev-ref HEAD', {
-            cwd: gitPath,
-            encoding: 'utf-8',
-            timeout: 5000
-        }).trim();
+        // Remote URL abrufen
+        const remotes = await git.getRemotes(true);
+        const origin = remotes.find(r => r.name === 'origin');
+        const remoteUrl = origin?.refs?.fetch || '';
 
-        const lastCommit = execSync('git log -1 --format="%h - %s (%ar)"', {
-            cwd: gitPath,
-            encoding: 'utf-8',
-            timeout: 5000
-        }).trim();
+        // Aktueller Branch
+        const branchSummary = await git.branch();
+        const branch = branchSummary.current;
+
+        // Letzter Commit
+        const logResult = await git.log({ maxCount: 1 });
+        const lastCommitData = logResult.latest;
+        const lastCommit = lastCommitData
+            ? `${lastCommitData.hash.substring(0, 7)} - ${lastCommitData.message} (${formatRelativeTime(lastCommitData.date)})`
+            : '';
 
         // Prüfen ob lokale Änderungen existieren
-        let hasLocalChanges = false;
-        try {
-            execSync('git diff --quiet && git diff --cached --quiet', {
-                cwd: gitPath,
-                timeout: 5000
-            });
-        } catch {
-            hasLocalChanges = true;
-        }
+        const status = await git.status();
+        const hasLocalChanges = !status.isClean();
 
         // URL für Anzeige bereinigen (Token entfernen)
         const displayUrl = sanitizeUrlForDisplay(remoteUrl);
@@ -94,6 +86,24 @@ function getGitStatus(projectPath) {
             error: 'Fehler beim Abrufen des Git-Status'
         };
     }
+}
+
+/**
+ * Formatiert ein Datum relativ (z.B. "vor 2 Stunden")
+ */
+function formatRelativeTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffDay > 0) return `vor ${diffDay} Tag${diffDay > 1 ? 'en' : ''}`;
+    if (diffHour > 0) return `vor ${diffHour} Stunde${diffHour > 1 ? 'n' : ''}`;
+    if (diffMin > 0) return `vor ${diffMin} Minute${diffMin > 1 ? 'n' : ''}`;
+    return 'gerade eben';
 }
 
 /**

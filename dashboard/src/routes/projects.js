@@ -190,7 +190,7 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
         const systemUsername = access.systemUsername;
 
         // Git-Status abrufen
-        const gitStatus = gitService.getGitStatus(project.path);
+        const gitStatus = await gitService.getGitStatus(project.path);
 
         // Projekttyp automatisch erkennen und mit aktuellem vergleichen
         const detectedType = gitService.detectProjectType(project.path);
@@ -500,7 +500,7 @@ router.post('/:name/autodeploy/enable', requireAuth, getProjectAccess(), async (
         }
 
         // Branch aus Git-Status holen
-        const gitStatus = gitService.getGitStatus(projectPath);
+        const gitStatus = await gitService.getGitStatus(projectPath);
         const branch = gitStatus?.branch || 'main';
 
         await autoDeployService.enableAutoDeploy(req.session.user.id, req.params.name, branch);
