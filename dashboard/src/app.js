@@ -40,11 +40,13 @@ app.use(helmet({
             connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
             formAction: ["'self'"],
             frameAncestors: ["'self'"],
-            objectSrc: ["'none'"]
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: null
         }
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false
+    crossOriginOpenerPolicy: false,
+    hsts: false
 }));
 
 // Security: Rate-Limiting für Auth-Routes
