@@ -378,4 +378,18 @@ PHPMYADMIN_PORT=8080
 PGADMIN_PORT=5050
 PGADMIN_EMAIL=admin@local.dev
 SERVER_IP=  # Automatically detected
+
+# Custom installation path (if not using /opt/dployr)
+HOST_USERS_PATH=/path/to/your/dployr/users
 ```
+
+### Custom Installation Path
+
+By default, Dployr expects to be installed in `/opt/dployr`. If you install it elsewhere, set `HOST_USERS_PATH` in your `.env`:
+
+```bash
+# Example: Installed in /home/user/dployr
+HOST_USERS_PATH=/home/user/dployr/users
+```
+
+This path is used by the dashboard to execute docker-compose commands on the host system.
