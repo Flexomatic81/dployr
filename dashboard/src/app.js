@@ -17,7 +17,7 @@ const { setUserLocals } = require('./middleware/auth');
 const autoDeployService = require('./services/autodeploy');
 const { logger, requestLogger } = require('./config/logger');
 
-// Routes importieren
+// Import routes
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const projectRoutes = require('./routes/projects');
@@ -30,7 +30,7 @@ const helpRoutes = require('./routes/help');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security: Helmet für HTTP Security Headers
+// Security: Helmet for HTTP security headers
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -52,19 +52,19 @@ app.use(helmet({
     hsts: false
 }));
 
-// Security: Rate-Limiting für Auth-Routes
+// Security: Rate limiting for auth routes
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 Minuten
-    max: 10, // 10 Versuche pro Fenster
-    message: 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.',
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 attempts per window
+    message: 'Too many login attempts. Please try again in 15 minutes.',
     standardHeaders: true,
     legacyHeaders: false
 });
 
-// Security: Allgemeines Rate-Limiting
+// Security: General rate limiting
 const generalLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 Minute
-    max: 100, // 100 Requests pro Minute
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 100, // 100 requests per minute
     standardHeaders: true,
     legacyHeaders: false
 });
@@ -87,7 +87,7 @@ app.use(express.json());
 app.use(cookieParser(process.env.SESSION_SECRET || 'change-this-secret'));
 app.use(methodOverride('_method'));
 
-// Session Store - wird später initialisiert wenn DB verfügbar
+// Session Store - initialized later when DB is available
 let sessionStore = null;
 let setupComplete = false;
 
@@ -114,9 +114,9 @@ function createSessionStore() {
         const pool = getPool();
         sessionStore = new MySQLStore({
             clearExpired: true,
-            checkExpirationInterval: 900000, // 15 Minuten
-            expiration: 86400000, // 24 Stunden
-            createDatabaseTable: false, // Tabelle wird in initDatabase erstellt
+            checkExpirationInterval: 900000, // 15 minutes
+            expiration: 86400000, // 24 hours
+            createDatabaseTable: false, // Table is created in initDatabase
             schema: {
                 tableName: 'sessions',
                 columnNames: {
@@ -126,11 +126,11 @@ function createSessionStore() {
                 }
             }
         }, pool);
-        logger.info('MySQL Session-Store initialisiert');
+        logger.info('MySQL Session Store initialized');
         return sessionStore;
     } catch (error) {
-        logger.warn('Session-Store fallback auf Memory-Store', { error: error.message });
-        return null; // Fallback auf Memory-Store
+        logger.warn('Session Store fallback to Memory Store', { error: error.message });
+        return null; // Fallback to Memory Store
     }
 }
 
@@ -143,21 +143,21 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true',
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 Stunden
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
 
 // Flash Messages
 app.use(flash());
 
-// User Locals für Views
+// User locals for views
 app.use(setUserLocals);
 
-// CSRF Protection (nach Session, vor Routes)
+// CSRF Protection (after session, before routes)
 app.use(csrfTokenMiddleware);
 app.use(csrfSynchronisedProtection);
 
-// Server-IP aus Setup-Marker laden (gecached)
+// Load server IP from setup marker (cached)
 let cachedServerIp = null;
 async function getServerIp() {
     if (cachedServerIp) return cachedServerIp;
@@ -172,7 +172,7 @@ async function getServerIp() {
     return cachedServerIp;
 }
 
-// Versionsinformationen laden (aus version.json, erstellt beim Docker-Build)
+// Load version information (from version.json, created during Docker build)
 let versionInfo = { hash: null, date: null };
 function loadVersionInfo() {
     try {
@@ -182,16 +182,16 @@ function loadVersionInfo() {
             const data = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
             if (data.hash && data.hash !== 'unknown') {
                 versionInfo = data;
-                logger.info('Version geladen', { hash: versionInfo.hash, date: versionInfo.date });
+                logger.info('Version loaded', { hash: versionInfo.hash, date: versionInfo.date });
             }
         }
     } catch (error) {
-        logger.debug('Versionsinformationen nicht verfügbar');
+        logger.debug('Version information not available');
     }
 }
 loadVersionInfo();
 
-// Flash Messages und globale Variablen für Views verfügbar machen
+// Make flash messages and global variables available for views
 app.use(async (req, res, next) => {
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
@@ -202,12 +202,12 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// Setup Route (vor anderen Routes, ohne Setup-Check)
+// Setup route (before other routes, without setup check)
 app.use('/setup', setupRoutes);
 
-// Setup-Check Middleware für alle anderen Routes
+// Setup check middleware for all other routes
 app.use(async (req, res, next) => {
-    // Setup-Route überspringen
+    // Skip setup route
     if (req.path.startsWith('/setup')) {
         return next();
     }
@@ -221,14 +221,14 @@ app.use(async (req, res, next) => {
         }
         next();
     } catch (error) {
-        // Bei Fehler (z.B. DB nicht erreichbar) zum Setup weiterleiten
-        logger.debug('Setup-Check Fehler, leite zum Setup weiter', { error: error.message });
+        // On error (e.g., DB not reachable) redirect to setup
+        logger.debug('Setup check error, redirecting to setup', { error: error.message });
         return res.redirect('/setup');
     }
 });
 
 // Routes
-// Auth-Routes mit speziellem Rate-Limiter
+// Auth routes with special rate limiter
 app.use('/login', authLimiter);
 app.use('/register', authLimiter);
 app.use('/', authRoutes);
@@ -288,7 +288,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Auto-Deploy Polling Intervall (5 Minuten)
+// Auto-Deploy polling interval (5 minutes)
 const AUTO_DEPLOY_INTERVAL = 5 * 60 * 1000;
 let autoDeployInterval = null;
 
@@ -297,47 +297,47 @@ function startAutoDeployPolling() {
         clearInterval(autoDeployInterval);
     }
 
-    logger.info('AutoDeploy Polling-Service gestartet', { interval: '5 Minuten' });
+    logger.info('AutoDeploy polling service started', { interval: '5 minutes' });
 
-    // Erster Zyklus nach 30 Sekunden (um Server-Start abzuwarten)
+    // First cycle after 30 seconds (to allow server startup)
     setTimeout(() => {
         autoDeployService.runPollingCycle();
     }, 30000);
 
-    // Dann alle 5 Minuten
+    // Then every 5 minutes
     autoDeployInterval = setInterval(() => {
         autoDeployService.runPollingCycle();
     }, AUTO_DEPLOY_INTERVAL);
 }
 
-// Server starten
+// Start server
 async function start() {
     try {
-        // Prüfen ob Setup abgeschlossen ist (via file check, nicht DB)
+        // Check if setup is complete (via file check, not DB)
         setupComplete = await checkSetupComplete();
 
         if (setupComplete) {
-            // Datenbank initialisieren nur wenn Setup fertig
+            // Initialize database only when setup is complete
             await initDatabase();
-            logger.info('Setup bereits abgeschlossen - Normalmodus');
+            logger.info('Setup already completed - normal mode');
 
-            // Auto-Deploy Polling starten
+            // Start Auto-Deploy polling
             startAutoDeployPolling();
         } else {
-            logger.info('Setup noch nicht abgeschlossen - Setup-Wizard aktiv');
+            logger.info('Setup not yet completed - setup wizard active');
         }
 
         app.listen(PORT, '0.0.0.0', () => {
-            logger.info('Dashboard gestartet', { port: PORT, url: `http://0.0.0.0:${PORT}` });
+            logger.info('Dashboard started', { port: PORT, url: `http://0.0.0.0:${PORT}` });
             if (!setupComplete) {
-                logger.info('Setup-Wizard verfügbar unter http://<SERVER-IP>:3000/setup');
+                logger.info('Setup wizard available at http://<SERVER-IP>:3000/setup');
             }
         });
     } catch (error) {
-        // Bei DB-Fehler trotzdem starten (für Setup-Wizard)
-        logger.warn('Starte im Setup-Modus (DB nicht verfügbar)', { error: error.message });
+        // Start anyway on DB error (for setup wizard)
+        logger.warn('Starting in setup mode (DB not available)', { error: error.message });
         app.listen(PORT, '0.0.0.0', () => {
-            logger.info('Dashboard gestartet im Setup-Modus', { port: PORT });
+            logger.info('Dashboard started in setup mode', { port: PORT });
         });
     }
 }
