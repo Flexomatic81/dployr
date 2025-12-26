@@ -1,4 +1,4 @@
-const { csrfErrorHandler, csrfTokenMiddleware } = require('../../src/middleware/csrf');
+const { csrfErrorHandler } = require('../../src/middleware/csrf');
 
 // Mock logger
 jest.mock('../../src/config/logger', () => ({

@@ -1,42 +1,37 @@
-const { doubleCsrf } = require('csrf-csrf');
+const { csrfSync } = require('csrf-sync');
 const { logger } = require('../config/logger');
 
-// CSRF Protection mit csrf-csrf (Double Submit Cookie Pattern)
-const isProduction = process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true';
-
+// CSRF Protection mit csrf-sync (Synchronizer Token Pattern für Session-basierte Apps)
 const {
-    generateCsrfToken,
-    doubleCsrfProtection
-} = doubleCsrf({
-    getSecret: () => process.env.SESSION_SECRET || 'change-this-secret',
-    // Session-Identifier für CSRF-Token-Bindung
-    getSessionIdentifier: (req) => {
-        // Verwende Session-ID oder IP als Fallback
-        return req.session?.id || req.ip || 'anonymous';
-    },
-    // __Host- Prefix erfordert HTTPS, daher nur in Produktion verwenden
-    cookieName: isProduction ? '__Host-dployr.x-csrf-token' : 'dployr.x-csrf-token',
-    cookieOptions: {
-        httpOnly: true,
-        sameSite: 'strict',
-        path: '/',
-        secure: isProduction
-    },
-    size: 64,
-    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+    csrfSynchronisedProtection,
+    generateToken
+} = csrfSync({
     getTokenFromRequest: (req) => {
         // Token aus Body, Header oder Query lesen
         return req.body._csrf || req.headers['x-csrf-token'] || req.query._csrf;
-    }
+    },
+    getTokenFromState: (req) => {
+        // Token aus Session lesen
+        return req.session?.csrfToken;
+    },
+    storeTokenInState: (req, token) => {
+        // Token in Session speichern
+        if (req.session) {
+            req.session.csrfToken = token;
+        }
+    },
+    size: 64
 });
 
 // Middleware die CSRF-Token in res.locals verfügbar macht
 function csrfTokenMiddleware(req, res, next) {
-    // Token generieren und in locals speichern
-    const token = generateCsrfToken(req, res);
-    res.locals.csrfToken = token;
+    // Token generieren falls nicht vorhanden
+    let token = req.session?.csrfToken;
+    if (!token) {
+        token = generateToken(req);
+    }
 
-    // Hidden Input Helper für Views
+    res.locals.csrfToken = token;
     res.locals.csrfInput = `<input type="hidden" name="_csrf" value="${token}">`;
 
     next();
@@ -44,7 +39,10 @@ function csrfTokenMiddleware(req, res, next) {
 
 // Error Handler für CSRF-Fehler
 function csrfErrorHandler(err, req, res, next) {
-    if (err.code === 'EBADCSRFTOKEN' || err.message === 'invalid csrf token') {
+    if (err.code === 'EBADCSRFTOKEN' ||
+        err.message === 'invalid csrf token' ||
+        err.message?.includes('CSRF')) {
+
         logger.warn('CSRF-Token ungültig', {
             ip: req.ip,
             url: req.originalUrl,
@@ -69,8 +67,8 @@ function csrfErrorHandler(err, req, res, next) {
 }
 
 module.exports = {
-    generateCsrfToken,
-    doubleCsrfProtection,
+    csrfSynchronisedProtection,
+    generateToken,
     csrfTokenMiddleware,
     csrfErrorHandler
 };

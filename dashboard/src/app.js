@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { doubleCsrfProtection, csrfTokenMiddleware, csrfErrorHandler } = require('./middleware/csrf');
+const { csrfSynchronisedProtection, csrfTokenMiddleware, csrfErrorHandler } = require('./middleware/csrf');
 
 const { initDatabase, getPool } = require('./config/database');
 const { setUserLocals } = require('./middleware/auth');
@@ -137,8 +137,8 @@ app.use(flash());
 app.use(setUserLocals);
 
 // CSRF Protection (nach Session, vor Routes)
-app.use(doubleCsrfProtection);
 app.use(csrfTokenMiddleware);
+app.use(csrfSynchronisedProtection);
 
 // Server-IP aus Setup-Marker laden (gecached)
 let cachedServerIp = null;
