@@ -46,6 +46,13 @@ Check for `await` without try/catch in route handlers.
 
 ## 3. Security Checks
 
+### Personal data in code
+Search for real names, usernames, email addresses in:
+- Shell scripts (examples, default values)
+- Configuration files
+- Comments and documentation
+Common patterns: names in DEFAULT_USER, example commands, email addresses.
+
 ### Hardcoded secrets/passwords
 Search for patterns like:
 - `password = "` or `password: "`
