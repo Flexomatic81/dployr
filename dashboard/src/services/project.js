@@ -1,6 +1,5 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
 const dockerService = require('./docker');
 const { generateDockerCompose, generateNginxConfig, getGitPath, isGitRepository } = require('./git');
 const { logger } = require('../config/logger');
@@ -154,7 +153,10 @@ function getTemplateDisplayName(name) {
     const names = {
         'static-website': 'Statische Website (HTML/CSS/JS)',
         'php-website': 'PHP Website',
-        'nodejs-app': 'Node.js Anwendung'
+        'nodejs-app': 'Node.js Anwendung',
+        'laravel': 'Laravel (PHP Framework)',
+        'nodejs-static': 'Node.js Static (React, Vue, Vite)',
+        'nextjs': 'Next.js (SSR)'
     };
     return names[name] || name;
 }

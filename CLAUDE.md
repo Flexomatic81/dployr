@@ -167,7 +167,7 @@ Middleware: `requireAuth` protects routes, `requireAdmin` for admin operations.
 The dashboard implements multiple security layers:
 
 - **Helmet**: Security headers (CSP, X-Frame-Options, etc.)
-- **Rate Limiting**: Auth routes limited to 5 requests/15min, general API 100/15min
+- **Rate Limiting**: Auth routes limited to 10 requests/15min, general API 100 requests/min
 - **Input Validation**: Joi schemas for login, register, project creation
 - **MySQL Session Store**: Persistent sessions (survives restarts)
 - **CSRF Protection**: Via session-based forms
@@ -285,8 +285,8 @@ DB_VARIABLE_ALIASES = {
 
 **Beispiel:**
 - `.env.example` enthält `DB_USER=root` und `DB_NAME=myapp`
-- User wählt Datenbank `mehmed_tetris` aus Dployr
-- Ergebnis: `DB_USER=mehmed_tetris` und `DB_NAME=mehmed_tetris`
+- User wählt Datenbank `max_blog` aus Dployr
+- Ergebnis: `DB_USER=max_blog` und `DB_NAME=max_blog`
 
 **Service-Funktion:** `mergeDbCredentials()` in `project.js`
 
