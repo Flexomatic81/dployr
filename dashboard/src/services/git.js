@@ -143,8 +143,8 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
 
     try {
         // Clone mit simple-git (sicher, kein Shell-Escaping nötig)
-        const git = simpleGit();
-        await git.clone(authenticatedUrl, tempDir, { '--timeout': '120' });
+        const git = simpleGit({ timeout: { block: 120000 } });
+        await git.clone(authenticatedUrl, tempDir);
 
         // Wichtige Dateien sichern (docker-compose.yml, nginx, .env)
         const backups = {};
@@ -640,8 +640,8 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
 
     try {
         // Clone mit simple-git (sicher)
-        const git = simpleGit();
-        await git.clone(authenticatedUrl, htmlPath, { '--timeout': '120' });
+        const git = simpleGit({ timeout: { block: 120000 } });
+        await git.clone(authenticatedUrl, htmlPath);
 
         // Projekttyp erkennen (aus html/ Ordner)
         const projectType = detectProjectType(htmlPath);
