@@ -4,6 +4,7 @@ const { exec } = require('child_process');
 const dockerService = require('./docker');
 const { generateDockerCompose, generateNginxConfig, getGitPath, isGitRepository } = require('./git');
 const { logger } = require('../config/logger');
+const { DB_VARIABLE_ALIASES } = require('../config/constants');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 const SCRIPTS_PATH = process.env.SCRIPTS_PATH || '/app/scripts';
@@ -574,7 +575,7 @@ async function copyEnvExample(systemUsername, projectName) {
     return { success: true, filename: example.filename };
 }
 
-// Datenbank-Credentials zu .env hinzufügen (App-Ebene)
+// Datenbank-Credentials zu .env hinzufügen (App-Ebene) - Legacy-Funktion
 async function appendDbCredentials(systemUsername, projectName, dbCredentials) {
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
@@ -608,6 +609,151 @@ DB_PASSWORD=${dbCredentials.password}
 
     await fs.writeFile(envPath, content + credentialsBlock, 'utf8');
     return { success: true };
+}
+
+/**
+ * Intelligentes Einfügen von DB-Credentials in .env
+ * - Nutzt .env.example als Vorlage falls vorhanden
+ * - Ersetzt bekannte DB-Variablen-Aliase mit den Dployr-Werten
+ * - Hängt fehlende Credentials am Ende an
+ *
+ * @param {string} systemUsername - System-Username
+ * @param {string} projectName - Projektname
+ * @param {Object} dbCredentials - Datenbank-Credentials aus Dployr
+ * @returns {Object} Ergebnis mit Statistiken
+ */
+async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
+    const envPath = await getAppEnvPath(systemUsername, projectName);
+
+    // Basis-Inhalt laden: .env.example falls vorhanden, sonst bestehende .env
+    let baseContent = '';
+    let usedExample = false;
+
+    const envExample = await checkEnvExample(systemUsername, projectName);
+    if (envExample.exists) {
+        // .env.example als Basis verwenden
+        baseContent = envExample.content;
+        usedExample = true;
+
+        // Aber existierende .env-Werte (außer DB) beibehalten
+        try {
+            const existingEnv = await fs.readFile(envPath, 'utf8');
+            const existingVars = parseEnvFile(existingEnv);
+
+            // Nicht-DB-Variablen aus existierender .env übernehmen
+            for (const [key, value] of Object.entries(existingVars)) {
+                if (!isDbVariable(key)) {
+                    // Variable in baseContent ersetzen falls vorhanden
+                    const regex = new RegExp(`^${key}=.*$`, 'm');
+                    if (regex.test(baseContent)) {
+                        baseContent = baseContent.replace(regex, `${key}=${value}`);
+                    }
+                }
+            }
+        } catch (e) {
+            // .env existiert nicht - nur .env.example verwenden
+        }
+    } else {
+        // Keine .env.example - bestehende .env verwenden
+        try {
+            baseContent = await fs.readFile(envPath, 'utf8');
+        } catch (e) {
+            // .env existiert nicht - leer starten
+            baseContent = '';
+        }
+    }
+
+    // Credential-Mapping: welcher Dployr-Wert gehört zu welcher Kategorie
+    const credentialMap = {
+        host: dbCredentials.host,
+        port: String(dbCredentials.port),
+        database: dbCredentials.database,
+        username: dbCredentials.username,
+        password: dbCredentials.password
+    };
+
+    // Statistiken
+    let replacedCount = 0;
+    let addedCount = 0;
+    const replaced = { host: false, port: false, database: false, username: false, password: false };
+
+    // Zeile für Zeile verarbeiten
+    const lines = baseContent.split('\n');
+    const resultLines = [];
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+
+        // Kommentare und leere Zeilen behalten
+        if (trimmed === '' || trimmed.startsWith('#')) {
+            resultLines.push(line);
+            continue;
+        }
+
+        // Variable parsen
+        const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+        if (!match) {
+            resultLines.push(line);
+            continue;
+        }
+
+        const varName = match[1];
+        let wasReplaced = false;
+
+        // Prüfen ob Variable ein bekannter DB-Alias ist
+        for (const [credKey, aliases] of Object.entries(DB_VARIABLE_ALIASES)) {
+            if (aliases.includes(varName)) {
+                // Wert ersetzen
+                resultLines.push(`${varName}=${credentialMap[credKey]}`);
+                replaced[credKey] = true;
+                replacedCount++;
+                wasReplaced = true;
+                break;
+            }
+        }
+
+        if (!wasReplaced) {
+            resultLines.push(line);
+        }
+    }
+
+    // Fehlende Credentials anhängen
+    const missing = [];
+    if (!replaced.host) missing.push(`DB_HOST=${dbCredentials.host}`);
+    if (!replaced.port) missing.push(`DB_PORT=${dbCredentials.port}`);
+    if (!replaced.database) missing.push(`DB_DATABASE=${dbCredentials.database}`);
+    if (!replaced.username) missing.push(`DB_USERNAME=${dbCredentials.username}`);
+    if (!replaced.password) missing.push(`DB_PASSWORD=${dbCredentials.password}`);
+
+    if (missing.length > 0) {
+        addedCount = missing.length;
+        resultLines.push('');
+        resultLines.push(`# Dployr: ${dbCredentials.database}`);
+        missing.forEach(line => resultLines.push(line));
+    }
+
+    // Ergebnis speichern
+    await fs.writeFile(envPath, resultLines.join('\n'), 'utf8');
+
+    return {
+        success: true,
+        usedExample,
+        exampleFile: envExample.filename,
+        replacedCount,
+        addedCount
+    };
+}
+
+/**
+ * Prüft ob eine Variable eine DB-Variable ist (basierend auf bekannten Aliasen)
+ */
+function isDbVariable(varName) {
+    for (const aliases of Object.values(DB_VARIABLE_ALIASES)) {
+        if (aliases.includes(varName)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Datenbank-Credentials für einen User laden
@@ -671,5 +817,6 @@ module.exports = {
     checkEnvExample,
     copyEnvExample,
     appendDbCredentials,
+    mergeDbCredentials,
     getUserDbCredentials
 };

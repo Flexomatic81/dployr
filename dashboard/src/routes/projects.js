@@ -373,7 +373,8 @@ router.post('/:name/env/copy-example', requireAuth, getProjectAccess(), requireP
     }
 });
 
-// Datenbank-Credentials zu .env hinzufügen (manage oder höher)
+// Datenbank-Credentials intelligent in .env einfügen (manage oder höher)
+// Nutzt .env.example als Vorlage falls vorhanden und ersetzt bekannte DB-Variablen
 router.post('/:name/env/add-db', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const systemUsername = req.projectAccess.systemUsername;
@@ -388,11 +389,25 @@ router.post('/:name/env/add-db', requireAuth, getProjectAccess(), requirePermiss
             return res.redirect(`/projects/${req.params.name}`);
         }
 
-        await projectService.appendDbCredentials(systemUsername, req.params.name, dbCredentials);
-        req.flash('success', 'Datenbank-Credentials wurden zur .env hinzugefügt. Container-Neustart empfohlen.');
+        const result = await projectService.mergeDbCredentials(systemUsername, req.params.name, dbCredentials);
+
+        // Benutzerfreundliche Erfolgsmeldung
+        let message = 'Datenbank-Credentials eingerichtet';
+        if (result.usedExample) {
+            message += ` (${result.exampleFile} als Vorlage)`;
+        }
+        if (result.replacedCount > 0) {
+            message += `, ${result.replacedCount} Variable${result.replacedCount > 1 ? 'n' : ''} ersetzt`;
+        }
+        if (result.addedCount > 0) {
+            message += `, ${result.addedCount} hinzugefügt`;
+        }
+        message += '. Container-Neustart empfohlen.';
+
+        req.flash('success', message);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Hinzufügen der DB-Credentials', { error: error.message });
+        logger.error('Fehler beim Einrichten der DB-Credentials', { error: error.message });
         req.flash('error', 'Fehler: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
