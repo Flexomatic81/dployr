@@ -416,10 +416,13 @@ router.get('/deployments', async (req, res) => {
         let query = `
             SELECT
                 dl.*,
+                dl.created_at as deployed_at,
+                dl.old_commit_hash as commit_before,
+                dl.new_commit_hash as commit_after,
                 u.username,
                 u.system_username
             FROM deployment_logs dl
-            JOIN users u ON dl.user_id = u.id
+            JOIN dashboard_users u ON dl.user_id = u.id
         `;
 
         const params = [];
@@ -428,7 +431,7 @@ router.get('/deployments', async (req, res) => {
             params.push(statusFilter);
         }
 
-        query += ' ORDER BY dl.deployed_at DESC LIMIT ?';
+        query += ' ORDER BY dl.created_at DESC LIMIT ?';
         params.push(limit);
 
         const [deployments] = await pool.execute(query, params);
@@ -441,7 +444,7 @@ router.get('/deployments', async (req, res) => {
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
                 AVG(duration_ms) as avg_duration
             FROM deployment_logs
-            WHERE deployed_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
         `);
 
         res.render('admin/deployments', {
