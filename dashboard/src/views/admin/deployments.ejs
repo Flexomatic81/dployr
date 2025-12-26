@@ -154,6 +154,10 @@
                             <span class="badge bg-info">Auto</span>
                             <% } else if (deploy.trigger_type === 'manual') { %>
                             <span class="badge bg-secondary">Manuell</span>
+                            <% } else if (deploy.trigger_type === 'clone') { %>
+                            <span class="badge bg-primary">Clone</span>
+                            <% } else if (deploy.trigger_type === 'pull') { %>
+                            <span class="badge bg-warning text-dark">Pull</span>
                             <% } else { %>
                             <span class="badge bg-light text-dark"><%= deploy.trigger_type %></span>
                             <% } %>

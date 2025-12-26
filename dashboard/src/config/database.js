@@ -120,11 +120,11 @@ async function initDatabase() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
                 project_name VARCHAR(100) NOT NULL,
-                trigger_type ENUM('auto', 'manual') DEFAULT 'auto',
+                trigger_type ENUM('auto', 'manual', 'clone', 'pull') DEFAULT 'auto',
                 old_commit_hash VARCHAR(40) NULL,
                 new_commit_hash VARCHAR(40) NULL,
                 commit_message TEXT NULL,
-                status ENUM('pending', 'pulling', 'restarting', 'success', 'failed') NOT NULL,
+                status ENUM('pending', 'pulling', 'cloning', 'restarting', 'success', 'failed') NOT NULL,
                 error_message TEXT NULL,
                 duration_ms INT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -133,6 +133,18 @@ async function initDatabase() {
                 INDEX idx_created (created_at)
             )
         `);
+
+        // Migration: trigger_type ENUM erweitern für clone/pull
+        try {
+            await connection.execute(`
+                ALTER TABLE deployment_logs MODIFY COLUMN trigger_type ENUM('auto', 'manual', 'clone', 'pull') DEFAULT 'auto'
+            `);
+            await connection.execute(`
+                ALTER TABLE deployment_logs MODIFY COLUMN status ENUM('pending', 'pulling', 'cloning', 'restarting', 'success', 'failed') NOT NULL
+            `);
+        } catch (e) {
+            // ENUM bereits erweitert - ignorieren
+        }
 
         // Project Shares Tabelle für Projekt-Freigaben
         await connection.execute(`

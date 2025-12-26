@@ -295,6 +295,27 @@ async function updateDeploymentLog(logId, updates) {
 }
 
 /**
+ * Loggt ein Deployment (für Clone, Pull, etc.)
+ */
+async function logDeployment(userId, projectName, triggerType, data = {}) {
+    const {
+        status = 'success',
+        oldCommitHash = null,
+        newCommitHash = null,
+        commitMessage = null,
+        errorMessage = null,
+        durationMs = null
+    } = data;
+
+    await pool.execute(
+        `INSERT INTO deployment_logs
+         (user_id, project_name, trigger_type, old_commit_hash, new_commit_hash, commit_message, status, error_message, duration_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, projectName, triggerType, oldCommitHash, newCommitHash, commitMessage, status, errorMessage, durationMs]
+    );
+}
+
+/**
  * Holt die Deployment-Historie für ein Projekt
  */
 async function getDeploymentHistory(userId, projectName, limit = 10) {
@@ -396,6 +417,7 @@ module.exports = {
     getAllActiveAutoDeployConfigs,
     checkForUpdates,
     executeDeploy,
+    logDeployment,
     getDeploymentHistory,
     getLastSuccessfulDeployment,
     runPollingCycle,

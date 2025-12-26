@@ -142,10 +142,12 @@ router.post('/from-zip', requireAuth, upload.single('zipfile'), validateZipMiddl
 
 // Neues Projekt von Git erstellen - Verarbeitung
 router.post('/from-git', requireAuth, async (req, res) => {
-    try {
-        const { name, repo_url, access_token, port } = req.body;
-        const systemUsername = req.session.user.system_username;
+    const startTime = Date.now();
+    const { name, repo_url, access_token, port } = req.body;
+    const systemUsername = req.session.user.system_username;
+    const userId = req.session.user.id;
 
+    try {
         // Validierung
         if (!/^[a-z0-9-]+$/.test(name)) {
             req.flash('error', 'Projektname darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten');
@@ -165,6 +167,18 @@ router.post('/from-git', requireAuth, async (req, res) => {
             parseInt(port)
         );
 
+        // Deployment-Log für Clone erstellen
+        try {
+            await autoDeployService.logDeployment(userId, name, 'clone', {
+                status: 'success',
+                newCommitHash: result.commitHash || null,
+                commitMessage: `Repository geklont: ${repo_url.replace(/\/\/[^:]+:[^@]+@/, '//')}`,
+                durationMs: Date.now() - startTime
+            });
+        } catch (logError) {
+            logger.warn('Deployment-Log konnte nicht erstellt werden', { error: logError.message });
+        }
+
         const typeNames = {
             static: 'Statische Website',
             php: 'PHP Website',
@@ -177,6 +191,17 @@ router.post('/from-git', requireAuth, async (req, res) => {
         req.flash('success', `Projekt "${name}" erfolgreich von Git erstellt! Erkannt als: ${typeNames[result.projectType] || result.projectType}`);
         res.redirect(`/projects/${name}`);
     } catch (error) {
+        // Fehlgeschlagenes Clone loggen
+        try {
+            await autoDeployService.logDeployment(userId, name, 'clone', {
+                status: 'failed',
+                errorMessage: error.message,
+                durationMs: Date.now() - startTime
+            });
+        } catch (logError) {
+            // Ignorieren falls Logging fehlschlägt
+        }
+
         logger.error('Fehler beim Erstellen des Git-Projekts', { error: error.message });
         req.flash('error', error.message || 'Fehler beim Erstellen des Projekts');
         res.redirect('/projects/create');
@@ -443,16 +468,62 @@ router.delete('/:name', requireAuth, getProjectAccess(), async (req, res) => {
 
 // Git Pull durchführen (manage oder höher)
 router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    const startTime = Date.now();
+    const projectName = req.params.name;
+    const userId = req.session.user.id;
+
     try {
         const systemUsername = req.projectAccess.systemUsername;
-        const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
+        const projectPath = gitService.getProjectPath(systemUsername, projectName);
 
         if (!gitService.isGitRepository(projectPath)) {
             req.flash('error', 'Kein Git-Repository verbunden');
-            return res.redirect(`/projects/${req.params.name}`);
+            return res.redirect(`/projects/${projectName}`);
         }
 
+        // Alten Commit-Hash speichern
+        const { execSync } = require('child_process');
+        const gitPath = gitService.getGitPath(projectPath);
+        let oldCommitHash = null;
+        try {
+            oldCommitHash = execSync('git rev-parse HEAD', {
+                cwd: gitPath,
+                encoding: 'utf-8',
+                timeout: 5000
+            }).trim().substring(0, 40);
+        } catch (e) {}
+
         const result = await gitService.pullChanges(projectPath);
+
+        // Neuen Commit-Hash und Message holen
+        let newCommitHash = null;
+        let commitMessage = null;
+        try {
+            newCommitHash = execSync('git rev-parse HEAD', {
+                cwd: gitPath,
+                encoding: 'utf-8',
+                timeout: 5000
+            }).trim().substring(0, 40);
+
+            commitMessage = execSync('git log -1 --format="%s"', {
+                cwd: gitPath,
+                encoding: 'utf-8',
+                timeout: 5000
+            }).trim();
+        } catch (e) {}
+
+        // Deployment-Log erstellen
+        try {
+            await autoDeployService.logDeployment(userId, projectName, 'pull', {
+                status: 'success',
+                oldCommitHash,
+                newCommitHash,
+                commitMessage: result.hasChanges ? commitMessage : 'Keine Änderungen',
+                durationMs: Date.now() - startTime
+            });
+        } catch (logError) {
+            logger.warn('Deployment-Log konnte nicht erstellt werden', { error: logError.message });
+        }
 
         if (result.hasChanges) {
             req.flash('success', 'Änderungen erfolgreich gepullt! Neustart des Projekts empfohlen.');
@@ -460,11 +531,22 @@ router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermissio
             req.flash('info', 'Keine neuen Änderungen vorhanden.');
         }
 
-        res.redirect(`/projects/${req.params.name}`);
+        res.redirect(`/projects/${projectName}`);
     } catch (error) {
+        // Fehlgeschlagenen Pull loggen
+        try {
+            await autoDeployService.logDeployment(userId, projectName, 'pull', {
+                status: 'failed',
+                errorMessage: error.message,
+                durationMs: Date.now() - startTime
+            });
+        } catch (logError) {
+            // Ignorieren falls Logging fehlschlägt
+        }
+
         logger.error('Git pull error', { error: error.message });
         req.flash('error', error.message);
-        res.redirect(`/projects/${req.params.name}`);
+        res.redirect(`/projects/${projectName}`);
     }
 });
 
