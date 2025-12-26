@@ -8,7 +8,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const userService = require('../services/user');
 const projectService = require('../services/project');
 const { logger } = require('../config/logger');
-const pool = require('../config/database');
+const { pool } = require('../config/database');
 
 const LOG_DIR = process.env.LOG_DIR || '/app/logs';
 
