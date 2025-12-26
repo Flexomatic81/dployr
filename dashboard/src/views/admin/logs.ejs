@@ -1,0 +1,156 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+        <li class="breadcrumb-item active">System-Logs</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-file-text"></i> System-Logs</h1>
+    <button type="button" class="btn btn-outline-primary" id="refreshLogs">
+        <i class="bi bi-arrow-clockwise"></i> Aktualisieren
+    </button>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="/admin/logs" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="type" class="form-label">Log-Datei</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="combined" <%= filters.type === 'combined' ? 'selected' : '' %>>Alle Logs (combined.log)</option>
+                    <option value="error" <%= filters.type === 'error' ? 'selected' : '' %>>Nur Fehler (error.log)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="level" class="form-label">Log-Level</label>
+                <select name="level" id="level" class="form-select">
+                    <option value="all" <%= filters.level === 'all' ? 'selected' : '' %>>Alle</option>
+                    <option value="error" <%= filters.level === 'error' ? 'selected' : '' %>>Error</option>
+                    <option value="warn" <%= filters.level === 'warn' ? 'selected' : '' %>>Warn</option>
+                    <option value="info" <%= filters.level === 'info' ? 'selected' : '' %>>Info</option>
+                    <option value="debug" <%= filters.level === 'debug' ? 'selected' : '' %>>Debug</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="limit" class="form-label">Anzahl</label>
+                <select name="limit" id="limit" class="form-select">
+                    <option value="50" <%= filters.limit === 50 ? 'selected' : '' %>>50</option>
+                    <option value="100" <%= filters.limit === 100 ? 'selected' : '' %>>100</option>
+                    <option value="200" <%= filters.limit === 200 ? 'selected' : '' %>>200</option>
+                    <option value="500" <%= filters.limit === 500 ? 'selected' : '' %>>500</option>
+                    <option value="1000" <%= filters.limit === 1000 ? 'selected' : '' %>>1000</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<% if (error) { %>
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i> <%= error %>
+</div>
+<% } %>
+
+<!-- Log-Einträge -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-ul"></i> Log-Einträge (<%= logs.length %>)</span>
+        <small class="text-muted">Neueste zuerst</small>
+    </div>
+    <div class="card-body p-0">
+        <% if (logs.length === 0) { %>
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-2">Keine Log-Einträge gefunden</p>
+        </div>
+        <% } else { %>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0" id="logsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 160px;">Zeitpunkt</th>
+                        <th style="width: 80px;">Level</th>
+                        <th>Nachricht</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% logs.forEach((log, index) => { %>
+                    <tr class="log-row" data-index="<%= index %>">
+                        <td class="text-muted small font-monospace">
+                            <%= log.timestamp %>
+                        </td>
+                        <td>
+                            <% if (log.level === 'error') { %>
+                            <span class="badge bg-danger">ERROR</span>
+                            <% } else if (log.level === 'warn') { %>
+                            <span class="badge bg-warning text-dark">WARN</span>
+                            <% } else if (log.level === 'info') { %>
+                            <span class="badge bg-info text-dark">INFO</span>
+                            <% } else if (log.level === 'debug') { %>
+                            <span class="badge bg-secondary">DEBUG</span>
+                            <% } else { %>
+                            <span class="badge bg-light text-dark"><%= log.level.toUpperCase() %></span>
+                            <% } %>
+                        </td>
+                        <td class="text-break">
+                            <%= log.message %>
+                        </td>
+                        <td>
+                            <% if (Object.keys(log.meta).filter(k => log.meta[k] !== undefined).length > 0) { %>
+                            <button type="button" class="btn btn-sm btn-outline-secondary toggle-meta" data-index="<%= index %>">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% if (Object.keys(log.meta).filter(k => log.meta[k] !== undefined).length > 0) { %>
+                    <tr class="meta-row d-none" id="meta-<%= index %>">
+                        <td colspan="4" class="bg-light">
+                            <pre class="mb-0 small"><%= JSON.stringify(Object.fromEntries(Object.entries(log.meta).filter(([k, v]) => v !== undefined)), null, 2) %></pre>
+                        </td>
+                    </tr>
+                    <% } %>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle Meta-Daten
+    document.querySelectorAll('.toggle-meta').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = this.dataset.index;
+            const metaRow = document.getElementById('meta-' + index);
+            const icon = this.querySelector('i');
+
+            if (metaRow.classList.contains('d-none')) {
+                metaRow.classList.remove('d-none');
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+            } else {
+                metaRow.classList.add('d-none');
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+            }
+        });
+    });
+
+    // Refresh-Button
+    document.getElementById('refreshLogs').addEventListener('click', function() {
+        location.reload();
+    });
+});
+</script>

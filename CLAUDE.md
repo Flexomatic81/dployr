@@ -49,7 +49,7 @@ dashboard/src/
 │   ├── projects.js     # Project CRUD, Git/ZIP deployment, sharing
 │   ├── databases.js    # Database CRUD with type selection
 │   ├── logs.js         # Container logs viewer
-│   ├── admin.js        # User management, approval workflow
+│   ├── admin.js        # User management, approval workflow, system logs, deployments
 │   ├── setup.js        # Initial configuration wizard
 │   └── help.js         # Help/documentation page
 ├── services/           # Business logic layer
@@ -181,6 +181,21 @@ const { logger } = require('../config/logger');
 logger.info('Message', { context: 'value' });
 logger.error('Error', { error: error.message });
 ```
+
+### Admin Log Viewer
+
+Admins can view system logs and deployment history via the admin panel:
+
+**Routes:**
+- `GET /admin/logs` - System-Logs anzeigen (combined.log, error.log)
+- `GET /admin/logs/api` - JSON-API für Live-Refresh
+- `GET /admin/deployments` - Deployment-Historie aller Benutzer
+
+**Features:**
+- Log-Level-Filter (error, warn, info, debug)
+- Log-Datei-Auswahl (combined.log oder error.log)
+- Deployment-Statistiken (letzte 24h)
+- Expandierbare Meta-Daten und Fehlermeldungen
 
 Log files in `dashboard/logs/`:
 - `combined.log` - All logs

@@ -115,4 +115,38 @@
             </div>
         </div>
     </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-file-text"></i> System-Logs
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Application-Logs des Dashboards einsehen und filtern.</p>
+                <a href="/admin/logs" class="btn btn-primary">
+                    <i class="bi bi-file-text"></i> Logs anzeigen
+                </a>
+                <a href="/admin/logs?type=error" class="btn btn-outline-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Nur Fehler
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-rocket-takeoff"></i> Deployment-Historie
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Alle Deployments aller Benutzer überwachen.</p>
+                <a href="/admin/deployments" class="btn btn-primary">
+                    <i class="bi bi-rocket-takeoff"></i> Deployments
+                </a>
+                <a href="/admin/deployments?status=failed" class="btn btn-outline-danger">
+                    <i class="bi bi-x-circle"></i> Fehlgeschlagene
+                </a>
+            </div>
+        </div>
+    </div>
 </div>

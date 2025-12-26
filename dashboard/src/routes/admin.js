@@ -1,9 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs').promises;
+const path = require('path');
+const readline = require('readline');
+const { createReadStream } = require('fs');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const userService = require('../services/user');
 const projectService = require('../services/project');
 const { logger } = require('../config/logger');
+const pool = require('../config/database');
+
+const LOG_DIR = process.env.LOG_DIR || '/app/logs';
 
 // Alle Admin-Routen erfordern Admin-Rechte
 router.use(requireAuth);
@@ -270,6 +277,185 @@ router.get('/projects', async (req, res) => {
     } catch (error) {
         logger.error('Fehler beim Laden der Projekte', { error: error.message });
         req.flash('error', 'Fehler beim Laden der Projekte');
+        res.redirect('/admin');
+    }
+});
+
+// ============================================
+// System-Logs
+// ============================================
+
+// Hilfsfunktion: Letzte N Zeilen einer Datei lesen (effizient)
+async function readLastLines(filePath, maxLines = 500) {
+    return new Promise((resolve, reject) => {
+        const lines = [];
+
+        const rl = readline.createInterface({
+            input: createReadStream(filePath),
+            crlfDelay: Infinity
+        });
+
+        rl.on('line', (line) => {
+            lines.push(line);
+            // Nur die letzten maxLines behalten
+            if (lines.length > maxLines) {
+                lines.shift();
+            }
+        });
+
+        rl.on('close', () => resolve(lines));
+        rl.on('error', reject);
+    });
+}
+
+// Hilfsfunktion: Log-Zeile parsen (JSON-Format von Winston)
+function parseLogLine(line) {
+    try {
+        const parsed = JSON.parse(line);
+        return {
+            timestamp: parsed.timestamp || '',
+            level: parsed.level || 'info',
+            message: parsed.message || '',
+            meta: { ...parsed, timestamp: undefined, level: undefined, message: undefined, service: undefined }
+        };
+    } catch {
+        // Fallback für nicht-JSON Zeilen
+        return {
+            timestamp: '',
+            level: 'info',
+            message: line,
+            meta: {}
+        };
+    }
+}
+
+// System-Logs anzeigen
+router.get('/logs', async (req, res) => {
+    try {
+        const logType = req.query.type || 'combined'; // combined oder error
+        const levelFilter = req.query.level || 'all'; // all, error, warn, info
+        const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
+
+        const logFile = logType === 'error' ? 'error.log' : 'combined.log';
+        const logPath = path.join(LOG_DIR, logFile);
+
+        let logs = [];
+        let error = null;
+
+        try {
+            const lines = await readLastLines(logPath, limit * 2); // Mehr lesen für Filter
+            logs = lines
+                .map(parseLogLine)
+                .filter(log => {
+                    if (levelFilter === 'all') return true;
+                    return log.level === levelFilter;
+                })
+                .slice(-limit)
+                .reverse(); // Neueste zuerst
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                error = `Log-Datei nicht gefunden: ${logFile}`;
+            } else {
+                error = `Fehler beim Lesen der Logs: ${err.message}`;
+            }
+        }
+
+        res.render('admin/logs', {
+            title: 'System-Logs',
+            logs,
+            error,
+            filters: {
+                type: logType,
+                level: levelFilter,
+                limit
+            }
+        });
+    } catch (error) {
+        logger.error('Fehler beim Laden der System-Logs', { error: error.message });
+        req.flash('error', 'Fehler beim Laden der System-Logs');
+        res.redirect('/admin');
+    }
+});
+
+// System-Logs als JSON API (für Live-Refresh)
+router.get('/logs/api', async (req, res) => {
+    try {
+        const logType = req.query.type || 'combined';
+        const levelFilter = req.query.level || 'all';
+        const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+
+        const logFile = logType === 'error' ? 'error.log' : 'combined.log';
+        const logPath = path.join(LOG_DIR, logFile);
+
+        const lines = await readLastLines(logPath, limit * 2);
+        const logs = lines
+            .map(parseLogLine)
+            .filter(log => {
+                if (levelFilter === 'all') return true;
+                return log.level === levelFilter;
+            })
+            .slice(-limit)
+            .reverse();
+
+        res.json({ success: true, logs });
+    } catch (err) {
+        res.json({ success: false, error: err.message });
+    }
+});
+
+// ============================================
+// Deployment-Historie
+// ============================================
+
+// Deployment-Historie anzeigen
+router.get('/deployments', async (req, res) => {
+    try {
+        const statusFilter = req.query.status || 'all';
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+
+        let query = `
+            SELECT
+                dl.*,
+                u.username,
+                u.system_username
+            FROM deployment_logs dl
+            JOIN users u ON dl.user_id = u.id
+        `;
+
+        const params = [];
+        if (statusFilter !== 'all') {
+            query += ' WHERE dl.status = ?';
+            params.push(statusFilter);
+        }
+
+        query += ' ORDER BY dl.deployed_at DESC LIMIT ?';
+        params.push(limit);
+
+        const [deployments] = await pool.execute(query, params);
+
+        // Statistiken berechnen
+        const [stats] = await pool.execute(`
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                AVG(duration_ms) as avg_duration
+            FROM deployment_logs
+            WHERE deployed_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        `);
+
+        res.render('admin/deployments', {
+            title: 'Deployment-Historie',
+            deployments,
+            stats: stats[0],
+            filters: {
+                status: statusFilter,
+                limit
+            }
+        });
+    } catch (error) {
+        logger.error('Fehler beim Laden der Deployment-Historie', { error: error.message });
+        req.flash('error', 'Fehler beim Laden der Deployment-Historie');
         res.redirect('/admin');
     }
 });

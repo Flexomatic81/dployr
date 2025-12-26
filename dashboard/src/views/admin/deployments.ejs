@@ -1,0 +1,239 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+        <li class="breadcrumb-item active">Deployment-Historie</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-rocket-takeoff"></i> Deployment-Historie</h1>
+</div>
+
+<!-- Statistiken (letzte 24h) -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">Deployments (24h)</h6>
+                        <h2 class="mb-0"><%= stats.total || 0 %></h2>
+                    </div>
+                    <i class="bi bi-rocket-takeoff fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">Erfolgreich</h6>
+                        <h2 class="mb-0"><%= stats.successful || 0 %></h2>
+                    </div>
+                    <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">Fehlgeschlagen</h6>
+                        <h2 class="mb-0"><%= stats.failed || 0 %></h2>
+                    </div>
+                    <i class="bi bi-x-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">Avg. Dauer</h6>
+                        <h2 class="mb-0">
+                            <% if (stats.avg_duration) { %>
+                            <%= (stats.avg_duration / 1000).toFixed(1) %>s
+                            <% } else { %>
+                            -
+                            <% } %>
+                        </h2>
+                    </div>
+                    <i class="bi bi-stopwatch fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="/admin/deployments" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>Alle</option>
+                    <option value="success" <%= filters.status === 'success' ? 'selected' : '' %>>Erfolgreich</option>
+                    <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>Fehlgeschlagen</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="limit" class="form-label">Anzahl</label>
+                <select name="limit" id="limit" class="form-select">
+                    <option value="25" <%= filters.limit === 25 ? 'selected' : '' %>>25</option>
+                    <option value="50" <%= filters.limit === 50 ? 'selected' : '' %>>50</option>
+                    <option value="100" <%= filters.limit === 100 ? 'selected' : '' %>>100</option>
+                    <option value="200" <%= filters.limit === 200 ? 'selected' : '' %>>200</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Deployment-Liste -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list-ul"></i> Deployments (<%= deployments.length %>)
+    </div>
+    <div class="card-body p-0">
+        <% if (deployments.length === 0) { %>
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-2">Keine Deployments gefunden</p>
+        </div>
+        <% } else { %>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 160px;">Zeitpunkt</th>
+                        <th>Benutzer</th>
+                        <th>Projekt</th>
+                        <th>Trigger</th>
+                        <th style="width: 100px;">Status</th>
+                        <th style="width: 100px;">Dauer</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% deployments.forEach((deploy, index) => { %>
+                    <tr>
+                        <td class="text-muted small">
+                            <%= new Date(deploy.deployed_at).toLocaleString('de-DE') %>
+                        </td>
+                        <td>
+                            <a href="/admin/users/<%= deploy.user_id %>/edit" class="text-decoration-none">
+                                <%= deploy.username %>
+                            </a>
+                            <br>
+                            <small class="text-muted"><%= deploy.system_username %></small>
+                        </td>
+                        <td>
+                            <strong><%= deploy.project_name %></strong>
+                            <% if (deploy.branch) { %>
+                            <br>
+                            <small class="text-muted">
+                                <i class="bi bi-diagram-2"></i> <%= deploy.branch %>
+                            </small>
+                            <% } %>
+                        </td>
+                        <td>
+                            <% if (deploy.trigger_type === 'auto') { %>
+                            <span class="badge bg-info">Auto</span>
+                            <% } else if (deploy.trigger_type === 'manual') { %>
+                            <span class="badge bg-secondary">Manuell</span>
+                            <% } else { %>
+                            <span class="badge bg-light text-dark"><%= deploy.trigger_type %></span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <% if (deploy.status === 'success') { %>
+                            <span class="badge bg-success">Erfolgreich</span>
+                            <% } else if (deploy.status === 'failed') { %>
+                            <span class="badge bg-danger">Fehlgeschlagen</span>
+                            <% } else { %>
+                            <span class="badge bg-warning text-dark"><%= deploy.status %></span>
+                            <% } %>
+                        </td>
+                        <td class="text-muted">
+                            <% if (deploy.duration_ms) { %>
+                            <%= (deploy.duration_ms / 1000).toFixed(1) %>s
+                            <% } else { %>
+                            -
+                            <% } %>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-secondary toggle-details" data-index="<%= index %>">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="details-row d-none" id="details-<%= index %>">
+                        <td colspan="7" class="bg-light">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <% if (deploy.commit_before) { %>
+                                    <p class="mb-1">
+                                        <strong>Vorheriger Commit:</strong><br>
+                                        <code class="small"><%= deploy.commit_before %></code>
+                                    </p>
+                                    <% } %>
+                                    <% if (deploy.commit_after) { %>
+                                    <p class="mb-1">
+                                        <strong>Neuer Commit:</strong><br>
+                                        <code class="small"><%= deploy.commit_after %></code>
+                                    </p>
+                                    <% } %>
+                                </div>
+                                <div class="col-md-6">
+                                    <% if (deploy.error_message) { %>
+                                    <p class="mb-1">
+                                        <strong>Fehlermeldung:</strong><br>
+                                        <span class="text-danger"><%= deploy.error_message %></span>
+                                    </p>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.toggle-details').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = this.dataset.index;
+            const detailsRow = document.getElementById('details-' + index);
+            const icon = this.querySelector('i');
+
+            if (detailsRow.classList.contains('d-none')) {
+                detailsRow.classList.remove('d-none');
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+            } else {
+                detailsRow.classList.add('d-none');
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+            }
+        });
+    });
+});
+</script>
