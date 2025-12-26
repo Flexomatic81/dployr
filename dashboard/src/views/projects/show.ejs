@@ -473,19 +473,19 @@
             <small class="text-muted ms-2">& Datenbank-Verbindung</small>
             <% } %>
         </h5>
+        <% if (userDatabases && userDatabases.length > 0) { %>
         <div class="btn-group btn-group-sm">
-            <% if (envExample && envExample.exists) { %>
-            <form action="/projects/<%= project.name %>/env/copy-example" method="POST" class="d-inline">
-                <button type="submit" class="btn btn-outline-secondary" title="<%= envExample.filename %> zu .env kopieren">
-                    <i class="bi bi-file-earmark-arrow-down"></i> <%= envExample.filename %>
-                </button>
-            </form>
-            <% } %>
-            <% if (userDatabases && userDatabases.length > 0) { %>
-            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Datenbank-Credentials einfügen">
-                <i class="bi bi-database-add"></i> DB einfügen
+            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                title="<%= envExample && envExample.exists ? 'Nutzt ' + envExample.filename + ' als Vorlage und ersetzt DB-Variablen' : 'Fügt DB-Credentials ein und ersetzt bekannte Variablen' %>">
+                <i class="bi bi-database-add"></i> DB einrichten
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
+                <% if (envExample && envExample.exists) { %>
+                <li class="dropdown-header">
+                    <i class="bi bi-file-earmark-code"></i> Nutzt <%= envExample.filename %> als Vorlage
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <% } %>
                 <% userDatabases.forEach(db => { %>
                 <li>
                     <form action="/projects/<%= project.name %>/env/add-db" method="POST">
@@ -498,15 +498,25 @@
                 </li>
                 <% }) %>
             </ul>
-            <% } %>
         </div>
+        <% } %>
     </div>
     <div class="card-body">
-        <% if (envExample && envExample.exists && !envContent.trim()) { %>
+        <% if (envExample && envExample.exists && !envContent.trim() && userDatabases && userDatabases.length > 0) { %>
         <div class="alert alert-info mb-3">
             <i class="bi bi-lightbulb"></i>
-            <strong>Tipp:</strong> Es wurde eine <code><%= envExample.filename %></code> Datei gefunden.
-            Klicke oben auf den Button um sie als Vorlage zu verwenden.
+            <strong>Tipp:</strong> Es wurde eine <code><%= envExample.filename %></code> gefunden.
+            Wähle oben eine Datenbank aus - die Vorlage wird automatisch verwendet und DB-Variablen werden ersetzt.
+        </div>
+        <% } else if (envExample && envExample.exists && !envContent.trim()) { %>
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-lightbulb"></i>
+            <strong>Tipp:</strong> Es wurde eine <code><%= envExample.filename %></code> gefunden.
+            <form action="/projects/<%= project.name %>/env/copy-example" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-info ms-2">
+                    <i class="bi bi-file-earmark-arrow-down"></i> Als Vorlage verwenden
+                </button>
+            </form>
         </div>
         <% } %>
         <form action="/projects/<%= project.name %>/env" method="POST">
