@@ -5,7 +5,7 @@ const { logger } = require('../config/logger');
 const isProduction = process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true';
 
 const {
-    generateToken,
+    generateCsrfToken,
     doubleCsrfProtection
 } = doubleCsrf({
     getSecret: () => process.env.SESSION_SECRET || 'change-this-secret',
@@ -28,7 +28,7 @@ const {
 // Middleware die CSRF-Token in res.locals verfügbar macht
 function csrfTokenMiddleware(req, res, next) {
     // Token generieren und in locals speichern
-    const token = generateToken(req, res);
+    const token = generateCsrfToken(req, res);
     res.locals.csrfToken = token;
 
     // Hidden Input Helper für Views
@@ -64,7 +64,7 @@ function csrfErrorHandler(err, req, res, next) {
 }
 
 module.exports = {
-    generateToken,
+    generateCsrfToken,
     doubleCsrfProtection,
     csrfTokenMiddleware,
     csrfErrorHandler
