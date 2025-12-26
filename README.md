@@ -346,6 +346,7 @@ cd users/<USER>/PROJECT && docker compose logs -f
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
 # Deploy update (git pull + rebuild + restart)
+# Can be run from anywhere - auto-navigates to project root
 ./scripts/deploy.sh
 ```
 
