@@ -89,9 +89,26 @@ app.use(methodOverride('_method'));
 
 // Session Store - wird später initialisiert wenn DB verfügbar
 let sessionStore = null;
+let setupComplete = false;
+
+async function checkSetupComplete() {
+    try {
+        const fs = require('fs').promises;
+        await fs.access('/app/infrastructure/.setup-complete');
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 function createSessionStore() {
     if (sessionStore) return sessionStore;
+
+    // Don't try to connect to DB if setup is not complete
+    if (!setupComplete) {
+        logger.info('Setup not complete - using Memory Session Store');
+        return null; // Fallback to Memory-Store
+    }
 
     try {
         const pool = getPool();
@@ -117,10 +134,10 @@ function createSessionStore() {
     }
 }
 
-// Session Setup
+// Session Setup - initially with memory store, upgraded after setup
 app.use(session({
     secret: process.env.SESSION_SECRET || 'change-this-secret',
-    store: createSessionStore(),
+    store: null, // Start with memory store, will be upgraded in start()
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -256,6 +273,15 @@ app.use(csrfErrorHandler);
 // Error Handler
 app.use((err, req, res, next) => {
     logger.error('Unhandled error', { error: err.message, stack: err.stack, url: req.originalUrl });
+
+    // Ensure isAuthenticated and user are defined for layout
+    if (typeof res.locals.isAuthenticated === 'undefined') {
+        res.locals.isAuthenticated = false;
+    }
+    if (typeof res.locals.user === 'undefined') {
+        res.locals.user = null;
+    }
+
     res.status(500).render('error', {
         title: 'Fehler',
         message: process.env.NODE_ENV === 'development' ? err.message : 'Ein Fehler ist aufgetreten.'
@@ -287,9 +313,8 @@ function startAutoDeployPolling() {
 // Server starten
 async function start() {
     try {
-        // Prüfen ob Setup abgeschlossen ist
-        const { isSetupComplete } = require('./routes/setup');
-        const setupComplete = await isSetupComplete();
+        // Prüfen ob Setup abgeschlossen ist (via file check, nicht DB)
+        setupComplete = await checkSetupComplete();
 
         if (setupComplete) {
             // Datenbank initialisieren nur wenn Setup fertig

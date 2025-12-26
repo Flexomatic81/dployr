@@ -26,8 +26,10 @@ function redirectIfAuth(req, res, next) {
 
 // Middleware: Make user data available in views
 function setUserLocals(req, res, next) {
-    res.locals.user = req.session ? req.session.user : null;
-    res.locals.isAuthenticated = !!(req.session && req.session.user);
+    // Safely access session (may be undefined during setup or on errors)
+    const session = req.session || {};
+    res.locals.user = session.user || null;
+    res.locals.isAuthenticated = !!(session.user);
     next();
 }
 
