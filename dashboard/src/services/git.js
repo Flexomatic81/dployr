@@ -1,6 +1,7 @@
-const { execSync, exec } = require('child_process');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const simpleGit = require('simple-git');
 const { generateNginxConfig } = require('./utils/nginx');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
@@ -127,109 +128,92 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
     }
 
     const authenticatedUrl = createAuthenticatedUrl(repoUrl, token);
+    const tempDir = `${projectPath}_temp_${Date.now()}`;
 
-    return new Promise((resolve, reject) => {
-        // Clone in temporäres Verzeichnis, dann zusammenführen
-        const tempDir = `${projectPath}_temp_${Date.now()}`;
+    try {
+        // Clone mit simple-git (sicher, kein Shell-Escaping nötig)
+        const git = simpleGit();
+        await git.clone(authenticatedUrl, tempDir, { '--timeout': '120' });
 
-        exec(`git clone "${authenticatedUrl}" "${tempDir}"`, {
-            timeout: 120000 // 2 Minuten Timeout
-        }, async (error, stdout, stderr) => {
-            if (error) {
-                // Temporäres Verzeichnis aufräumen bei Fehler
-                try {
-                    fs.rmSync(tempDir, { recursive: true, force: true });
-                } catch {}
+        // Wichtige Dateien sichern (docker-compose.yml, nginx, .env)
+        const backups = {};
+        const filesToPreserve = ['docker-compose.yml', 'nginx', '.env'];
 
-                // Token aus Fehlermeldung entfernen
-                const cleanError = stderr.replace(/https:\/\/[^@]+@/g, 'https://***@');
-                reject(new Error(`Git clone fehlgeschlagen: ${cleanError}`));
-                return;
+        for (const file of filesToPreserve) {
+            const filePath = path.join(projectPath, file);
+            if (fs.existsSync(filePath)) {
+                const tempBackupPath = path.join(tempDir, `_backup_${file}`);
+                if (fs.statSync(filePath).isDirectory()) {
+                    fs.cpSync(filePath, tempBackupPath, { recursive: true });
+                    backups[file] = { isDir: true, backupPath: tempBackupPath };
+                } else {
+                    fs.copyFileSync(filePath, tempBackupPath);
+                    backups[file] = { isDir: false, backupPath: tempBackupPath };
+                }
             }
+        }
 
-            try {
-                // Wichtige Dateien sichern (docker-compose.yml, nginx, .env)
-                const backups = {};
-                const filesToPreserve = ['docker-compose.yml', 'nginx', '.env'];
+        // Altes Verzeichnis komplett leeren
+        const oldFiles = fs.readdirSync(projectPath);
+        for (const file of oldFiles) {
+            const filePath = path.join(projectPath, file);
+            fs.rmSync(filePath, { recursive: true, force: true });
+        }
 
-                for (const file of filesToPreserve) {
-                    const filePath = path.join(projectPath, file);
-                    if (fs.existsSync(filePath)) {
-                        const tempBackupPath = path.join(tempDir, `_backup_${file}`);
-                        if (fs.statSync(filePath).isDirectory()) {
-                            // Verzeichnis rekursiv kopieren
-                            fs.cpSync(filePath, tempBackupPath, { recursive: true });
-                            backups[file] = { isDir: true, backupPath: tempBackupPath };
-                        } else {
-                            fs.copyFileSync(filePath, tempBackupPath);
-                            backups[file] = { isDir: false, backupPath: tempBackupPath };
-                        }
-                    }
-                }
+        // Dateien aus temp verschieben (außer Backups)
+        const newFiles = fs.readdirSync(tempDir);
+        for (const file of newFiles) {
+            if (file.startsWith('_backup_')) continue;
 
-                // Altes Verzeichnis komplett leeren
-                const oldFiles = fs.readdirSync(projectPath);
-                for (const file of oldFiles) {
-                    const filePath = path.join(projectPath, file);
-                    fs.rmSync(filePath, { recursive: true, force: true });
-                }
+            const src = path.join(tempDir, file);
+            const dest = path.join(projectPath, file);
+            fs.renameSync(src, dest);
+        }
 
-                // Dateien aus temp verschieben (außer Backups)
-                const newFiles = fs.readdirSync(tempDir);
-                for (const file of newFiles) {
-                    // Backup-Dateien überspringen
-                    if (file.startsWith('_backup_')) continue;
-
-                    const src = path.join(tempDir, file);
-                    const dest = path.join(projectPath, file);
-                    fs.renameSync(src, dest);
-                }
-
-                // Gesicherte Dateien wiederherstellen (überschreiben Repository-Dateien)
-                for (const [file, backup] of Object.entries(backups)) {
-                    const filePath = path.join(projectPath, file);
-                    // Erst eventuelle Datei aus Repo löschen
-                    if (fs.existsSync(filePath)) {
-                        fs.rmSync(filePath, { recursive: true, force: true });
-                    }
-                    // Backup wiederherstellen
-                    if (backup.isDir) {
-                        fs.cpSync(backup.backupPath, filePath, { recursive: true });
-                    } else {
-                        fs.copyFileSync(backup.backupPath, filePath);
-                    }
-                }
-
-                // Temp-Verzeichnis löschen (inkl. Backups)
-                fs.rmSync(tempDir, { recursive: true, force: true });
-
-                // Token in .git-credentials speichern für spätere Pulls
-                if (token) {
-                    saveCredentials(projectPath, repoUrl, token);
-                }
-
-                // Docker-Compose anpassen falls nötig
-                adjustDockerCompose(projectPath);
-
-                resolve({
-                    success: true,
-                    message: 'Repository erfolgreich geklont'
-                });
-            } catch (err) {
-                // Aufräumen bei Fehler
-                try {
-                    fs.rmSync(tempDir, { recursive: true, force: true });
-                } catch {}
-                reject(new Error(`Fehler beim Verschieben der Dateien: ${err.message}`));
+        // Gesicherte Dateien wiederherstellen
+        for (const [file, backup] of Object.entries(backups)) {
+            const filePath = path.join(projectPath, file);
+            if (fs.existsSync(filePath)) {
+                fs.rmSync(filePath, { recursive: true, force: true });
             }
-        });
-    });
+            if (backup.isDir) {
+                fs.cpSync(backup.backupPath, filePath, { recursive: true });
+            } else {
+                fs.copyFileSync(backup.backupPath, filePath);
+            }
+        }
+
+        // Temp-Verzeichnis löschen
+        fs.rmSync(tempDir, { recursive: true, force: true });
+
+        // Token in .git-credentials speichern für spätere Pulls
+        if (token) {
+            await saveCredentials(projectPath, repoUrl, token);
+        }
+
+        // Docker-Compose anpassen falls nötig
+        adjustDockerCompose(projectPath);
+
+        return {
+            success: true,
+            message: 'Repository erfolgreich geklont'
+        };
+    } catch (err) {
+        // Aufräumen bei Fehler
+        try {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        } catch {}
+
+        // Token aus Fehlermeldung entfernen
+        const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
+        throw new Error(`Git clone fehlgeschlagen: ${cleanError}`);
+    }
 }
 
 /**
  * Speichert Credentials für ein Repository
  */
-function saveCredentials(projectPath, repoUrl, token) {
+async function saveCredentials(projectPath, repoUrl, token) {
     const gitPath = getGitPath(projectPath);
     const credentialsPath = path.join(gitPath, '.git-credentials');
     const url = new URL(repoUrl);
@@ -237,10 +221,9 @@ function saveCredentials(projectPath, repoUrl, token) {
 
     fs.writeFileSync(credentialsPath, credentialLine + '\n', { mode: 0o600 });
 
-    // Git konfigurieren, diese Credentials zu nutzen
-    execSync(`git config credential.helper "store --file=.git-credentials"`, {
-        cwd: gitPath
-    });
+    // Git konfigurieren mit simple-git
+    const git = simpleGit(gitPath);
+    await git.addConfig('credential.helper', 'store --file=.git-credentials');
 }
 
 /**
@@ -311,28 +294,24 @@ async function pullChanges(projectPath) {
 
     const gitPath = getGitPath(projectPath);
 
-    return new Promise((resolve, reject) => {
-        exec('git pull', {
-            cwd: gitPath,
-            timeout: 60000 // 1 Minute Timeout
-        }, (error, stdout, stderr) => {
-            if (error) {
-                const cleanError = stderr.replace(/https:\/\/[^@]+@/g, 'https://***@');
-                reject(new Error(`Git pull fehlgeschlagen: ${cleanError}`));
-                return;
-            }
+    try {
+        const git = simpleGit(gitPath);
+        const result = await git.pull();
 
-            // Prüfen ob Änderungen gepullt wurden
-            const hasChanges = !stdout.includes('Already up to date') &&
-                               !stdout.includes('Bereits aktuell');
+        // Prüfen ob Änderungen gepullt wurden
+        const hasChanges = result.files.length > 0 ||
+                          result.insertions > 0 ||
+                          result.deletions > 0;
 
-            resolve({
-                success: true,
-                hasChanges,
-                output: stdout.trim()
-            });
-        });
-    });
+        return {
+            success: true,
+            hasChanges,
+            output: result.summary ? JSON.stringify(result.summary) : 'Pull completed'
+        };
+    } catch (err) {
+        const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
+        throw new Error(`Git pull fehlgeschlagen: ${cleanError}`);
+    }
 }
 
 /**
@@ -648,69 +627,57 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
 
     const authenticatedUrl = createAuthenticatedUrl(repoUrl, token);
 
-    return new Promise((resolve, reject) => {
-        // In html/ Unterordner klonen
-        exec(`git clone "${authenticatedUrl}" "${htmlPath}"`, {
-            timeout: 120000
-        }, (error, stdout, stderr) => {
-            if (error) {
-                // Aufräumen bei Fehler
-                try {
-                    fs.rmSync(projectPath, { recursive: true, force: true });
-                } catch {}
+    try {
+        // Clone mit simple-git (sicher)
+        const git = simpleGit();
+        await git.clone(authenticatedUrl, htmlPath, { '--timeout': '120' });
 
-                const cleanError = stderr.replace(/https:\/\/[^@]+@/g, 'https://***@');
-                reject(new Error(`Git clone fehlgeschlagen: ${cleanError}`));
-                return;
-            }
+        // Projekttyp erkennen (aus html/ Ordner)
+        const projectType = detectProjectType(htmlPath);
+        console.log(`Erkannter Projekttyp: ${projectType}`);
 
-            try {
-                // Projekttyp erkennen (aus html/ Ordner)
-                const projectType = detectProjectType(htmlPath);
-                console.log(`Erkannter Projekttyp: ${projectType}`);
+        // docker-compose.yml generieren (im Projektroot)
+        const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
+        fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
 
-                // docker-compose.yml generieren (im Projektroot)
-                const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
-                fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
+        // .env generieren (im Projektroot - nur Docker-Variablen)
+        const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
+        fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
-                // .env generieren (im Projektroot - nur Docker-Variablen)
-                const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
-                fs.writeFileSync(path.join(projectPath, '.env'), envContent);
+        // nginx-Config für statische Websites
+        if (projectType === 'static') {
+            const nginxDir = path.join(projectPath, 'nginx');
+            fs.mkdirSync(nginxDir, { recursive: true });
+            fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
+        }
 
-                // nginx-Config für statische Websites
-                if (projectType === 'static') {
-                    const nginxDir = path.join(projectPath, 'nginx');
-                    fs.mkdirSync(nginxDir, { recursive: true });
-                    fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
-                }
+        // Credentials speichern falls Token vorhanden (im html/ Ordner)
+        if (token) {
+            const credentialsPath = path.join(htmlPath, '.git-credentials');
+            const url = new URL(repoUrl);
+            const credentialLine = `https://${token}@${url.host}${url.pathname}`;
+            fs.writeFileSync(credentialsPath, credentialLine + '\n', { mode: 0o600 });
 
-                // Credentials speichern falls Token vorhanden (im html/ Ordner)
-                if (token) {
-                    const credentialsPath = path.join(htmlPath, '.git-credentials');
-                    const url = new URL(repoUrl);
-                    const credentialLine = `https://${token}@${url.host}${url.pathname}`;
-                    fs.writeFileSync(credentialsPath, credentialLine + '\n', { mode: 0o600 });
+            // Git config mit simple-git
+            const htmlGit = simpleGit(htmlPath);
+            await htmlGit.addConfig('credential.helper', 'store --file=.git-credentials');
+        }
 
-                    execSync(`git config credential.helper "store --file=.git-credentials"`, {
-                        cwd: htmlPath
-                    });
-                }
+        return {
+            success: true,
+            projectType,
+            path: projectPath,
+            port
+        };
+    } catch (err) {
+        // Aufräumen bei Fehler
+        try {
+            fs.rmSync(projectPath, { recursive: true, force: true });
+        } catch {}
 
-                resolve({
-                    success: true,
-                    projectType,
-                    path: projectPath,
-                    port
-                });
-            } catch (err) {
-                // Aufräumen bei Fehler
-                try {
-                    fs.rmSync(projectPath, { recursive: true, force: true });
-                } catch {}
-                reject(new Error(`Fehler beim Erstellen des Projekts: ${err.message}`));
-            }
-        });
-    });
+        const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
+        throw new Error(`Git clone fehlgeschlagen: ${cleanError}`);
+    }
 }
 
 module.exports = {

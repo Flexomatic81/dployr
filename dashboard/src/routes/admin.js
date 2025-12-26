@@ -11,18 +11,19 @@ router.use(requireAdmin);
 // Admin Dashboard - Übersicht
 router.get('/', async (req, res) => {
     try {
-        const userCount = await userService.getUserCount();
-        const adminCount = await userService.getAdminCount();
-        const pendingCount = await userService.getPendingCount();
+        // Alle Counts parallel abrufen
+        const [userCount, adminCount, pendingCount, users] = await Promise.all([
+            userService.getUserCount(),
+            userService.getAdminCount(),
+            userService.getPendingCount(),
+            userService.getAllUsers()
+        ]);
 
-        // Alle Projekte aller User zählen
-        const users = await userService.getAllUsers();
-        let totalProjects = 0;
-
-        for (const user of users) {
-            const projects = await projectService.getUserProjects(user.system_username);
-            totalProjects += projects.length;
-        }
+        // Alle Projekt-Counts parallel abrufen
+        const projectCounts = await Promise.all(
+            users.map(user => projectService.getUserProjects(user.system_username))
+        );
+        const totalProjects = projectCounts.reduce((sum, projects) => sum + projects.length, 0);
 
         res.render('admin/index', {
             title: 'Admin-Bereich',
@@ -93,11 +94,14 @@ router.get('/users', async (req, res) => {
     try {
         const users = await userService.getAllUsers();
 
-        // Projekte pro User zählen
-        for (const user of users) {
-            const projects = await projectService.getUserProjects(user.system_username);
-            user.projectCount = projects.length;
-        }
+        // Projekte pro User parallel zählen
+        const projectCounts = await Promise.all(
+            users.map(user => projectService.getUserProjects(user.system_username))
+        );
+
+        users.forEach((user, index) => {
+            user.projectCount = projectCounts[index].length;
+        });
 
         res.render('admin/users', {
             title: 'User-Verwaltung',
@@ -243,18 +247,20 @@ router.delete('/users/:id', async (req, res) => {
 router.get('/projects', async (req, res) => {
     try {
         const users = await userService.getAllUsers();
-        const allProjects = [];
 
-        for (const user of users) {
-            const projects = await projectService.getUserProjects(user.system_username);
-            for (const project of projects) {
-                allProjects.push({
-                    ...project,
-                    ownerUsername: user.username,
-                    ownerSystemUsername: user.system_username
-                });
-            }
-        }
+        // Alle Projekte parallel abrufen
+        const projectsPerUser = await Promise.all(
+            users.map(user => projectService.getUserProjects(user.system_username))
+        );
+
+        // Projekte mit Owner-Infos zusammenführen
+        const allProjects = users.flatMap((user, index) =>
+            projectsPerUser[index].map(project => ({
+                ...project,
+                ownerUsername: user.username,
+                ownerSystemUsername: user.system_username
+            }))
+        );
 
         res.render('admin/projects', {
             title: 'Alle Projekte',

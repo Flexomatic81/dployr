@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userService = require('../services/user');
 const { redirectIfAuth, requireAuth } = require('../middleware/auth');
+const { validate } = require('../middleware/validation');
 
 // Login-Seite anzeigen
 router.get('/login', redirectIfAuth, (req, res) => {
@@ -9,8 +10,8 @@ router.get('/login', redirectIfAuth, (req, res) => {
 });
 
 // Login verarbeiten
-router.post('/login', redirectIfAuth, async (req, res) => {
-    const { username, password } = req.body;
+router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
+    const { username, password } = req.validatedBody || req.body;
 
     try {
         const user = await userService.getUserByUsername(username);
@@ -56,31 +57,10 @@ router.get('/register', redirectIfAuth, (req, res) => {
 });
 
 // Registrierung verarbeiten
-router.post('/register', redirectIfAuth, async (req, res) => {
-    const { username, password, password_confirm } = req.body;
+router.post('/register', redirectIfAuth, validate('register'), async (req, res) => {
+    const { username, password } = req.validatedBody || req.body;
     // System-Username ist identisch mit dem Benutzernamen
     const system_username = username;
-
-    // Validierung
-    if (!username || !password) {
-        req.flash('error', 'Alle Felder müssen ausgefüllt werden');
-        return res.redirect('/register');
-    }
-
-    if (password !== password_confirm) {
-        req.flash('error', 'Passwörter stimmen nicht überein');
-        return res.redirect('/register');
-    }
-
-    if (password.length < 6) {
-        req.flash('error', 'Passwort muss mindestens 6 Zeichen lang sein');
-        return res.redirect('/register');
-    }
-
-    if (!/^[a-z0-9_-]+$/.test(username)) {
-        req.flash('error', 'Benutzername darf nur Kleinbuchstaben, Zahlen, - und _ enthalten');
-        return res.redirect('/register');
-    }
 
     try {
         // Prüfen ob Username bereits existiert

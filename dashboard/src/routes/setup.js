@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
-const path = require('path');
-const { exec } = require('child_process');
 const bcrypt = require('bcrypt');
+const Docker = require('dockerode');
 
-const BASE_PATH = '/app';
-const INFRASTRUCTURE_PATH = '/app/infrastructure';
+const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+
 const SETUP_MARKER_PATH = '/app/infrastructure/.setup-complete';
 
 // Prüfen ob Setup bereits abgeschlossen
@@ -88,17 +87,22 @@ router.post('/run', async (req, res) => {
 
 // Hilfsfunktionen
 async function checkDocker() {
-    return new Promise((resolve) => {
-        exec('docker info', (error) => resolve(!error));
-    });
+    try {
+        await docker.ping();
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 async function isInfrastructureRunning() {
-    return new Promise((resolve) => {
-        exec('docker ps --filter "name=dployr-mariadb" -q', (error, stdout) => {
-            resolve(stdout.trim().length > 0);
-        });
-    });
+    try {
+        const container = docker.getContainer('dployr-mariadb');
+        const info = await container.inspect();
+        return info.State.Running;
+    } catch {
+        return false;
+    }
 }
 
 async function markSetupComplete(serverIp, defaultUser) {
@@ -112,22 +116,44 @@ async function markSetupComplete(serverIp, defaultUser) {
 }
 
 async function createDockerNetwork() {
-    return new Promise((resolve) => {
-        exec('docker network create dployr-network 2>/dev/null || true', (error, stdout, stderr) => {
-            resolve();
-        });
-    });
+    try {
+        const networks = await docker.listNetworks({ filters: { name: ['dployr-network'] } });
+        if (networks.length === 0) {
+            await docker.createNetwork({ Name: 'dployr-network' });
+        }
+    } catch {
+        // Network may already exist, ignore error
+    }
 }
 
 async function waitForMariaDB(mysqlRootPassword, maxAttempts = 30) {
-    for (let i = 0; i < maxAttempts; i++) {
-        const isReady = await new Promise((resolve) => {
-            // MariaDB 11 verwendet 'mariadb' statt 'mysql' als Client
-            exec(`docker exec dployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "SELECT 1" 2>/dev/null`,
-                (error) => resolve(!error));
-        });
+    const container = docker.getContainer('dployr-mariadb');
 
-        if (isReady) return;
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            const exec = await container.exec({
+                Cmd: ['mariadb', '-uroot', `-p${mysqlRootPassword}`, '-e', 'SELECT 1'],
+                AttachStdout: true,
+                AttachStderr: true
+            });
+
+            const stream = await exec.start({ hijack: true, stdin: false });
+
+            // Wait for command to complete
+            await new Promise((resolve, reject) => {
+                stream.on('end', resolve);
+                stream.on('error', reject);
+                // Consume data to allow stream to end
+                stream.on('data', () => {});
+            });
+
+            const inspection = await exec.inspect();
+            if (inspection.ExitCode === 0) {
+                return;
+            }
+        } catch {
+            // Connection failed, wait and retry
+        }
         await new Promise(r => setTimeout(r, 2000));
     }
     throw new Error('MariaDB nicht erreichbar nach 60 Sekunden');
@@ -135,24 +161,37 @@ async function waitForMariaDB(mysqlRootPassword, maxAttempts = 30) {
 
 async function createDashboardDatabase(mysqlRootPassword) {
     const dbPassword = process.env.DB_PASSWORD;
+    const container = docker.getContainer('dployr-mariadb');
 
-    return new Promise((resolve, reject) => {
-        const sql = `
-            CREATE DATABASE IF NOT EXISTS dashboard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-            CREATE USER IF NOT EXISTS 'dashboard_user'@'%' IDENTIFIED BY '${dbPassword}';
-            GRANT ALL PRIVILEGES ON dashboard.* TO 'dashboard_user'@'%';
-            FLUSH PRIVILEGES;
-        `;
+    const sql = `
+        CREATE DATABASE IF NOT EXISTS dashboard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        CREATE USER IF NOT EXISTS 'dashboard_user'@'%' IDENTIFIED BY '${dbPassword}';
+        GRANT ALL PRIVILEGES ON dashboard.* TO 'dashboard_user'@'%';
+        FLUSH PRIVILEGES;
+    `;
 
-        exec(`docker exec -i dployr-mariadb mariadb -uroot -p"${mysqlRootPassword}" -e "${sql}"`,
-            (error, stdout, stderr) => {
-                if (error) {
-                    reject(new Error(stderr || error.message));
-                } else {
-                    resolve();
-                }
-            });
+    const exec = await container.exec({
+        Cmd: ['mariadb', '-uroot', `-p${mysqlRootPassword}`, '-e', sql],
+        AttachStdout: true,
+        AttachStderr: true
     });
+
+    const stream = await exec.start({ hijack: true, stdin: false });
+
+    // Collect stderr for error messages
+    let stderr = '';
+    await new Promise((resolve, reject) => {
+        stream.on('data', (chunk) => {
+            stderr += chunk.toString();
+        });
+        stream.on('end', resolve);
+        stream.on('error', reject);
+    });
+
+    const inspection = await exec.inspect();
+    if (inspection.ExitCode !== 0) {
+        throw new Error(stderr || 'Datenbankfehler');
+    }
 }
 
 async function createAdminUser(username, password, systemUsername) {

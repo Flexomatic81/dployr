@@ -2,14 +2,18 @@ require('dotenv').config();
 
 const express = require('express');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const flash = require('express-flash');
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-const { initDatabase } = require('./config/database');
+const { initDatabase, getPool } = require('./config/database');
 const { setUserLocals } = require('./middleware/auth');
 const autoDeployService = require('./services/autodeploy');
+const { logger, requestLogger } = require('./config/logger');
 
 // Routes importieren
 const authRoutes = require('./routes/auth');
@@ -24,6 +28,42 @@ const helpRoutes = require('./routes/help');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security: Helmet für HTTP Security Headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"]
+        }
+    }
+}));
+
+// Security: Rate-Limiting für Auth-Routes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 Minuten
+    max: 10, // 10 Versuche pro Fenster
+    message: 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Security: Allgemeines Rate-Limiting
+const generalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 Minute
+    max: 100, // 100 Requests pro Minute
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use(generalLimiter);
+
+// Request Logging
+app.use(requestLogger);
+
 // View Engine Setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -36,9 +76,40 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 
+// Session Store - wird später initialisiert wenn DB verfügbar
+let sessionStore = null;
+
+function createSessionStore() {
+    if (sessionStore) return sessionStore;
+
+    try {
+        const pool = getPool();
+        sessionStore = new MySQLStore({
+            clearExpired: true,
+            checkExpirationInterval: 900000, // 15 Minuten
+            expiration: 86400000, // 24 Stunden
+            createDatabaseTable: false, // Tabelle wird in initDatabase erstellt
+            schema: {
+                tableName: 'sessions',
+                columnNames: {
+                    session_id: 'session_id',
+                    expires: 'expires',
+                    data: 'data'
+                }
+            }
+        }, pool);
+        logger.info('MySQL Session-Store initialisiert');
+        return sessionStore;
+    } catch (error) {
+        logger.warn('Session-Store fallback auf Memory-Store', { error: error.message });
+        return null; // Fallback auf Memory-Store
+    }
+}
+
 // Session Setup
 app.use(session({
     secret: process.env.SESSION_SECRET || 'change-this-secret',
+    store: createSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -125,6 +196,9 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
+// Auth-Routes mit speziellem Rate-Limiter
+app.use('/login', authLimiter);
+app.use('/register', authLimiter);
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/projects', projectRoutes);
@@ -163,7 +237,7 @@ app.use((req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    logger.error('Unhandled error', { error: err.message, stack: err.stack, url: req.originalUrl });
     res.status(500).render('error', {
         title: 'Fehler',
         message: process.env.NODE_ENV === 'development' ? err.message : 'Ein Fehler ist aufgetreten.'
@@ -179,7 +253,7 @@ function startAutoDeployPolling() {
         clearInterval(autoDeployInterval);
     }
 
-    console.log('[AutoDeploy] Polling-Service gestartet (Intervall: 5 Minuten)');
+    logger.info('AutoDeploy Polling-Service gestartet', { interval: '5 Minuten' });
 
     // Erster Zyklus nach 30 Sekunden (um Server-Start abzuwarten)
     setTimeout(() => {
@@ -202,26 +276,25 @@ async function start() {
         if (setupComplete) {
             // Datenbank initialisieren nur wenn Setup fertig
             await initDatabase();
-            console.log('Setup bereits abgeschlossen - Normalmodus');
+            logger.info('Setup bereits abgeschlossen - Normalmodus');
 
             // Auto-Deploy Polling starten
             startAutoDeployPolling();
         } else {
-            console.log('Setup noch nicht abgeschlossen - Setup-Wizard aktiv');
+            logger.info('Setup noch nicht abgeschlossen - Setup-Wizard aktiv');
         }
 
         app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Dashboard läuft auf http://0.0.0.0:${PORT}`);
+            logger.info('Dashboard gestartet', { port: PORT, url: `http://0.0.0.0:${PORT}` });
             if (!setupComplete) {
-                console.log('Öffne im Browser: http://<SERVER-IP>:3000/setup');
+                logger.info('Setup-Wizard verfügbar unter http://<SERVER-IP>:3000/setup');
             }
         });
     } catch (error) {
         // Bei DB-Fehler trotzdem starten (für Setup-Wizard)
-        console.log('Starte im Setup-Modus (DB nicht verfügbar)');
+        logger.warn('Starte im Setup-Modus (DB nicht verfügbar)', { error: error.message });
         app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Dashboard läuft auf http://0.0.0.0:${PORT}`);
-            console.log('Öffne im Browser: http://<SERVER-IP>:3000/setup');
+            logger.info('Dashboard gestartet im Setup-Modus', { port: PORT });
         });
     }
 }
