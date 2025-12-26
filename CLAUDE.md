@@ -2,6 +2,38 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Style
+
+**Language Requirements:**
+- All code comments MUST be in English
+- All log messages (logger.info, logger.error, etc.) MUST be in English
+- All variable and function names MUST be in English
+- All JSDoc comments MUST be in English
+- HTML/EJS comments (`<!-- -->`, `<%# %>`) MUST be in English
+
+**Exception - UI Text:**
+- User-facing UI text (labels, buttons, error messages, flash messages) remains in **German**
+- This includes: form labels, button text, validation messages, flash notifications, page titles
+
+**Examples:**
+```javascript
+// Good: English comment
+// Check if user has permission
+
+// Bad: German comment
+// Prüfe ob Benutzer Berechtigung hat
+
+// Good: English log message
+logger.info('Project created successfully', { name: projectName });
+
+// Bad: German log message
+logger.info('Projekt erfolgreich erstellt', { name: projectName });
+
+// Good: German UI text (user-facing)
+req.flash('success', 'Projekt erfolgreich erstellt');
+res.render('page', { title: 'Projekte' });
+```
+
 ## Project Overview
 
 Dployr is a Docker-based multi-user hosting platform that allows users to deploy isolated web projects (Static, PHP, Node.js) with automatic database provisioning (MariaDB/PostgreSQL) through a web dashboard.
