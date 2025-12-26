@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Script zur Überprüfung welche Dienste die wichtigen Ports belegen
+# Script to check which services are using important ports
 
 echo "════════════════════════════════════════════"
-echo "Port-Übersicht für Webserver"
+echo "Port Overview for Webserver"
 echo "════════════════════════════════════════════"
 echo ""
 
@@ -18,75 +18,75 @@ check_port() {
         netstat -tulpn 2>/dev/null | grep -E ":$port " | head -5
         echo ""
 
-        # Prozess-Details
+        # Process details
         local pid=$(netstat -tulpn 2>/dev/null | grep -E ":$port " | awk '{print $7}' | cut -d'/' -f1 | head -1)
         if [ -n "$pid" ] && [ "$pid" != "-" ]; then
-            echo "Prozess-Info:"
+            echo "Process info:"
             ps aux | grep -E "^[^ ]+ +$pid " | grep -v grep || true
         fi
     else
-        echo "✓ Port ist frei"
+        echo "✓ Port is free"
     fi
     echo ""
 }
 
-# Web-Ports
+# Web ports
 check_port 80 "HTTP"
 check_port 443 "HTTPS"
 check_port 8080 "phpMyAdmin / Alternative HTTP"
 check_port 3306 "MySQL/MariaDB"
 
-# Beispiel User-Ports
-echo "User-Projekt Ports (8001-8010):"
+# Example user ports
+echo "User project ports (8001-8010):"
 echo "─────────────────────────────────"
 for port in {8001..8010}; do
     if netstat -tulpn 2>/dev/null | grep -E ":$port " > /dev/null; then
-        echo "Port $port: BELEGT"
+        echo "Port $port: IN USE"
         netstat -tulpn 2>/dev/null | grep -E ":$port " | awk '{print "  " $7}'
     fi
 done
 echo ""
 
-# Docker Container
-echo "Docker Container im dployr-network:"
+# Docker containers
+echo "Docker containers in dployr-network:"
 echo "─────────────────────────────────"
 if command -v docker &> /dev/null; then
     if docker network ls 2>/dev/null | grep -q dployr-network; then
-        docker ps --filter "network=dployr-network" --format "{{.Names}}\t{{.Ports}}" 2>/dev/null || echo "Keine Container im dployr-network"
+        docker ps --filter "network=dployr-network" --format "{{.Names}}\t{{.Ports}}" 2>/dev/null || echo "No containers in dployr-network"
     else
-        echo "dployr-network existiert noch nicht"
+        echo "dployr-network does not exist yet"
     fi
 else
-    echo "Docker nicht installiert"
+    echo "Docker not installed"
 fi
 echo ""
 
-# Nginx Check
+# Nginx check
 echo "Nginx Status:"
 echo "─────────────────────────────────"
 if command -v nginx &> /dev/null; then
-    echo "⚠ Nginx ist auf dem Host installiert!"
+    echo "⚠ Nginx is installed on the host!"
     nginx -v 2>&1
-    systemctl is-active nginx 2>/dev/null || service nginx status 2>/dev/null | head -3 || echo "Status unbekannt"
+    systemctl is-active nginx 2>/dev/null || service nginx status 2>/dev/null | head -3 || echo "Status unknown"
     echo ""
-    echo "Empfehlung: Nginx Host-Installation entfernen mit:"
+    echo "Recommendation: Remove host Nginx installation with:"
     echo "  ./scripts/remove-nginx.sh"
 else
-    echo "✓ Keine Host-Nginx Installation (gut!)"
+    echo "✓ No host Nginx installation (good!)"
 fi
 echo ""
 
 echo "════════════════════════════════════════════"
-echo "Zusammenfassung:"
+echo "Summary:"
 echo "════════════════════════════════════════════"
 echo ""
-echo "Für dieses Docker-Setup benötigt:"
-echo "  - Frei: Port 80, 443 (für NPM, falls auf diesem Host)"
-echo "  - Frei: Port 8080 (für phpMyAdmin)"
-echo "  - Frei: Port 3306 (für MariaDB, nur localhost)"
-echo "  - Frei: Port 8001+ (für User-Projekte)"
+echo "Required for this Docker setup:"
+echo "  - Free: Port 80, 443 (for NPM, if on this host)"
+echo "  - Free: Port 8080 (for phpMyAdmin)"
+echo "  - Free: Port 3306 (for MariaDB, localhost only)"
+echo "  - Free: Port 8001+ (for user projects)"
 echo ""
-echo "Nginx auf dem Host: NICHT benötigt!"
-echo "Jeder Docker-Container bringt seinen eigenen Webserver mit."
+echo "Nginx on host: NOT required!"
+echo "Each Docker container brings its own web server."
 echo ""
 echo "════════════════════════════════════════════"

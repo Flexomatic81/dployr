@@ -1,43 +1,43 @@
 #!/bin/bash
 
-# Script zum Löschen eines einzelnen Projekts
-# Verwendung: ./delete-project.sh <username> <projektname>
+# Script to delete a single project
+# Usage: ./delete-project.sh <username> <projectname>
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Gemeinsame Funktionen laden
+# Load common functions
 source "$SCRIPT_DIR/common.sh"
 
-# Docker prüfen
+# Check Docker
 check_docker
 
-# Zentrale Konfiguration laden
+# Load central configuration
 load_config "$SCRIPT_DIR"
 
 USERNAME=$1
 PROJECT_NAME=$2
 
-# Validierung
+# Validation
 if [ -z "$USERNAME" ] || [ -z "$PROJECT_NAME" ]; then
-    echo "Verwendung: $0 <username> <projektname>"
+    echo "Usage: $0 <username> <projectname>"
     echo ""
-    echo "Beispiel: $0 mehmed mein-projekt"
+    echo "Example: $0 mehmed my-project"
     exit 1
 fi
 
 PROJECT_DIR="$BASE_DIR/users/$USERNAME/$PROJECT_NAME"
 
-# Prüfen ob Projekt existiert
+# Check if project exists
 if [ ! -d "$PROJECT_DIR" ]; then
-    echo -e "${RED}✗ Projekt '$PROJECT_NAME' existiert nicht!${NC}"
-    echo "Pfad: $PROJECT_DIR"
+    echo -e "${RED}✗ Project '$PROJECT_NAME' does not exist!${NC}"
+    echo "Path: $PROJECT_DIR"
     exit 1
 fi
 
-# Projekt-Datenbank aus .env lesen
+# Read project database from .env
 PROJECT_DB=""
 PROJECT_DB_USER=""
 if [ -f "$PROJECT_DIR/.env" ]; then
@@ -45,7 +45,7 @@ if [ -f "$PROJECT_DIR/.env" ]; then
     PROJECT_DB_USER=$(grep "^DB_USERNAME=" "$PROJECT_DIR/.env" 2>/dev/null | cut -d'=' -f2 || true)
 fi
 
-# Container-Status prüfen
+# Check container status
 CONTAINER_RUNNING=false
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "${USERNAME}-${PROJECT_NAME}"; then
     CONTAINER_RUNNING=true
@@ -53,54 +53,54 @@ fi
 
 echo ""
 echo "════════════════════════════════════════════"
-echo -e "${YELLOW}⚠ Projekt löschen${NC}"
+echo -e "${YELLOW}⚠ Delete project${NC}"
 echo "════════════════════════════════════════════"
 echo ""
 echo "User:       $USERNAME"
-echo "Projekt:    $PROJECT_NAME"
-echo "Verzeichnis: $PROJECT_DIR"
+echo "Project:    $PROJECT_NAME"
+echo "Directory:  $PROJECT_DIR"
 if [ "$CONTAINER_RUNNING" = true ]; then
-    echo -e "Status:     ${GREEN}läuft${NC}"
+    echo -e "Status:     ${GREEN}running${NC}"
 else
-    echo "Status:     gestoppt"
+    echo "Status:     stopped"
 fi
 if [ -n "$PROJECT_DB" ]; then
-    echo "Datenbank:  $PROJECT_DB"
+    echo "Database:   $PROJECT_DB"
 fi
 echo ""
-echo -e "${YELLOW}Diese Aktion kann NICHT rückgängig gemacht werden!${NC}"
+echo -e "${YELLOW}This action CANNOT be undone!${NC}"
 echo ""
-read -p "Projekt '$PROJECT_NAME' wirklich löschen? (j/N): " CONFIRM
+read -p "Really delete project '$PROJECT_NAME'? (y/N): " CONFIRM
 
-if [ "$CONFIRM" != "j" ] && [ "$CONFIRM" != "J" ]; then
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     echo ""
-    echo "Abgebrochen."
+    echo "Cancelled."
     exit 0
 fi
 
 echo ""
-echo "Lösche Projekt '$PROJECT_NAME'..."
+echo "Deleting project '$PROJECT_NAME'..."
 echo ""
 
-# 1. Container stoppen
-echo "[1/3] Stoppe Container..."
+# 1. Stop container
+echo "[1/3] Stopping container..."
 if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
     cd "$PROJECT_DIR"
     docker compose down --volumes --remove-orphans 2>/dev/null || docker-compose down --volumes --remove-orphans 2>/dev/null || true
     cd "$BASE_DIR"
-    echo -e "  ${GREEN}✓${NC} Container gestoppt"
+    echo -e "  ${GREEN}✓${NC} Container stopped"
 else
-    echo "  Keine docker-compose.yml gefunden"
+    echo "  No docker-compose.yml found"
 fi
 
-# 2. Datenbank löschen (optional)
+# 2. Delete database (optional)
 MARIADB_CONTAINER="dployr-mariadb"
 if [ -n "$PROJECT_DB" ] && docker ps | grep -q "$MARIADB_CONTAINER"; then
-    echo "[2/3] Lösche Datenbank..."
+    echo "[2/3] Deleting database..."
 
-    read -p "  Datenbank '$PROJECT_DB' auch löschen? (j/N): " DELETE_DB
+    read -p "  Also delete database '$PROJECT_DB'? (y/N): " DELETE_DB
 
-    if [ "$DELETE_DB" = "j" ] || [ "$DELETE_DB" = "J" ]; then
+    if [ "$DELETE_DB" = "y" ] || [ "$DELETE_DB" = "Y" ]; then
         docker exec -i "$MARIADB_CONTAINER" mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-ChangeMeInProduction123!}" -e "DROP DATABASE IF EXISTS \`$PROJECT_DB\`;" 2>/dev/null || true
 
         if [ -n "$PROJECT_DB_USER" ]; then
@@ -109,29 +109,29 @@ if [ -n "$PROJECT_DB" ] && docker ps | grep -q "$MARIADB_CONTAINER"; then
 
         docker exec -i "$MARIADB_CONTAINER" mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-ChangeMeInProduction123!}" -e "FLUSH PRIVILEGES;" 2>/dev/null || true
 
-        # Aus .db-credentials entfernen
+        # Remove from .db-credentials
         CREDS_FILE="$BASE_DIR/users/$USERNAME/.db-credentials"
         if [ -f "$CREDS_FILE" ] && [ -n "$PROJECT_DB" ]; then
-            # Temporäre Datei erstellen ohne die DB-Einträge
-            grep -v "DB_DATABASE=$PROJECT_DB" "$CREDS_FILE" | grep -v "DB_USERNAME=$PROJECT_DB_USER" | grep -v "# Datenbank: $PROJECT_DB" > "$CREDS_FILE.tmp" 2>/dev/null || true
+            # Create temp file without the DB entries
+            grep -v "DB_DATABASE=$PROJECT_DB" "$CREDS_FILE" | grep -v "DB_USERNAME=$PROJECT_DB_USER" | grep -v "# Database: $PROJECT_DB" > "$CREDS_FILE.tmp" 2>/dev/null || true
             mv "$CREDS_FILE.tmp" "$CREDS_FILE" 2>/dev/null || true
         fi
 
-        echo -e "  ${GREEN}✓${NC} Datenbank gelöscht"
+        echo -e "  ${GREEN}✓${NC} Database deleted"
     else
-        echo "  Datenbank beibehalten"
+        echo "  Database kept"
     fi
 else
-    echo "[2/3] Keine Datenbank zu löschen"
+    echo "[2/3] No database to delete"
 fi
 
-# 3. Projekt-Verzeichnis löschen
-echo "[3/3] Lösche Projekt-Verzeichnis..."
+# 3. Delete project directory
+echo "[3/3] Deleting project directory..."
 rm -rf "$PROJECT_DIR"
-echo -e "  ${GREEN}✓${NC} Verzeichnis gelöscht"
+echo -e "  ${GREEN}✓${NC} Directory deleted"
 
 echo ""
 echo "════════════════════════════════════════════"
-echo -e "${GREEN}✓ Projekt '$PROJECT_NAME' erfolgreich gelöscht!${NC}"
+echo -e "${GREEN}✓ Project '$PROJECT_NAME' deleted successfully!${NC}"
 echo "════════════════════════════════════════════"
 echo ""

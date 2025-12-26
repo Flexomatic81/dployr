@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# Listet alle User-Projekte auf
+# Lists all user projects
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(dirname "$SCRIPT_DIR")"
 USERS_DIR="$BASE_DIR/users"
 
 echo "════════════════════════════════════════════"
-echo "User-Projekte Übersicht"
+echo "User Projects Overview"
 echo "════════════════════════════════════════════"
 echo ""
 
 if [ ! -d "$USERS_DIR" ] || [ -z "$(ls -A "$USERS_DIR" 2>/dev/null)" ]; then
-    echo "Keine Projekte gefunden."
+    echo "No projects found."
     exit 0
 fi
 
@@ -28,17 +28,17 @@ for USER_DIR in "$USERS_DIR"/*; do
                 PROJECT_NAME=$(basename "$PROJECT_DIR")
                 PROJECT_COUNT=$((PROJECT_COUNT + 1))
 
-                # Container Status prüfen
+                # Check container status
                 cd "$PROJECT_DIR"
                 CONTAINERS=$(docker-compose ps -q 2>/dev/null | wc -l)
                 RUNNING=$(docker-compose ps 2>/dev/null | grep "Up" | wc -l)
 
-                STATUS="Gestoppt"
+                STATUS="Stopped"
                 if [ "$RUNNING" -gt 0 ]; then
-                    STATUS="Läuft ($RUNNING/$CONTAINERS Container)"
+                    STATUS="Running ($RUNNING/$CONTAINERS containers)"
                 fi
 
-                # Port aus .env lesen
+                # Read port from .env
                 PORT=""
                 if [ -f ".env" ]; then
                     PORT=$(grep "EXPOSED_PORT" .env | cut -d= -f2)
@@ -49,20 +49,20 @@ for USER_DIR in "$USERS_DIR"/*; do
                 if [ -n "$PORT" ]; then
                     echo "      Port:   $PORT"
                 fi
-                echo "      Pfad:   $PROJECT_DIR"
+                echo "      Path:   $PROJECT_DIR"
                 echo ""
             fi
         done
 
         if [ $PROJECT_COUNT -eq 0 ]; then
-            echo "  Keine Projekte"
+            echo "  No projects"
             echo ""
         fi
     fi
 done
 
 echo "════════════════════════════════════════════"
-echo "Docker Container Übersicht:"
+echo "Docker Container Overview:"
 echo "────────────────────────────────────────────"
 docker ps --filter "network=dployr-network" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 echo "════════════════════════════════════════════"

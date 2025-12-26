@@ -1,26 +1,26 @@
 #!/bin/bash
 
-# Gemeinsame Funktionen für alle Skripte
+# Common functions for all scripts
 
-# Farben
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Docker-Prüfung
+# Docker check
 check_docker() {
-    # Docker installiert?
+    # Docker installed?
     if ! command -v docker &> /dev/null; then
-        echo -e "${RED}✗ Docker ist nicht installiert!${NC}"
+        echo -e "${RED}✗ Docker is not installed!${NC}"
         echo ""
-        echo "Docker wird benötigt. Installation:"
+        echo "Docker is required. Installation:"
         echo ""
-        echo "  Schnell (alle Distributionen):"
+        echo "  Quick (all distributions):"
         echo "    curl -fsSL https://get.docker.com | sh"
         echo "    sudo usermod -aG docker \$USER"
-        echo "    # Danach neu einloggen!"
+        echo "    # Then log out and back in!"
         echo ""
         echo "  Debian/Ubuntu:"
         echo "    sudo apt update && sudo apt install -y docker.io docker-compose-plugin"
@@ -39,7 +39,7 @@ check_docker() {
     # Docker Compose v2?
     if ! docker compose version &> /dev/null; then
         if ! command -v docker-compose &> /dev/null; then
-            echo -e "${RED}✗ Docker Compose ist nicht installiert!${NC}"
+            echo -e "${RED}✗ Docker Compose is not installed!${NC}"
             echo ""
             echo "Installation:"
             echo "  Debian/Ubuntu: sudo apt install -y docker-compose-plugin"
@@ -49,22 +49,22 @@ check_docker() {
         fi
     fi
 
-    # Docker-Daemon läuft?
+    # Docker daemon running?
     if ! docker info &> /dev/null; then
-        echo -e "${RED}✗ Docker-Daemon läuft nicht!${NC}"
+        echo -e "${RED}✗ Docker daemon is not running!${NC}"
         echo ""
-        echo "Starte Docker:"
+        echo "Start Docker:"
         echo "  sudo systemctl start docker"
         echo ""
-        echo "Oder prüfe ob dein User in der docker-Gruppe ist:"
+        echo "Or check if your user is in the docker group:"
         echo "  sudo usermod -aG docker \$USER"
-        echo "  # Danach neu einloggen!"
+        echo "  # Then log out and back in!"
         echo ""
         exit 1
     fi
 }
 
-# Konfiguration laden
+# Load configuration
 load_config() {
     local script_dir="$1"
     local base_dir="$(dirname "$script_dir")"
@@ -74,7 +74,7 @@ load_config() {
         source "$config_file"
     fi
 
-    # Fallback-Werte
+    # Fallback values
     SERVER_IP="${SERVER_IP:-192.168.2.125}"
     DEFAULT_USER="${DEFAULT_USER:-mehmed}"
     PHPMYADMIN_PORT="${PHPMYADMIN_PORT:-8080}"

@@ -1,52 +1,52 @@
 #!/bin/bash
 
-# Script zum Entfernen einer bestehenden Nginx-Installation auf dem Host
-# WICHTIG: Nur ausführen, wenn Nginx nicht mehr benötigt wird!
+# Script to remove an existing Nginx installation on the host
+# IMPORTANT: Only run if Nginx is no longer needed!
 
 set -e
 
 echo "════════════════════════════════════════════"
-echo "Nginx Host-Installation entfernen"
+echo "Remove Nginx Host Installation"
 echo "════════════════════════════════════════════"
 echo ""
-echo "WARNUNG: Dieses Script entfernt Nginx komplett vom Host-System!"
-echo "Dies ist sicher, da unser Docker-Setup eigene Nginx-Container verwendet."
+echo "WARNING: This script completely removes Nginx from the host system!"
+echo "This is safe because our Docker setup uses its own Nginx containers."
 echo ""
-read -p "Möchtest Du fortfahren? (ja/nein): " confirm
+read -p "Do you want to continue? (yes/no): " confirm
 
-if [ "$confirm" != "ja" ]; then
-    echo "Abgebrochen."
+if [ "$confirm" != "yes" ]; then
+    echo "Cancelled."
     exit 0
 fi
 
 echo ""
-echo "[1/6] Prüfe ob Nginx installiert ist..."
+echo "[1/6] Checking if Nginx is installed..."
 
 if ! command -v nginx &> /dev/null; then
-    echo "✓ Nginx ist nicht installiert (gut!)"
+    echo "✓ Nginx is not installed (good!)"
     echo ""
-    echo "Prüfe trotzdem Port 80 und 443..."
-    netstat -tulpn | grep -E ':(80|443) ' || echo "✓ Ports 80 und 443 sind frei"
+    echo "Checking ports 80 and 443 anyway..."
+    netstat -tulpn | grep -E ':(80|443) ' || echo "✓ Ports 80 and 443 are free"
     exit 0
 fi
 
-echo "✓ Nginx gefunden, wird entfernt..."
+echo "✓ Nginx found, removing..."
 echo ""
 
-# Nginx Version anzeigen
-echo "Installierte Version:"
+# Show Nginx version
+echo "Installed version:"
 nginx -v 2>&1 || true
 echo ""
 
-# Nginx stoppen
-echo "[2/6] Stoppe Nginx Service..."
+# Stop Nginx
+echo "[2/6] Stopping Nginx service..."
 systemctl stop nginx 2>/dev/null || service nginx stop 2>/dev/null || true
 systemctl disable nginx 2>/dev/null || true
-echo "✓ Nginx gestoppt"
+echo "✓ Nginx stopped"
 echo ""
 
-# Nginx deinstallieren
-echo "[3/6] Deinstalliere Nginx-Pakete..."
+# Uninstall Nginx
+echo "[3/6] Uninstalling Nginx packages..."
 if command -v apt-get &> /dev/null; then
     # Debian/Ubuntu
     apt-get purge -y nginx nginx-common nginx-core nginx-full 2>/dev/null || true
@@ -56,49 +56,49 @@ elif command -v yum &> /dev/null; then
     # CentOS/RHEL
     yum remove -y nginx 2>/dev/null || true
 fi
-echo "✓ Pakete deinstalliert"
+echo "✓ Packages uninstalled"
 echo ""
 
-# Konfigurationsdateien entfernen
-echo "[4/6] Entferne Konfigurationsdateien..."
+# Remove configuration files
+echo "[4/6] Removing configuration files..."
 rm -rf /etc/nginx
 rm -rf /var/log/nginx
 rm -rf /var/lib/nginx
 rm -rf /usr/share/nginx
-echo "✓ Konfiguration entfernt"
+echo "✓ Configuration removed"
 echo ""
 
-# Benutzer/Gruppe entfernen (optional)
-echo "[5/6] Entferne nginx User/Gruppe..."
+# Remove user/group (optional)
+echo "[5/6] Removing nginx user/group..."
 userdel nginx 2>/dev/null || true
 groupdel nginx 2>/dev/null || true
-echo "✓ User/Gruppe entfernt"
+echo "✓ User/group removed"
 echo ""
 
-# Port-Check
-echo "[6/6] Überprüfe Ports..."
+# Port check
+echo "[6/6] Checking ports..."
 echo ""
 if netstat -tulpn | grep -E ':(80|443) '; then
-    echo "⚠ WARNUNG: Port 80 oder 443 ist noch belegt!"
-    echo "Prüfe welcher Prozess die Ports nutzt."
+    echo "⚠ WARNING: Port 80 or 443 is still in use!"
+    echo "Check which process is using the ports."
 else
-    echo "✓ Ports 80 und 443 sind frei"
+    echo "✓ Ports 80 and 443 are free"
 fi
 echo ""
 
 echo "════════════════════════════════════════════"
-echo "✓ Nginx erfolgreich entfernt!"
+echo "✓ Nginx successfully removed!"
 echo "════════════════════════════════════════════"
 echo ""
-echo "Nächste Schritte:"
+echo "Next steps:"
 echo ""
-echo "1. Überprüfe ob Docker und NPM laufen:"
+echo "1. Check if Docker and NPM are running:"
 echo "   docker ps"
 echo ""
-echo "2. Starte das Docker-Setup:"
+echo "2. Start the Docker setup:"
 echo "   ./quick-start.sh"
 echo ""
-echo "3. NPM sollte nun Port 80/443 nutzen können"
-echo "   (falls NPM auf diesem Host läuft)"
+echo "3. NPM should now be able to use ports 80/443"
+echo "   (if NPM runs on this host)"
 echo ""
 echo "════════════════════════════════════════════"
