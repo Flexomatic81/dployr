@@ -33,11 +33,15 @@ The dashboard uses a service-oriented architecture with clear separation:
 
 ```
 dashboard/src/
-├── app.js              # Express app entry point
-├── config/database.js  # MySQL connection pool
+├── app.js              # Express app entry point (Helmet, Rate Limiting, Session Store)
+├── config/
+│   ├── database.js     # MySQL connection pool
+│   ├── logger.js       # Winston logger configuration
+│   └── constants.js    # Shared constants (permissions, intervals, DB aliases)
 ├── middleware/
 │   ├── auth.js         # Authentication middleware (requireAuth, requireAdmin)
 │   ├── projectAccess.js # Project access control (getProjectAccess, requirePermission)
+│   ├── validation.js   # Input validation with Joi
 │   └── upload.js       # Multer config for ZIP uploads
 ├── routes/             # Express route handlers
 │   ├── auth.js         # Login, register, logout
@@ -63,7 +67,10 @@ dashboard/src/
 │   └── utils/          # Shared utility functions
 │       ├── nginx.js    # Nginx config generation
 │       └── crypto.js   # Password generation
-└── views/              # EJS templates with express-ejs-layouts
+├── views/              # EJS templates with express-ejs-layouts
+└── tests/              # Unit tests (Jest)
+    ├── services/       # Service tests
+    └── middleware/     # Middleware tests
 ```
 
 ### Database Provider Pattern
@@ -151,9 +158,46 @@ Template type is auto-detected from docker-compose.yml content in existing proje
 1. User registers → `approved = FALSE`
 2. Admin approves via `/admin` panel
 3. User can log in after approval
-4. Session stored in memory (24-hour maxAge)
+4. Session stored in MySQL (express-mysql-session, 24-hour maxAge)
 
 Middleware: `requireAuth` protects routes, `requireAdmin` for admin operations.
+
+## Security Features
+
+The dashboard implements multiple security layers:
+
+- **Helmet**: Security headers (CSP, X-Frame-Options, etc.)
+- **Rate Limiting**: Auth routes limited to 5 requests/15min, general API 100/15min
+- **Input Validation**: Joi schemas for login, register, project creation
+- **MySQL Session Store**: Persistent sessions (survives restarts)
+- **CSRF Protection**: Via session-based forms
+
+## Logging
+
+Winston logger with structured logging:
+
+```javascript
+const { logger } = require('../config/logger');
+logger.info('Message', { context: 'value' });
+logger.error('Error', { error: error.message });
+```
+
+Log files in `dashboard/logs/`:
+- `combined.log` - All logs
+- `error.log` - Errors only
+
+## Testing
+
+Unit tests with Jest:
+
+```bash
+cd dashboard && npm test
+```
+
+Test structure:
+- `tests/services/user.test.js` - User service tests
+- `tests/middleware/auth.test.js` - Auth middleware tests
+- `tests/middleware/validation.test.js` - Validation tests
 
 ## Environment Variables
 
@@ -209,15 +253,42 @@ The project detail page includes an `.env` editor with:
 
 - **Textarea editor**: Direct editing of `.env` file content
 - **`.env.example` detection**: Automatically finds `.env.example`, `.env.sample`, `.env.dist`, `.env.template`
-- **Copy example**: Merges example file with existing values (doesn't overwrite)
-- **DB credential injection**: Dropdown to insert database credentials from user's databases
+- **Smart DB Credentials Merge**: Intelligent database credential injection (see below)
 
 **Important:** The `.env` editor edits the **app's** `.env` file (in `html/` or Git path), not the Docker system `.env` in the project root. System variables (PROJECT_NAME, EXPOSED_PORT) are managed separately.
 
 Routes:
 - `POST /projects/:name/env` - Save .env content
 - `POST /projects/:name/env/copy-example` - Copy .env.example to .env
-- `POST /projects/:name/env/add-db` - Append database credentials
+- `POST /projects/:name/env/add-db` - Smart merge of database credentials
+
+## Smart DB Credentials Merge
+
+The "DB einrichten" button intelligently merges database credentials into `.env` files:
+
+**Funktionsweise:**
+1. Nutzt `.env.example` als Vorlage (falls vorhanden)
+2. Erkennt bekannte DB-Variablen-Aliase und ersetzt deren Werte
+3. Behält nicht-DB-Variablen aus bestehender `.env` bei
+4. Hängt fehlende Credentials am Ende an
+
+**Bekannte DB-Variablen-Aliase** (in `config/constants.js`):
+```javascript
+DB_VARIABLE_ALIASES = {
+    host: ['DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST', 'POSTGRES_HOST', ...],
+    port: ['DB_PORT', 'DATABASE_PORT', 'MYSQL_PORT', ...],
+    database: ['DB_DATABASE', 'DB_NAME', 'MYSQL_DATABASE', ...],
+    username: ['DB_USERNAME', 'DB_USER', 'MYSQL_USER', ...],
+    password: ['DB_PASSWORD', 'DATABASE_PASSWORD', ...]
+}
+```
+
+**Beispiel:**
+- `.env.example` enthält `DB_USER=root` und `DB_NAME=myapp`
+- User wählt Datenbank `mehmed_tetris` aus Dployr
+- Ergebnis: `DB_USER=mehmed_tetris` und `DB_NAME=mehmed_tetris`
+
+**Service-Funktion:** `mergeDbCredentials()` in `project.js`
 
 ## Auto-Deploy
 
@@ -281,6 +352,7 @@ Projekte können mit anderen Benutzern geteilt werden.
 |------------|---------|
 | `auth.js` | `requireAuth`, `requireAdmin` route protection |
 | `projectAccess.js` | `getProjectAccess()`, `requirePermission()` for project access control |
+| `validation.js` | Joi-based input validation for forms |
 | `upload.js` | Multer config for ZIP uploads (100 MB limit, `/tmp/dployr-uploads`)
 
 ## Utility Modules
@@ -289,6 +361,14 @@ Projekte können mit anderen Benutzern geteilt werden.
 |--------|---------|
 | `utils/nginx.js` | `generateNginxConfig()` for static website nginx config |
 | `utils/crypto.js` | `generatePassword()` for secure password generation |
+
+## Config Modules
+
+| Module | Purpose |
+|--------|---------|
+| `config/database.js` | MySQL connection pool |
+| `config/logger.js` | Winston logger setup (console + file) |
+| `config/constants.js` | `PERMISSION_LEVELS`, `VALID_INTERVALS`, `PROJECT_TYPES`, `DB_VARIABLE_ALIASES` |
 
 ## Project Type Detection
 

@@ -268,7 +268,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-body">
-                                    <h6><i class="bi bi-database text-primary"></i> MariaDB</h6>
+                                    <h6><i class="bi bi-database text-warning"></i> MariaDB</h6>
                                     <small class="text-muted">MySQL-kompatibel, ideal für PHP/Laravel</small>
                                 </div>
                             </div>
@@ -276,7 +276,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-body">
-                                    <h6><i class="bi bi-database text-info"></i> PostgreSQL</h6>
+                                    <h6><i class="bi bi-database-fill text-primary"></i> PostgreSQL</h6>
                                     <small class="text-muted">Erweiterte Features, ideal für komplexe Anwendungen</small>
                                 </div>
                             </div>
@@ -295,11 +295,27 @@
                     <h5 class="mt-4">Datenbank mit Projekt verbinden</h5>
                     <p>In der Projektansicht unter "Umgebungsvariablen":</p>
                     <ol>
-                        <li>Klicke auf den Button <i class="bi bi-database-add"></i> <strong>DB einfügen</strong></li>
+                        <li>Klicke auf den Button <i class="bi bi-database-add"></i> <strong>DB einrichten</strong></li>
                         <li>Wähle eine deiner Datenbanken aus dem Dropdown</li>
-                        <li>Die Credentials werden automatisch zur <code>.env</code> hinzugefügt</li>
+                        <li>Die Credentials werden <strong>intelligent</strong> in die <code>.env</code> eingefügt (siehe unten)</li>
                         <li>Starte den Container neu, damit die Änderungen wirksam werden</li>
                     </ol>
+
+                    <h5 class="mt-4">Intelligente DB-Einrichtung</h5>
+                    <p>Das System erkennt automatisch verschiedene Variablennamen für Datenbank-Credentials:</p>
+                    <ul>
+                        <li><strong>Host:</strong> <code>DB_HOST</code>, <code>DATABASE_HOST</code>, <code>MYSQL_HOST</code>, <code>POSTGRES_HOST</code>, ...</li>
+                        <li><strong>User:</strong> <code>DB_USER</code>, <code>DB_USERNAME</code>, <code>MYSQL_USER</code>, ...</li>
+                        <li><strong>Passwort:</strong> <code>DB_PASSWORD</code>, <code>DATABASE_PASSWORD</code>, ...</li>
+                        <li><strong>Datenbank:</strong> <code>DB_NAME</code>, <code>DB_DATABASE</code>, <code>MYSQL_DATABASE</code>, ...</li>
+                    </ul>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Tipp:</strong> Wenn dein Projekt eine <code>.env.example</code> hat, wird diese automatisch als Vorlage verwendet.
+                        Die DB-Variablen werden mit den richtigen Werten ersetzt, alle anderen Variablen bleiben erhalten!
+                    </div>
+
                     <div class="alert alert-secondary">
                         <i class="bi bi-info-circle"></i>
                         Der Button erscheint nur, wenn du mindestens eine Datenbank erstellt hast.
@@ -365,16 +381,20 @@
                     <h5>Bearbeiten</h5>
                     <p>In der Projektansicht findest du einen Editor für die <code>.env</code>-Datei. Änderungen werden nach dem Speichern übernommen.</p>
 
-                    <h5 class="mt-4">.env.example kopieren</h5>
-                    <p>Wenn dein Projekt eine <code>.env.example</code> enthält, kannst du diese als Vorlage nutzen:</p>
-                    <ol>
-                        <li>Klicke auf den Button mit dem Dateinamen</li>
-                        <li>Die Werte werden zur <code>.env</code> hinzugefügt</li>
-                        <li>Bereits vorhandene Werte bleiben erhalten</li>
-                    </ol>
+                    <h5 class="mt-4">.env.example als Vorlage</h5>
+                    <p>Wenn dein Projekt eine <code>.env.example</code> enthält:</p>
+                    <ul>
+                        <li><strong>Mit Datenbank:</strong> Klicke auf <i class="bi bi-database-add"></i> <strong>DB einrichten</strong> - die Vorlage wird automatisch verwendet und die DB-Variablen werden ersetzt</li>
+                        <li><strong>Ohne Datenbank:</strong> Klicke auf den Button "Als Vorlage verwenden" im Hinweis</li>
+                    </ul>
 
                     <h5 class="mt-4">Datenbank-Credentials</h5>
-                    <p>Über das Dropdown kannst du Datenbank-Zugangsdaten automatisch einfügen lassen.</p>
+                    <p>Der Button <i class="bi bi-database-add"></i> <strong>DB einrichten</strong> fügt Datenbank-Zugangsdaten intelligent ein:</p>
+                    <ul>
+                        <li>Erkennt verschiedene Variablennamen (DB_USER, MYSQL_USER, etc.)</li>
+                        <li>Ersetzt nur die DB-relevanten Variablen</li>
+                        <li>Behält alle anderen Werte unverändert</li>
+                    </ul>
 
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
@@ -444,15 +464,19 @@
                                     <ol>
                                         <li>Erstelle eine Datenbank unter <a href="/databases">Datenbanken</a></li>
                                         <li>Gehe zur Projektansicht</li>
-                                        <li>Klicke auf <i class="bi bi-database-add"></i> <strong>DB einfügen</strong> und wähle eine Datenbank</li>
-                                        <li>Die Credentials werden zu deiner <code>.env</code> hinzugefügt</li>
+                                        <li>Klicke auf <i class="bi bi-database-add"></i> <strong>DB einrichten</strong> und wähle eine Datenbank</li>
+                                        <li>Die Credentials werden intelligent in deine <code>.env</code> eingefügt</li>
                                         <li>Starte den Container neu</li>
                                     </ol>
-                                    <p class="mt-2"><strong>Hosts:</strong></p>
+                                    <p class="mt-2"><strong>Hosts (intern):</strong></p>
                                     <ul>
                                         <li>MariaDB: <code>dployr-mariadb</code></li>
                                         <li>PostgreSQL: <code>dployr-postgresql</code></li>
                                     </ul>
+                                    <div class="alert alert-success mt-2 mb-0">
+                                        <i class="bi bi-lightbulb"></i>
+                                        <strong>Tipp:</strong> Wenn dein Projekt eine <code>.env.example</code> mit anderen Variablennamen hat (z.B. <code>DB_USER</code> statt <code>DB_USERNAME</code>), werden diese automatisch erkannt und ersetzt!
+                                    </div>
                                 </div>
                             </div>
                         </div>
