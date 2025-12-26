@@ -114,8 +114,8 @@
                     </tr>
                     <% if (Object.keys(log.meta).filter(k => log.meta[k] !== undefined).length > 0) { %>
                     <tr class="meta-row d-none" id="meta-<%= index %>">
-                        <td colspan="4" class="bg-light">
-                            <pre class="mb-0 small"><%= JSON.stringify(Object.fromEntries(Object.entries(log.meta).filter(([k, v]) => v !== undefined)), null, 2) %></pre>
+                        <td colspan="4">
+                            <pre class="mb-0 small p-2 rounded" style="background-color: var(--bs-tertiary-bg); color: var(--bs-body-color);"><%= JSON.stringify(Object.fromEntries(Object.entries(log.meta).filter(([k, v]) => v !== undefined)), null, 2) %></pre>
                         </td>
                     </tr>
                     <% } %>
