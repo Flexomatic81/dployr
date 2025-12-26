@@ -4,7 +4,7 @@ const { pool } = require('../config/database');
 const SALT_ROUNDS = 10;
 
 /**
- * Alle User abrufen
+ * Get all users
  */
 async function getAllUsers() {
     const [users] = await pool.query(
@@ -14,7 +14,7 @@ async function getAllUsers() {
 }
 
 /**
- * Alle ausstehenden User (nicht freigeschaltet) abrufen
+ * Get all pending users (not approved)
  */
 async function getPendingUsers() {
     const [users] = await pool.query(
@@ -24,7 +24,7 @@ async function getPendingUsers() {
 }
 
 /**
- * Anzahl ausstehender Registrierungen
+ * Get count of pending registrations
  */
 async function getPendingCount() {
     const [result] = await pool.query(
@@ -34,7 +34,7 @@ async function getPendingCount() {
 }
 
 /**
- * User nach ID abrufen
+ * Get user by ID
  */
 async function getUserById(id) {
     const [users] = await pool.query(
@@ -45,7 +45,7 @@ async function getUserById(id) {
 }
 
 /**
- * User nach Username abrufen (für Login)
+ * Get user by username (for login)
  */
 async function getUserByUsername(username) {
     const [users] = await pool.query(
@@ -56,7 +56,7 @@ async function getUserByUsername(username) {
 }
 
 /**
- * Prüfen ob Username oder System-Username bereits existiert
+ * Check if username or system username already exists
  */
 async function existsUsernameOrSystemUsername(username, systemUsername, excludeId = null) {
     let query = 'SELECT id FROM dashboard_users WHERE (username = ? OR system_username = ?)';
@@ -72,8 +72,8 @@ async function existsUsernameOrSystemUsername(username, systemUsername, excludeI
 }
 
 /**
- * Neuen User erstellen
- * @param {boolean} approved - Wenn true, wird User sofort freigeschaltet (Admin-Erstellung)
+ * Create new user
+ * @param {boolean} approved - If true, user is immediately approved (admin creation)
  */
 async function createUser(username, password, systemUsername, isAdmin = false, approved = false) {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -93,7 +93,7 @@ async function createUser(username, password, systemUsername, isAdmin = false, a
 }
 
 /**
- * User aktualisieren
+ * Update user
  */
 async function updateUser(id, { username, password, systemUsername, isAdmin }) {
     if (password) {
@@ -113,7 +113,7 @@ async function updateUser(id, { username, password, systemUsername, isAdmin }) {
 }
 
 /**
- * Nur Passwort aktualisieren
+ * Update password only
  */
 async function updatePassword(id, newPassword) {
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -124,21 +124,21 @@ async function updatePassword(id, newPassword) {
 }
 
 /**
- * User löschen
+ * Delete user
  */
 async function deleteUser(id) {
     await pool.query('DELETE FROM dashboard_users WHERE id = ?', [id]);
 }
 
 /**
- * Passwort verifizieren
+ * Verify password
  */
 async function verifyPassword(user, password) {
     return bcrypt.compare(password, user.password_hash);
 }
 
 /**
- * Anzahl der Admins abrufen
+ * Get admin count
  */
 async function getAdminCount() {
     const [result] = await pool.query(
@@ -148,7 +148,7 @@ async function getAdminCount() {
 }
 
 /**
- * Anzahl aller User abrufen
+ * Get total user count
  */
 async function getUserCount() {
     const [result] = await pool.query(
@@ -158,7 +158,7 @@ async function getUserCount() {
 }
 
 /**
- * Prüfen ob User der letzte Admin ist
+ * Check if user is the last admin
  */
 async function isLastAdmin(userId) {
     const user = await getUserById(userId);
@@ -169,7 +169,7 @@ async function isLastAdmin(userId) {
 }
 
 /**
- * User freischalten (Registrierung genehmigen)
+ * Approve user (approve registration)
  */
 async function approveUser(id) {
     await pool.query(
@@ -180,16 +180,16 @@ async function approveUser(id) {
 }
 
 /**
- * User-Registrierung ablehnen (User löschen)
+ * Reject user registration (delete user)
  */
 async function rejectUser(id) {
-    // Nur nicht freigeschaltete User können abgelehnt werden
+    // Only non-approved users can be rejected
     const user = await getUserById(id);
     if (!user) {
-        throw new Error('User nicht gefunden');
+        throw new Error('User not found');
     }
     if (user.approved) {
-        throw new Error('Bereits freigeschaltete User können nicht abgelehnt werden');
+        throw new Error('Already approved users cannot be rejected');
     }
     await pool.query('DELETE FROM dashboard_users WHERE id = ?', [id]);
 }

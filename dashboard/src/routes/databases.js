@@ -4,7 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const databaseService = require('../services/database');
 const { logger } = require('../config/logger');
 
-// Alle Datenbanken anzeigen
+// Show all databases
 router.get('/', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
@@ -12,12 +12,12 @@ router.get('/', requireAuth, async (req, res) => {
         const dbTypes = databaseService.getAvailableTypes();
         const serverIp = process.env.SERVER_IP || 'localhost';
 
-        // Prüfen welche DB-Typen vorhanden sind
+        // Check which DB types are present
         const hasMariaDB = databases.some(db => db.type !== 'postgresql');
         const hasPostgreSQL = databases.some(db => db.type === 'postgresql');
 
         res.render('databases/index', {
-            title: 'Datenbanken',
+            title: 'Databases',
             databases,
             dbTypes,
             serverIp,
@@ -25,22 +25,22 @@ router.get('/', requireAuth, async (req, res) => {
             hasPostgreSQL
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der Datenbanken', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der Datenbanken');
+        logger.error('Error loading databases', { error: error.message });
+        req.flash('error', 'Error loading databases');
         return res.redirect('/dashboard');
     }
 });
 
-// Neue Datenbank erstellen - Formular
+// Create new database - Form
 router.get('/create', requireAuth, (req, res) => {
     const dbTypes = databaseService.getAvailableTypes();
     res.render('databases/create', {
-        title: 'Neue Datenbank',
+        title: 'New Database',
         dbTypes
     });
 });
 
-// Neue Datenbank erstellen - Verarbeitung
+// Create new database - Processing
 router.post('/', requireAuth, async (req, res) => {
     try {
         const { name, type } = req.body;
@@ -49,26 +49,26 @@ router.post('/', requireAuth, async (req, res) => {
         const dbInfo = await databaseService.createDatabase(systemUsername, name, type || 'mariadb');
 
         const typeName = type === 'postgresql' ? 'PostgreSQL' : 'MariaDB';
-        req.flash('success', `${typeName}-Datenbank "${dbInfo.database}" erfolgreich erstellt!`);
+        req.flash('success', `${typeName} database "${dbInfo.database}" created successfully!`);
         return res.redirect('/databases');
     } catch (error) {
-        logger.error('Fehler beim Erstellen der Datenbank', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Erstellen der Datenbank');
+        logger.error('Error creating database', { error: error.message });
+        req.flash('error', error.message || 'Error creating database');
         return res.redirect('/databases/create');
     }
 });
 
-// Datenbank löschen
+// Delete database
 router.delete('/:name', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
 
         await databaseService.deleteDatabase(systemUsername, req.params.name);
-        req.flash('success', `Datenbank "${req.params.name}" gelöscht`);
+        req.flash('success', `Database "${req.params.name}" deleted`);
         return res.redirect('/databases');
     } catch (error) {
-        logger.error('Fehler beim Löschen der Datenbank', { error: error.message });
-        req.flash('error', 'Fehler beim Löschen: ' + error.message);
+        logger.error('Error deleting database', { error: error.message });
+        req.flash('error', 'Error deleting: ' + error.message);
         return res.redirect('/databases');
     }
 });

@@ -1,11 +1,11 @@
 /**
- * Nginx-Konfigurationsgenerator
- * Zentrale Stelle für Nginx-Config-Generierung
+ * Nginx configuration generator
+ * Central place for nginx config generation
  */
 
 /**
- * Generiert nginx default.conf für statische Websites
- * @returns {string} Nginx-Konfiguration
+ * Generates nginx default.conf for static websites
+ * @returns {string} Nginx configuration
  */
 function generateNginxConfig() {
     return `server {

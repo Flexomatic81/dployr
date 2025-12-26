@@ -11,33 +11,33 @@ const schemas = {
             .max(30)
             .required()
             .messages({
-                'string.pattern.base': 'Benutzername darf nur Kleinbuchstaben, Zahlen, - und _ enthalten',
-                'string.min': 'Benutzername muss mindestens 3 Zeichen lang sein',
-                'string.max': 'Benutzername darf maximal 30 Zeichen lang sein',
-                'any.required': 'Benutzername ist erforderlich'
+                'string.pattern.base': 'Username may only contain lowercase letters, numbers, - and _',
+                'string.min': 'Username must be at least 3 characters long',
+                'string.max': 'Username must not exceed 30 characters',
+                'any.required': 'Username is required'
             }),
         password: Joi.string()
             .min(8)
             .required()
             .messages({
-                'string.min': 'Passwort muss mindestens 8 Zeichen lang sein',
-                'any.required': 'Passwort ist erforderlich'
+                'string.min': 'Password must be at least 8 characters long',
+                'any.required': 'Password is required'
             }),
         password_confirm: Joi.string()
             .valid(Joi.ref('password'))
             .required()
             .messages({
-                'any.only': 'Passwörter stimmen nicht überein',
-                'any.required': 'Passwort-Bestätigung ist erforderlich'
+                'any.only': 'Passwords do not match',
+                'any.required': 'Password confirmation is required'
             })
     }),
 
     login: Joi.object({
         username: Joi.string().required().messages({
-            'any.required': 'Benutzername ist erforderlich'
+            'any.required': 'Username is required'
         }),
         password: Joi.string().required().messages({
-            'any.required': 'Passwort ist erforderlich'
+            'any.required': 'Password is required'
         })
     }),
 
@@ -49,17 +49,17 @@ const schemas = {
             .max(50)
             .required()
             .messages({
-                'string.pattern.base': 'Projektname darf nur Kleinbuchstaben, Zahlen und - enthalten',
-                'string.min': 'Projektname muss mindestens 2 Zeichen lang sein',
-                'string.max': 'Projektname darf maximal 50 Zeichen lang sein',
-                'any.required': 'Projektname ist erforderlich'
+                'string.pattern.base': 'Project name may only contain lowercase letters, numbers and -',
+                'string.min': 'Project name must be at least 2 characters long',
+                'string.max': 'Project name must not exceed 50 characters',
+                'any.required': 'Project name is required'
             }),
         type: Joi.string()
             .valid('static-website', 'php-website', 'nodejs-app', 'laravel', 'nextjs', 'nodejs-static')
             .required()
             .messages({
-                'any.only': 'Ungültiger Projekttyp',
-                'any.required': 'Projekttyp ist erforderlich'
+                'any.only': 'Invalid project type',
+                'any.required': 'Project type is required'
             })
     }),
 
@@ -70,19 +70,19 @@ const schemas = {
             .max(50)
             .required()
             .messages({
-                'string.pattern.base': 'Projektname darf nur Kleinbuchstaben, Zahlen und - enthalten',
-                'string.min': 'Projektname muss mindestens 2 Zeichen lang sein',
-                'string.max': 'Projektname darf maximal 50 Zeichen lang sein',
-                'any.required': 'Projektname ist erforderlich'
+                'string.pattern.base': 'Project name may only contain lowercase letters, numbers and -',
+                'string.min': 'Project name must be at least 2 characters long',
+                'string.max': 'Project name must not exceed 50 characters',
+                'any.required': 'Project name is required'
             }),
         repo_url: Joi.string()
             .uri({ scheme: ['https'] })
             .pattern(/^https:\/\/(github\.com|gitlab\.com|bitbucket\.org)\//)
             .required()
             .messages({
-                'string.uri': 'Ungültige Repository-URL',
-                'string.pattern.base': 'Nur GitHub, GitLab und Bitbucket URLs werden unterstützt',
-                'any.required': 'Repository-URL ist erforderlich'
+                'string.uri': 'Invalid repository URL',
+                'string.pattern.base': 'Only GitHub, GitLab and Bitbucket URLs are supported',
+                'any.required': 'Repository URL is required'
             }),
         access_token: Joi.string().allow('').optional()
     }),
@@ -95,17 +95,17 @@ const schemas = {
             .max(30)
             .required()
             .messages({
-                'string.pattern.base': 'Datenbankname darf nur Kleinbuchstaben, Zahlen und _ enthalten',
-                'string.min': 'Datenbankname muss mindestens 2 Zeichen lang sein',
-                'string.max': 'Datenbankname darf maximal 30 Zeichen lang sein',
-                'any.required': 'Datenbankname ist erforderlich'
+                'string.pattern.base': 'Database name may only contain lowercase letters, numbers and _',
+                'string.min': 'Database name must be at least 2 characters long',
+                'string.max': 'Database name must not exceed 30 characters',
+                'any.required': 'Database name is required'
             }),
         type: Joi.string()
             .valid('mariadb', 'postgresql')
             .required()
             .messages({
-                'any.only': 'Ungültiger Datenbanktyp',
-                'any.required': 'Datenbanktyp ist erforderlich'
+                'any.only': 'Invalid database type',
+                'any.required': 'Database type is required'
             })
     }),
 
@@ -117,22 +117,22 @@ const schemas = {
             .max(30)
             .required()
             .messages({
-                'string.pattern.base': 'Ungültiger Benutzername',
-                'any.required': 'Benutzername ist erforderlich'
+                'string.pattern.base': 'Invalid username',
+                'any.required': 'Username is required'
             }),
         permission: Joi.string()
             .valid('read', 'manage', 'full')
             .required()
             .messages({
-                'any.only': 'Ungültige Berechtigung',
-                'any.required': 'Berechtigung ist erforderlich'
+                'any.only': 'Invalid permission',
+                'any.required': 'Permission is required'
             })
     })
 };
 
 /**
  * Validation Middleware Factory
- * @param {string} schemaName - Name des zu verwendenden Schemas
+ * @param {string} schemaName - Name of the schema to use
  * @returns {Function} Express Middleware
  */
 function validate(schemaName) {
@@ -151,7 +151,7 @@ function validate(schemaName) {
         if (error) {
             const messages = error.details.map(detail => detail.message);
 
-            // Für AJAX-Requests JSON zurückgeben
+            // Return JSON for AJAX requests
             if (req.xhr || req.headers.accept?.includes('application/json')) {
                 return res.status(400).json({
                     success: false,
@@ -159,12 +159,12 @@ function validate(schemaName) {
                 });
             }
 
-            // Für normale Requests Flash-Message und Redirect
+            // Flash message and redirect for normal requests
             req.flash('error', messages.join('. '));
             return res.redirect('back');
         }
 
-        // Validierte Daten im Request speichern
+        // Store validated data in request
         req.validatedBody = value;
         next();
     };

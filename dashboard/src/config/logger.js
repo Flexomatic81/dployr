@@ -3,7 +3,7 @@ const path = require('path');
 
 const LOG_DIR = process.env.LOG_DIR || '/app/logs';
 
-// Custom Format für lesbare Logs
+// Custom format for readable logs
 const customFormat = winston.format.printf(({ level, message, timestamp, ...meta }) => {
     let metaStr = '';
     if (Object.keys(meta).length > 0) {
@@ -12,7 +12,7 @@ const customFormat = winston.format.printf(({ level, message, timestamp, ...meta
     return `${timestamp} [${level.toUpperCase()}] ${message}${metaStr}`;
 });
 
-// Logger Konfiguration
+// Logger configuration
 const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || 'info',
     format: winston.format.combine(
@@ -21,7 +21,7 @@ const logger = winston.createLogger({
     ),
     defaultMeta: { service: 'dployr-dashboard' },
     transports: [
-        // Console Transport - immer aktiv
+        // Console transport - always active
         new winston.transports.Console({
             format: winston.format.combine(
                 winston.format.colorize(),
@@ -31,12 +31,12 @@ const logger = winston.createLogger({
     ]
 });
 
-// File Transports nur wenn LOG_DIR beschreibbar ist
+// File transports only when LOG_DIR is writable
 try {
     const fs = require('fs');
     fs.mkdirSync(LOG_DIR, { recursive: true });
 
-    // Error Log
+    // Error log
     logger.add(new winston.transports.File({
         filename: path.join(LOG_DIR, 'error.log'),
         level: 'error',
@@ -48,7 +48,7 @@ try {
         maxFiles: 5
     }));
 
-    // Combined Log
+    // Combined log
     logger.add(new winston.transports.File({
         filename: path.join(LOG_DIR, 'combined.log'),
         format: winston.format.combine(
@@ -64,7 +64,7 @@ try {
     logger.warn('File logging disabled - cannot write to log directory', { logDir: LOG_DIR });
 }
 
-// Request Logger Middleware
+// Request logger middleware
 function requestLogger(req, res, next) {
     const start = Date.now();
 
@@ -78,13 +78,13 @@ function requestLogger(req, res, next) {
             ip: req.ip || req.connection.remoteAddress
         };
 
-        // Source Maps und andere unwichtige 404s nicht loggen
+        // Skip logging for source maps and other unimportant 404s
         const ignoredPatterns = ['.map', '.ico', '/favicon'];
         const shouldIgnore = res.statusCode === 404 &&
             ignoredPatterns.some(pattern => req.originalUrl.includes(pattern));
 
         if (shouldIgnore) {
-            return; // Nicht loggen
+            return; // Don't log
         }
 
         if (res.statusCode >= 500) {

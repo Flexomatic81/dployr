@@ -7,7 +7,7 @@ const postgresqlProvider = require('./providers/postgresql-provider');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
-// Provider nach Typ abrufen
+// Get provider by type
 function getProvider(type = 'mariadb') {
     switch (type) {
         case 'postgresql':
@@ -20,7 +20,7 @@ function getProvider(type = 'mariadb') {
     }
 }
 
-// Datenbanken eines Users abrufen
+// Get user databases
 async function getUserDatabases(systemUsername) {
     const credentialsPath = path.join(USERS_PATH, systemUsername, '.db-credentials');
     const databases = [];
@@ -38,12 +38,12 @@ async function getUserDatabases(systemUsername) {
                 if (currentDb.name) {
                     databases.push(currentDb);
                 }
-                // Parse Name und Typ aus Kommentar
+                // Parse name and type from comment
                 const nameMatch = trimmed.match(/# Datenbank:\s*([^\s(]+)/);
                 const typeMatch = trimmed.match(/typ:\s*(\w+)/);
                 currentDb = {
                     name: nameMatch ? nameMatch[1] : '',
-                    type: typeMatch ? typeMatch[1] : 'mariadb' // Default: mariadb für alte Einträge
+                    type: typeMatch ? typeMatch[1] : 'mariadb' // Default: mariadb for old entries
                 };
             } else if (trimmed.startsWith('DB_TYPE=')) {
                 currentDb.type = trimmed.split('=')[1];
@@ -73,53 +73,53 @@ async function getUserDatabases(systemUsername) {
     }
 }
 
-// Neue Datenbank erstellen
+// Create new database
 async function createDatabase(systemUsername, databaseName, type = 'mariadb') {
-    // Validierung
+    // Validation
     if (!/^[a-z0-9_]+$/.test(databaseName)) {
-        throw new Error('Datenbankname darf nur Kleinbuchstaben, Zahlen und Unterstriche enthalten');
+        throw new Error('Database name may only contain lowercase letters, numbers and underscores');
     }
 
-    // Provider für den gewählten Typ holen
+    // Get provider for selected type
     const provider = getProvider(type);
 
-    // Datenbank über Provider erstellen
+    // Create database via provider
     const result = await provider.createDatabase(systemUsername, databaseName);
 
-    // Credentials speichern (mit Typ-Information)
+    // Save credentials (with type information)
     await saveCredentials(systemUsername, result);
 
     return result;
 }
 
-// Datenbank löschen
+// Delete database
 async function deleteDatabase(systemUsername, databaseName) {
-    // Credentials laden um den User und Typ zu finden
+    // Load credentials to find user and type
     const databases = await getUserDatabases(systemUsername);
     const dbInfo = databases.find(db => db.database === databaseName);
 
     if (!dbInfo) {
-        throw new Error('Datenbank nicht gefunden');
+        throw new Error('Database not found');
     }
 
-    // Provider für den Datenbanktyp holen
+    // Get provider for database type
     const provider = getProvider(dbInfo.type);
 
-    // Datenbank über Provider löschen
+    // Delete database via provider
     await provider.deleteDatabase(databaseName, dbInfo.username);
 
-    // Credentials aus Datei entfernen
+    // Remove credentials from file
     await removeCredentials(systemUsername, databaseName);
 
     return { success: true };
 }
 
-// Credentials in Datei speichern (erweitertes Format)
+// Save credentials to file (extended format)
 async function saveCredentials(systemUsername, dbInfo) {
     const userPath = path.join(USERS_PATH, systemUsername);
     const credentialsPath = path.join(userPath, '.db-credentials');
 
-    // User-Verzeichnis erstellen falls nicht vorhanden
+    // Create user directory if not exists
     await fs.mkdir(userPath, { recursive: true });
 
     const entry = `
@@ -135,7 +135,7 @@ DB_PASSWORD=${dbInfo.password}
     await fs.appendFile(credentialsPath, entry);
 }
 
-// Credentials aus Datei entfernen
+// Remove credentials from file
 async function removeCredentials(systemUsername, databaseName) {
     const credentialsPath = path.join(USERS_PATH, systemUsername, '.db-credentials');
 
@@ -172,13 +172,13 @@ async function removeCredentials(systemUsername, databaseName) {
     }
 }
 
-// Verfügbare Datenbanktypen
+// Available database types
 function getAvailableTypes() {
     return [
         {
             id: 'mariadb',
             name: 'MariaDB',
-            description: 'MySQL-kompatible relationale Datenbank',
+            description: 'MySQL-compatible relational database',
             icon: 'bi-database',
             color: 'primary',
             port: 3306,
@@ -187,7 +187,7 @@ function getAvailableTypes() {
         {
             id: 'postgresql',
             name: 'PostgreSQL',
-            description: 'Fortschrittliche Open-Source Datenbank',
+            description: 'Advanced open-source database',
             icon: 'bi-database-fill',
             color: 'info',
             port: 5432,
@@ -196,7 +196,7 @@ function getAvailableTypes() {
     ];
 }
 
-// Verbindung für einen Typ testen
+// Test connection for a type
 async function testConnection(type = 'mariadb') {
     const provider = getProvider(type);
     return provider.testConnection();

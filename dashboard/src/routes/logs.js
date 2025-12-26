@@ -5,12 +5,12 @@ const { getProjectAccess } = require('../middleware/projectAccess');
 const dockerService = require('../services/docker');
 const { logger } = require('../config/logger');
 
-// Logs für ein Projekt anzeigen
+// Show logs for a project
 router.get('/:projectName', requireAuth, getProjectAccess('projectName'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
 
-        // Logs für alle Container des Projekts sammeln
+        // Collect logs for all containers of the project
         const containerLogs = [];
 
         for (const container of project.containers) {
@@ -30,13 +30,13 @@ router.get('/:projectName', requireAuth, getProjectAccess('projectName'), async 
             projectAccess: req.projectAccess
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der Logs', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der Logs');
+        logger.error('Error loading logs', { error: error.message });
+        req.flash('error', 'Error loading logs');
         return res.redirect('/projects');
     }
 });
 
-// API: Logs als JSON abrufen (für Auto-Refresh)
+// API: Fetch logs as JSON (for auto-refresh)
 router.get('/:projectName/api', requireAuth, getProjectAccess('projectName'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
@@ -54,7 +54,7 @@ router.get('/:projectName/api', requireAuth, getProjectAccess('projectName'), as
 
         res.json({ containerLogs });
     } catch (error) {
-        logger.error('API Log-Fehler', { error: error.message });
+        logger.error('API log error', { error: error.message });
         res.status(500).json({ error: error.message });
     }
 });

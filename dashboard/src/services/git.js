@@ -7,37 +7,37 @@ const { logger } = require('../config/logger');
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
 /**
- * Prüft ob ein Projekt ein Git-Repository ist
- * Git-Repos werden im html/ Unterordner geklont
+ * Checks if a project is a Git repository
+ * Git repos are cloned into the html/ subfolder
  */
 function isGitRepository(projectPath) {
-    // Zuerst im html/ Unterordner prüfen (neue Struktur)
+    // First check in html/ subfolder (new structure)
     const gitDirHtml = path.join(projectPath, 'html', '.git');
     if (fs.existsSync(gitDirHtml)) {
         return true;
     }
-    // Fallback: Direkt im Projektordner (alte Struktur, für Kompatibilität)
+    // Fallback: Directly in project folder (old structure, for compatibility)
     const gitDir = path.join(projectPath, '.git');
     return fs.existsSync(gitDir);
 }
 
 /**
- * Gibt den Pfad zum Git-Verzeichnis zurück (html/ oder root)
+ * Returns the path to the Git directory (html/ or root)
  */
 function getGitPath(projectPath) {
     const htmlPath = path.join(projectPath, 'html');
     if (fs.existsSync(path.join(htmlPath, '.git'))) {
         return htmlPath;
     }
-    // Fallback für alte Projekte
+    // Fallback for old projects
     if (fs.existsSync(path.join(projectPath, '.git'))) {
         return projectPath;
     }
-    return htmlPath; // Default für neue Projekte
+    return htmlPath; // Default for new projects
 }
 
 /**
- * Holt Git-Status-Informationen für ein Projekt
+ * Gets Git status information for a project
  */
 async function getGitStatus(projectPath) {
     if (!isGitRepository(projectPath)) {
@@ -49,27 +49,27 @@ async function getGitStatus(projectPath) {
     try {
         const git = simpleGit(gitPath);
 
-        // Remote URL abrufen
+        // Get remote URL
         const remotes = await git.getRemotes(true);
         const origin = remotes.find(r => r.name === 'origin');
         const remoteUrl = origin?.refs?.fetch || '';
 
-        // Aktueller Branch
+        // Current branch
         const branchSummary = await git.branch();
         const branch = branchSummary.current;
 
-        // Letzter Commit
+        // Last commit
         const logResult = await git.log({ maxCount: 1 });
         const lastCommitData = logResult.latest;
         const lastCommit = lastCommitData
             ? `${lastCommitData.hash.substring(0, 7)} - ${lastCommitData.message} (${formatRelativeTime(lastCommitData.date)})`
             : '';
 
-        // Prüfen ob lokale Änderungen existieren
+        // Check if local changes exist
         const status = await git.status();
         const hasLocalChanges = !status.isClean();
 
-        // URL für Anzeige bereinigen (Token entfernen)
+        // Clean URL for display (remove token)
         const displayUrl = sanitizeUrlForDisplay(remoteUrl);
 
         return {
@@ -83,13 +83,13 @@ async function getGitStatus(projectPath) {
         logger.error('Git status error', { error: error.message });
         return {
             connected: true,
-            error: 'Fehler beim Abrufen des Git-Status'
+            error: 'Error fetching Git status'
         };
     }
 }
 
 /**
- * Formatiert ein Datum relativ (z.B. "vor 2 Stunden")
+ * Formats a date relatively (e.g., "2 hours ago")
  */
 function formatRelativeTime(dateString) {
     const date = new Date(dateString);
@@ -100,14 +100,14 @@ function formatRelativeTime(dateString) {
     const diffHour = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHour / 24);
 
-    if (diffDay > 0) return `vor ${diffDay} Tag${diffDay > 1 ? 'en' : ''}`;
-    if (diffHour > 0) return `vor ${diffHour} Stunde${diffHour > 1 ? 'n' : ''}`;
-    if (diffMin > 0) return `vor ${diffMin} Minute${diffMin > 1 ? 'n' : ''}`;
-    return 'gerade eben';
+    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    return 'just now';
 }
 
 /**
- * Entfernt Credentials aus der URL für die Anzeige
+ * Removes credentials from URL for display
  */
 function sanitizeUrlForDisplay(url) {
     // https://token@github.com/user/repo -> https://github.com/user/repo
@@ -115,7 +115,7 @@ function sanitizeUrlForDisplay(url) {
 }
 
 /**
- * Erstellt eine authentifizierte URL für private Repos
+ * Creates an authenticated URL for private repos
  */
 function createAuthenticatedUrl(repoUrl, token) {
     if (!token) return repoUrl;
@@ -128,25 +128,25 @@ function createAuthenticatedUrl(repoUrl, token) {
 }
 
 /**
- * Klont ein Git-Repository in ein Projekt-Verzeichnis
- * Existierende Dateien werden durch Repository-Dateien ersetzt,
- * aber docker-compose.yml und nginx/ werden beibehalten
+ * Clones a Git repository into a project directory
+ * Existing files are replaced by repository files,
+ * but docker-compose.yml and nginx/ are preserved
  */
 async function cloneRepository(projectPath, repoUrl, token = null) {
-    // Prüfen ob bereits ein Git-Repository existiert
+    // Check if a Git repository already exists
     if (isGitRepository(projectPath)) {
-        throw new Error('Projekt ist bereits mit einem Git-Repository verbunden. Bitte zuerst trennen.');
+        throw new Error('Project is already connected to a Git repository. Please disconnect first.');
     }
 
     const authenticatedUrl = createAuthenticatedUrl(repoUrl, token);
     const tempDir = `${projectPath}_temp_${Date.now()}`;
 
     try {
-        // Clone mit simple-git (sicher, kein Shell-Escaping nötig)
+        // Clone with simple-git (secure, no shell escaping needed)
         const git = simpleGit({ timeout: { block: 120000 } });
         await git.clone(authenticatedUrl, tempDir);
 
-        // Wichtige Dateien sichern (docker-compose.yml, nginx, .env)
+        // Backup important files (docker-compose.yml, nginx, .env)
         const backups = {};
         const filesToPreserve = ['docker-compose.yml', 'nginx', '.env'];
 
@@ -164,14 +164,14 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
             }
         }
 
-        // Altes Verzeichnis komplett leeren
+        // Completely empty old directory
         const oldFiles = fs.readdirSync(projectPath);
         for (const file of oldFiles) {
             const filePath = path.join(projectPath, file);
             fs.rmSync(filePath, { recursive: true, force: true });
         }
 
-        // Dateien aus temp verschieben (außer Backups)
+        // Move files from temp (except backups)
         const newFiles = fs.readdirSync(tempDir);
         for (const file of newFiles) {
             if (file.startsWith('_backup_')) continue;
@@ -181,7 +181,7 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
             fs.renameSync(src, dest);
         }
 
-        // Gesicherte Dateien wiederherstellen
+        // Restore backed up files
         for (const [file, backup] of Object.entries(backups)) {
             const filePath = path.join(projectPath, file);
             if (fs.existsSync(filePath)) {
@@ -194,35 +194,35 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
             }
         }
 
-        // Temp-Verzeichnis löschen
+        // Delete temp directory
         fs.rmSync(tempDir, { recursive: true, force: true });
 
-        // Token in .git-credentials speichern für spätere Pulls
+        // Save token in .git-credentials for later pulls
         if (token) {
             await saveCredentials(projectPath, repoUrl, token);
         }
 
-        // Docker-Compose anpassen falls nötig
+        // Adjust Docker-Compose if needed
         adjustDockerCompose(projectPath);
 
         return {
             success: true,
-            message: 'Repository erfolgreich geklont'
+            message: 'Repository cloned successfully'
         };
     } catch (err) {
-        // Aufräumen bei Fehler
+        // Cleanup on error
         try {
             fs.rmSync(tempDir, { recursive: true, force: true });
         } catch {}
 
-        // Token aus Fehlermeldung entfernen
+        // Remove token from error message
         const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
-        throw new Error(`Git clone fehlgeschlagen: ${cleanError}`);
+        throw new Error(`Git clone failed: ${cleanError}`);
     }
 }
 
 /**
- * Speichert Credentials für ein Repository
+ * Saves credentials for a repository
  */
 async function saveCredentials(projectPath, repoUrl, token) {
     const gitPath = getGitPath(projectPath);
@@ -232,15 +232,15 @@ async function saveCredentials(projectPath, repoUrl, token) {
 
     fs.writeFileSync(credentialsPath, credentialLine + '\n', { mode: 0o600 });
 
-    // Git konfigurieren mit simple-git
+    // Configure Git with simple-git
     const git = simpleGit(gitPath);
     await git.addConfig('credential.helper', 'store --file=.git-credentials');
 }
 
 /**
- * Passt docker-compose.yml an die Repository-Struktur an
- * - Wenn ./html nicht existiert aber index.html im Root liegt,
- *   wird das Volume-Mount von ./html auf . geändert
+ * Adjusts docker-compose.yml to the repository structure
+ * - If ./html doesn't exist but index.html is in root,
+ *   the volume mount is changed from ./html to .
  */
 function adjustDockerCompose(projectPath) {
     const composePath = path.join(projectPath, 'docker-compose.yml');
@@ -254,7 +254,7 @@ function adjustDockerCompose(projectPath) {
         let content = fs.readFileSync(composePath, 'utf-8');
         let modified = false;
 
-        // Fall 1: Static Website - ./html existiert nicht, aber index.html im Root
+        // Case 1: Static Website - ./html doesn't exist, but index.html in root
         if (!fs.existsSync(htmlDir) && fs.existsSync(indexInRoot)) {
             if (content.includes('./html:/usr/share/nginx/html')) {
                 content = content.replace(
@@ -262,28 +262,28 @@ function adjustDockerCompose(projectPath) {
                     '.:/usr/share/nginx/html'
                 );
                 modified = true;
-                logger.debug('Docker-Compose angepasst: ./html -> . (index.html im Root gefunden)');
+                logger.debug('Docker-Compose adjusted: ./html -> . (index.html found in root)');
             }
         }
 
-        // Fall 2: Node.js App - ./src existiert nicht, aber package.json im Root
+        // Case 2: Node.js App - ./src doesn't exist, but package.json in root
         const packageJson = path.join(projectPath, 'package.json');
         if (!fs.existsSync(srcDir) && fs.existsSync(packageJson)) {
             if (content.includes('./src:/app/src')) {
                 content = content.replace('./src:/app/src', '.:/app');
                 modified = true;
-                logger.debug('Docker-Compose angepasst: ./src -> . (package.json im Root gefunden)');
+                logger.debug('Docker-Compose adjusted: ./src -> . (package.json found in root)');
             }
         }
 
-        // Fall 3: PHP Website - ./public existiert nicht, aber index.php im Root
+        // Case 3: PHP Website - ./public doesn't exist, but index.php in root
         const publicDir = path.join(projectPath, 'public');
         const indexPhp = path.join(projectPath, 'index.php');
         if (!fs.existsSync(publicDir) && fs.existsSync(indexPhp)) {
             if (content.includes('./public:/var/www/html')) {
                 content = content.replace('./public:/var/www/html', '.:/var/www/html');
                 modified = true;
-                logger.debug('Docker-Compose angepasst: ./public -> . (index.php im Root gefunden)');
+                logger.debug('Docker-Compose adjusted: ./public -> . (index.php found in root)');
             }
         }
 
@@ -291,16 +291,16 @@ function adjustDockerCompose(projectPath) {
             fs.writeFileSync(composePath, content);
         }
     } catch (error) {
-        logger.error('Fehler beim Anpassen der docker-compose.yml', { error: error.message });
+        logger.error('Error adjusting docker-compose.yml', { error: error.message });
     }
 }
 
 /**
- * Pullt die neuesten Änderungen vom Remote
+ * Pulls the latest changes from remote
  */
 async function pullChanges(projectPath) {
     if (!isGitRepository(projectPath)) {
-        throw new Error('Kein Git-Repository');
+        throw new Error('Not a Git repository');
     }
 
     const gitPath = getGitPath(projectPath);
@@ -309,7 +309,7 @@ async function pullChanges(projectPath) {
         const git = simpleGit(gitPath);
         const result = await git.pull();
 
-        // Prüfen ob Änderungen gepullt wurden
+        // Check if changes were pulled
         const hasChanges = result.files.length > 0 ||
                           result.insertions > 0 ||
                           result.deletions > 0;
@@ -321,12 +321,12 @@ async function pullChanges(projectPath) {
         };
     } catch (err) {
         const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
-        throw new Error(`Git pull fehlgeschlagen: ${cleanError}`);
+        throw new Error(`Git pull failed: ${cleanError}`);
     }
 }
 
 /**
- * Entfernt die Git-Verbindung von einem Projekt
+ * Removes the Git connection from a project
  */
 function disconnectRepository(projectPath) {
     const gitPath = getGitPath(projectPath);
@@ -341,39 +341,39 @@ function disconnectRepository(projectPath) {
         fs.unlinkSync(credentialsFile);
     }
 
-    return { success: true, message: 'Git-Verbindung entfernt' };
+    return { success: true, message: 'Git connection removed' };
 }
 
 /**
- * Validiert eine Git-Repository-URL
+ * Validates a Git repository URL
  */
 function isValidGitUrl(url) {
-    // Unterstützt: https://github.com/user/repo.git oder https://github.com/user/repo
+    // Supports: https://github.com/user/repo.git or https://github.com/user/repo
     const httpsPattern = /^https:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/[\w.-]+\/[\w.-]+(\.git)?$/;
     return httpsPattern.test(url);
 }
 
 /**
- * Holt den Projekt-Pfad für einen User
+ * Gets the project path for a user
  */
 function getProjectPath(systemUsername, projectName) {
     return path.join(USERS_PATH, systemUsername, projectName);
 }
 
 /**
- * Erkennt den Projekttyp anhand der Quelldateien im Verzeichnis
- * Prüft zuerst html/ Unterordner, dann das Projekt-Root
+ * Detects the project type based on source files in the directory
+ * Checks html/ subfolder first, then project root
  *
- * Unterschied zu project.js detectTemplateType(): Diese Funktion analysiert die Quelldateien,
- * während detectTemplateType() den konfigurierten Typ aus docker-compose.yml liest
+ * Difference to project.js detectTemplateType(): This function analyzes source files,
+ * while detectTemplateType() reads the configured type from docker-compose.yml
  */
 function detectProjectType(projectPath) {
-    // Ermittle den korrekten Pfad für die Dateien
-    // Bei neuen Projekten: html/, bei alten: projectPath selbst
+    // Determine the correct path for files
+    // For new projects: html/, for old ones: projectPath itself
     let scanPath = projectPath;
     const htmlPath = path.join(projectPath, 'html');
 
-    // Prüfe ob html/ existiert und App-Dateien enthält
+    // Check if html/ exists and contains app files
     if (fs.existsSync(htmlPath)) {
         const htmlHasFiles = fs.existsSync(path.join(htmlPath, 'package.json')) ||
                             fs.existsSync(path.join(htmlPath, 'composer.json')) ||
@@ -389,38 +389,38 @@ function detectProjectType(projectPath) {
     const hasPackageJson = fs.existsSync(path.join(scanPath, 'package.json'));
     const hasComposerJson = fs.existsSync(path.join(scanPath, 'composer.json'));
 
-    // Node.js Projekte genauer analysieren
+    // Analyze Node.js projects more precisely
     if (hasPackageJson) {
         try {
             const packageJson = JSON.parse(fs.readFileSync(path.join(scanPath, 'package.json'), 'utf8'));
             const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
 
-            // Next.js erkennen
+            // Detect Next.js
             if (deps['next']) {
                 return 'nextjs';
             }
-            // React/Vue/Vite Build-Projekte erkennen
+            // Detect React/Vue/Vite build projects
             if (deps['react'] || deps['vue'] || deps['vite'] || deps['@vitejs/plugin-react'] || deps['@vitejs/plugin-vue']) {
                 return 'nodejs-static';
             }
         } catch (e) {
-            // Fehler beim Parsen - Fallback zu nodejs
+            // Parsing error - Fallback to nodejs
         }
         return 'nodejs';
     }
 
-    // PHP Projekte genauer analysieren
+    // Analyze PHP projects more precisely
     if (hasComposerJson) {
         try {
             const composerJson = JSON.parse(fs.readFileSync(path.join(scanPath, 'composer.json'), 'utf8'));
             const deps = { ...composerJson.require, ...composerJson['require-dev'] };
 
-            // Laravel/Symfony erkennen
+            // Detect Laravel/Symfony
             if (deps['laravel/framework'] || deps['symfony/framework-bundle']) {
                 return 'laravel';
             }
         } catch (e) {
-            // Fehler beim Parsen - Fallback zu php
+            // Parsing error - Fallback to php
         }
         return 'php';
     }
@@ -438,8 +438,8 @@ function detectProjectType(projectPath) {
 }
 
 /**
- * Generiert docker-compose.yml basierend auf Projekttyp
- * Alle Volumes zeigen auf ./html/ da Git-Repos dort geklont werden
+ * Generates docker-compose.yml based on project type
+ * All volumes point to ./html/ since Git repos are cloned there
  */
 function generateDockerCompose(projectType, projectName, port) {
     const configs = {
@@ -511,7 +511,7 @@ networks:
   dployr-network:
     external: true`,
 
-        // Laravel/Symfony mit Composer
+        // Laravel/Symfony with Composer
         laravel: `version: '3.8'
 
 services:
@@ -545,7 +545,7 @@ networks:
   dployr-network:
     external: true`,
 
-        // React/Vue/Vite - Build zu statischen Dateien
+        // React/Vue/Vite - Build to static files
         'nodejs-static': `version: '3.8'
 
 services:
@@ -617,59 +617,59 @@ networks:
 }
 
 /**
- * Erstellt ein neues Projekt direkt von einem Git-Repository
- * Repository wird in html/ Unterordner geklont für konsistente Struktur
+ * Creates a new project directly from a Git repository
+ * Repository is cloned into html/ subfolder for consistent structure
  */
 async function createProjectFromGit(systemUsername, projectName, repoUrl, token, port) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
     const htmlPath = path.join(projectPath, 'html');
 
-    // Prüfen ob Projekt bereits existiert
+    // Check if project already exists
     if (fs.existsSync(projectPath)) {
-        throw new Error('Ein Projekt mit diesem Namen existiert bereits');
+        throw new Error('A project with this name already exists');
     }
 
-    // User-Verzeichnis erstellen
+    // Create user directory
     const userPath = path.join(USERS_PATH, systemUsername);
     fs.mkdirSync(userPath, { recursive: true });
 
-    // Projektverzeichnis erstellen
+    // Create project directory
     fs.mkdirSync(projectPath, { recursive: true });
 
     const authenticatedUrl = createAuthenticatedUrl(repoUrl, token);
 
     try {
-        // Clone mit simple-git (sicher)
+        // Clone with simple-git (secure)
         const git = simpleGit({ timeout: { block: 120000 } });
         await git.clone(authenticatedUrl, htmlPath);
 
-        // Projekttyp erkennen (aus html/ Ordner)
+        // Detect project type (from html/ folder)
         const projectType = detectProjectType(htmlPath);
-        logger.info('Projekttyp erkannt', { projectType });
+        logger.info('Project type detected', { projectType });
 
-        // docker-compose.yml generieren (im Projektroot)
+        // Generate docker-compose.yml (in project root)
         const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
         fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
 
-        // .env generieren (im Projektroot - nur Docker-Variablen)
+        // Generate .env (in project root - only Docker variables)
         const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
         fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
-        // nginx-Config für statische Websites
+        // nginx config for static websites
         if (projectType === 'static') {
             const nginxDir = path.join(projectPath, 'nginx');
             fs.mkdirSync(nginxDir, { recursive: true });
             fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
         }
 
-        // Credentials speichern falls Token vorhanden (im html/ Ordner)
+        // Save credentials if token present (in html/ folder)
         if (token) {
             const credentialsPath = path.join(htmlPath, '.git-credentials');
             const url = new URL(repoUrl);
             const credentialLine = `https://${token}@${url.host}${url.pathname}`;
             fs.writeFileSync(credentialsPath, credentialLine + '\n', { mode: 0o600 });
 
-            // Git config mit simple-git
+            // Git config with simple-git
             const htmlGit = simpleGit(htmlPath);
             await htmlGit.addConfig('credential.helper', 'store --file=.git-credentials');
         }
@@ -681,13 +681,13 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
             port
         };
     } catch (err) {
-        // Aufräumen bei Fehler
+        // Cleanup on error
         try {
             fs.rmSync(projectPath, { recursive: true, force: true });
         } catch {}
 
         const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
-        throw new Error(`Git clone fehlgeschlagen: ${cleanError}`);
+        throw new Error(`Git clone failed: ${cleanError}`);
     }
 }
 

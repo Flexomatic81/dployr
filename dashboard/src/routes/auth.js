@@ -5,12 +5,12 @@ const { redirectIfAuth, requireAuth } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
 const { logger } = require('../config/logger');
 
-// Login-Seite anzeigen
+// Show login page
 router.get('/login', redirectIfAuth, (req, res) => {
     res.render('login', { title: 'Login' });
 });
 
-// Login verarbeiten
+// Process login
 router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
     const { username, password } = req.validatedBody || req.body;
 
@@ -18,24 +18,24 @@ router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
         const user = await userService.getUserByUsername(username);
 
         if (!user) {
-            req.flash('error', 'Ungültiger Benutzername oder Passwort');
+            req.flash('error', 'Invalid username or password');
             return res.redirect('/login');
         }
 
         const validPassword = await userService.verifyPassword(user, password);
 
         if (!validPassword) {
-            req.flash('error', 'Ungültiger Benutzername oder Passwort');
+            req.flash('error', 'Invalid username or password');
             return res.redirect('/login');
         }
 
-        // Prüfen ob User freigeschaltet ist
+        // Check if user is approved
         if (!user.approved) {
-            req.flash('warning', 'Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch einen Administrator.');
+            req.flash('warning', 'Your account has not been approved yet. Please wait for confirmation from an administrator.');
             return res.redirect('/login');
         }
 
-        // Session erstellen
+        // Create session
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -43,41 +43,41 @@ router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
             is_admin: user.is_admin
         };
 
-        req.flash('success', `Willkommen zurück, ${user.username}!`);
+        req.flash('success', `Welcome back, ${user.username}!`);
         res.redirect('/dashboard');
     } catch (error) {
-        logger.error('Login-Fehler', { error: error.message });
-        req.flash('error', 'Ein Fehler ist aufgetreten');
+        logger.error('Login error', { error: error.message });
+        req.flash('error', 'An error occurred');
         res.redirect('/login');
     }
 });
 
-// Registrierungs-Seite anzeigen
+// Show registration page
 router.get('/register', redirectIfAuth, (req, res) => {
     res.render('register', { title: 'Registrieren' });
 });
 
-// Registrierung verarbeiten
+// Process registration
 router.post('/register', redirectIfAuth, validate('register'), async (req, res) => {
     const { username, password } = req.validatedBody || req.body;
-    // System-Username ist identisch mit dem Benutzernamen
+    // System username is identical to the username
     const system_username = username;
 
     try {
-        // Prüfen ob Username bereits existiert
+        // Check if username already exists
         if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
-            req.flash('error', 'Benutzername bereits vergeben');
+            req.flash('error', 'Username already taken');
             return res.redirect('/register');
         }
 
-        // User erstellen (noch nicht freigeschaltet)
+        // Create user (not yet approved)
         await userService.createUser(username, password, system_username, false);
 
-        req.flash('info', 'Registrierung eingegangen! Ein Administrator muss Ihr Konto noch freischalten.');
+        req.flash('info', 'Registration received! An administrator must approve your account first.');
         res.redirect('/login');
     } catch (error) {
-        logger.error('Registrierungs-Fehler', { error: error.message });
-        req.flash('error', 'Ein Fehler ist aufgetreten');
+        logger.error('Registration error', { error: error.message });
+        req.flash('error', 'An error occurred');
         res.redirect('/register');
     }
 });
@@ -86,17 +86,17 @@ router.post('/register', redirectIfAuth, validate('register'), async (req, res) 
 router.post('/logout', requireAuth, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
-            logger.error('Logout-Fehler', { error: err.message });
+            logger.error('Logout error', { error: err.message });
         }
         res.redirect('/login');
     });
 });
 
-// GET Route für Logout (Fallback)
+// GET route for logout (fallback)
 router.get('/logout', requireAuth, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
-            logger.error('Logout-Fehler', { error: err.message });
+            logger.error('Logout error', { error: err.message });
         }
         res.redirect('/login');
     });

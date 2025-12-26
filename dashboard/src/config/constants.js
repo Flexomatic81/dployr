@@ -1,18 +1,18 @@
 /**
- * Zentrale Konstanten für das Dployr-Dashboard
+ * Central constants for the Dployr dashboard
  */
 
-// Berechtigungsstufen für Projekt-Sharing (aufsteigend)
+// Permission levels for project sharing (ascending)
 const PERMISSION_LEVELS = {
     read: 1,
     manage: 2,
     full: 3
 };
 
-// Gültige Auto-Deploy Intervalle (in Minuten)
+// Valid auto-deploy intervals (in minutes)
 const VALID_INTERVALS = [5, 10, 15, 30, 60];
 
-// Unterstützte Projekttypen
+// Supported project types
 const PROJECT_TYPES = [
     'static',
     'php',
@@ -22,8 +22,8 @@ const PROJECT_TYPES = [
     'nextjs'
 ];
 
-// Bekannte Aliase für Datenbank-Umgebungsvariablen
-// Ermöglicht intelligentes Ersetzen von DB-Credentials in .env Dateien
+// Known aliases for database environment variables
+// Enables intelligent replacement of DB credentials in .env files
 const DB_VARIABLE_ALIASES = {
     host: ['DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST', 'POSTGRES_HOST', 'MARIADB_HOST', 'PG_HOST'],
     port: ['DB_PORT', 'DATABASE_PORT', 'MYSQL_PORT', 'POSTGRES_PORT', 'MARIADB_PORT', 'PG_PORT'],

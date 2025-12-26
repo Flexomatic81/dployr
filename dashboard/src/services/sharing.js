@@ -2,17 +2,17 @@ const { pool } = require('../config/database');
 const { PERMISSION_LEVELS } = require('../config/constants');
 
 /**
- * Teilt ein Projekt mit einem anderen User
+ * Share a project with another user
  */
 async function shareProject(ownerId, ownerSystemUsername, projectName, sharedWithId, permission = 'read') {
-    // Validierung: Kann nicht mit sich selbst teilen
+    // Validation: Cannot share with yourself
     if (ownerId === sharedWithId) {
-        throw new Error('Du kannst ein Projekt nicht mit dir selbst teilen');
+        throw new Error('You cannot share a project with yourself');
     }
 
-    // Validierung: Berechtigung muss gültig sein
+    // Validation: Permission must be valid
     if (!PERMISSION_LEVELS[permission]) {
-        throw new Error('Ungültige Berechtigung');
+        throw new Error('Invalid permission');
     }
 
     const [result] = await pool.execute(
@@ -26,7 +26,7 @@ async function shareProject(ownerId, ownerSystemUsername, projectName, sharedWit
 }
 
 /**
- * Entfernt eine Projekt-Freigabe
+ * Remove a project share
  */
 async function unshareProject(ownerId, projectName, sharedWithId) {
     const [result] = await pool.execute(
@@ -38,11 +38,11 @@ async function unshareProject(ownerId, projectName, sharedWithId) {
 }
 
 /**
- * Aktualisiert die Berechtigung einer Freigabe
+ * Update share permission
  */
 async function updateSharePermission(ownerId, projectName, sharedWithId, newPermission) {
     if (!PERMISSION_LEVELS[newPermission]) {
-        throw new Error('Ungültige Berechtigung');
+        throw new Error('Invalid permission');
     }
 
     const [result] = await pool.execute(
@@ -54,7 +54,7 @@ async function updateSharePermission(ownerId, projectName, sharedWithId, newPerm
 }
 
 /**
- * Holt alle Freigaben für ein Projekt (für Besitzer-Ansicht)
+ * Get all shares for a project (for owner view)
  */
 async function getProjectShares(ownerId, projectName) {
     const [rows] = await pool.execute(
@@ -69,7 +69,7 @@ async function getProjectShares(ownerId, projectName) {
 }
 
 /**
- * Holt alle mit einem User geteilten Projekte
+ * Get all projects shared with a user
  */
 async function getSharedProjects(userId) {
     const [rows] = await pool.execute(
@@ -84,7 +84,7 @@ async function getSharedProjects(userId) {
 }
 
 /**
- * Prüft ob ein User die erforderliche Berechtigung für ein geteiltes Projekt hat
+ * Check if user has required permission for a shared project
  */
 async function hasPermission(userId, ownerSystemUsername, projectName, requiredLevel) {
     const shareInfo = await getShareInfo(userId, ownerSystemUsername, projectName);
@@ -100,7 +100,7 @@ async function hasPermission(userId, ownerSystemUsername, projectName, requiredL
 }
 
 /**
- * Holt die Freigabe-Informationen für einen User und ein Projekt
+ * Get share information for a user and project
  */
 async function getShareInfo(userId, ownerSystemUsername, projectName) {
     const [rows] = await pool.execute(
@@ -116,7 +116,7 @@ async function getShareInfo(userId, ownerSystemUsername, projectName) {
 }
 
 /**
- * Holt die Freigabe-Informationen nur mit Projekt-Name (sucht über alle Owner)
+ * Get share information by project name only (searches across all owners)
  */
 async function getShareInfoByProjectName(userId, projectName) {
     const [rows] = await pool.execute(
@@ -131,7 +131,7 @@ async function getShareInfoByProjectName(userId, projectName) {
 }
 
 /**
- * Holt alle User (für Dropdown, exklusive eines bestimmten Users)
+ * Get all users (for dropdown, excluding a specific user)
  */
 async function getAllUsersExcept(excludeUserId) {
     const [rows] = await pool.execute(
@@ -145,7 +145,7 @@ async function getAllUsersExcept(excludeUserId) {
 }
 
 /**
- * Löscht alle Freigaben für ein Projekt (wenn Projekt gelöscht wird)
+ * Delete all shares for a project (when project is deleted)
  */
 async function deleteAllSharesForProject(ownerId, projectName) {
     const [result] = await pool.execute(
@@ -156,19 +156,19 @@ async function deleteAllSharesForProject(ownerId, projectName) {
 }
 
 /**
- * Gibt die menschenlesbare Bezeichnung für eine Berechtigung zurück
+ * Get human-readable label for a permission
  */
 function getPermissionLabel(permission) {
     const labels = {
-        read: 'Ansehen',
-        manage: 'Verwalten',
-        full: 'Vollzugriff'
+        read: 'View',
+        manage: 'Manage',
+        full: 'Full access'
     };
     return labels[permission] || permission;
 }
 
 /**
- * Gibt das Icon für eine Berechtigung zurück
+ * Get icon for a permission
  */
 function getPermissionIcon(permission) {
     const icons = {

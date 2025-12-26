@@ -5,10 +5,10 @@ const DB_HOST = 'dployr-mariadb';
 const DB_PORT = 3306;
 
 /**
- * MariaDB Provider für Datenbank-Operationen
+ * MariaDB Provider for database operations
  */
 
-// Neue Datenbank erstellen
+// Create new database
 async function createDatabase(systemUsername, databaseName) {
     const fullDbName = `${systemUsername}_${databaseName}`;
     const dbUser = `${systemUsername}_${databaseName}`;
@@ -22,22 +22,22 @@ async function createDatabase(systemUsername, databaseName) {
     });
 
     try {
-        // Datenbank erstellen
+        // Create database
         await rootConnection.execute(
             `CREATE DATABASE IF NOT EXISTS \`${fullDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
         );
 
-        // User erstellen oder Passwort aktualisieren falls User bereits existiert
+        // Create user or update password if user already exists
         await rootConnection.execute(
             `CREATE USER IF NOT EXISTS '${dbUser}'@'%' IDENTIFIED BY '${dbPassword}'`
         );
 
-        // Passwort setzen (falls User bereits existierte)
+        // Set password (if user already existed)
         await rootConnection.execute(
             `ALTER USER '${dbUser}'@'%' IDENTIFIED BY '${dbPassword}'`
         );
 
-        // Rechte vergeben
+        // Grant privileges
         await rootConnection.execute(
             `GRANT ALL PRIVILEGES ON \`${fullDbName}\`.* TO '${dbUser}'@'%'`
         );
@@ -57,7 +57,7 @@ async function createDatabase(systemUsername, databaseName) {
     }
 }
 
-// Datenbank löschen
+// Delete database
 async function deleteDatabase(databaseName, username) {
     const rootConnection = await mysql.createConnection({
         host: DB_HOST,
@@ -67,10 +67,10 @@ async function deleteDatabase(databaseName, username) {
     });
 
     try {
-        // Datenbank löschen
+        // Delete database
         await rootConnection.execute(`DROP DATABASE IF EXISTS \`${databaseName}\``);
 
-        // User löschen
+        // Delete user
         if (username) {
             await rootConnection.execute(`DROP USER IF EXISTS '${username}'@'%'`);
         }
@@ -83,7 +83,7 @@ async function deleteDatabase(databaseName, username) {
     }
 }
 
-// Verbindung testen
+// Test connection
 async function testConnection() {
     const connection = await mysql.createConnection({
         host: DB_HOST,
@@ -102,7 +102,7 @@ async function testConnection() {
     }
 }
 
-// Verbindungsinfo abrufen
+// Get connection info
 function getConnectionInfo() {
     return {
         host: DB_HOST,

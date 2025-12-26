@@ -9,10 +9,10 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 const SETUP_MARKER_PATH = '/app/infrastructure/.setup-complete';
 
-// Prüfen ob Setup bereits abgeschlossen
+// Check if setup is already complete
 async function isSetupComplete() {
     try {
-        // Prüfen ob Setup-Marker existiert
+        // Check if setup marker exists
         await fs.access(SETUP_MARKER_PATH);
         return true;
     } catch {
@@ -20,7 +20,7 @@ async function isSetupComplete() {
     }
 }
 
-// Setup-Status API
+// Setup status API
 router.get('/status', async (req, res) => {
     const complete = await isSetupComplete();
     res.json({
@@ -30,7 +30,7 @@ router.get('/status', async (req, res) => {
     });
 });
 
-// Setup-Wizard Seite
+// Setup wizard page
 router.get('/', async (req, res) => {
     const complete = await isSetupComplete();
 
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
         return res.redirect('/login');
     }
 
-    // Aktuelle Server-IP ermitteln
+    // Determine current server IP
     const serverIp = req.hostname || 'localhost';
 
     res.render('setup/wizard', {
@@ -49,44 +49,44 @@ router.get('/', async (req, res) => {
     });
 });
 
-// Setup durchführen
+// Execute setup
 router.post('/run', async (req, res) => {
     const { server_ip, admin_username, admin_password, system_username, mysql_root_password } = req.body;
 
     try {
         const steps = [];
 
-        // Schritt 1: Docker Network erstellen
-        steps.push({ step: 'network', status: 'running', message: 'Erstelle Docker-Netzwerk...' });
+        // Step 1: Create Docker network
+        steps.push({ step: 'network', status: 'running', message: 'Creating Docker network...' });
         await createDockerNetwork();
         steps[0].status = 'done';
 
-        // Schritt 2: Warten auf MariaDB (läuft bereits via docker-compose)
-        steps.push({ step: 'wait_db', status: 'running', message: 'Warte auf Datenbank...' });
+        // Step 2: Wait for MariaDB (already running via docker-compose)
+        steps.push({ step: 'wait_db', status: 'running', message: 'Waiting for database...' });
         await waitForMariaDB(mysql_root_password);
         steps[1].status = 'done';
 
-        // Schritt 3: Dashboard-Datenbank erstellen
-        steps.push({ step: 'dashboard_db', status: 'running', message: 'Erstelle Dashboard-Datenbank...' });
+        // Step 3: Create dashboard database
+        steps.push({ step: 'dashboard_db', status: 'running', message: 'Creating dashboard database...' });
         await createDashboardDatabase(mysql_root_password);
         steps[2].status = 'done';
 
-        // Schritt 4: Admin-User erstellen
-        steps.push({ step: 'admin', status: 'running', message: 'Erstelle Admin-Benutzer...' });
+        // Step 4: Create admin user
+        steps.push({ step: 'admin', status: 'running', message: 'Creating admin user...' });
         await createAdminUser(admin_username, admin_password, system_username);
         steps[3].status = 'done';
 
-        // Schritt 5: Setup als abgeschlossen markieren
+        // Step 5: Mark setup as complete
         await markSetupComplete(server_ip, system_username);
 
         res.json({ success: true, steps });
     } catch (error) {
-        logger.error('Setup-Fehler', { error: error.message });
+        logger.error('Setup error', { error: error.message });
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Hilfsfunktionen
+// Helper functions
 async function checkDocker() {
     try {
         await docker.ping();
@@ -107,7 +107,7 @@ async function isInfrastructureRunning() {
 }
 
 async function markSetupComplete(serverIp, defaultUser) {
-    // Setup-Marker mit Metadaten erstellen
+    // Create setup marker with metadata
     const markerContent = JSON.stringify({
         completedAt: new Date().toISOString(),
         serverIp,
@@ -157,7 +157,7 @@ async function waitForMariaDB(mysqlRootPassword, maxAttempts = 30) {
         }
         await new Promise(r => setTimeout(r, 2000));
     }
-    throw new Error('MariaDB nicht erreichbar nach 60 Sekunden');
+    throw new Error('MariaDB not reachable after 60 seconds');
 }
 
 async function createDashboardDatabase(mysqlRootPassword) {
@@ -191,20 +191,20 @@ async function createDashboardDatabase(mysqlRootPassword) {
 
     const inspection = await exec.inspect();
     if (inspection.ExitCode !== 0) {
-        throw new Error(stderr || 'Datenbankfehler');
+        throw new Error(stderr || 'Database error');
     }
 }
 
 async function createAdminUser(username, password, systemUsername) {
     const { pool, initDatabase } = require('../config/database');
 
-    // Tabellen erstellen falls nicht vorhanden
+    // Create tables if they don't exist
     await initDatabase();
 
-    // Passwort hashen
+    // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Admin-User erstellen (is_admin und approved auf TRUE)
+    // Create admin user (is_admin and approved set to TRUE)
     await pool.execute(
         `INSERT INTO dashboard_users (username, password_hash, system_username, is_admin, approved)
          VALUES (?, ?, ?, TRUE, TRUE)

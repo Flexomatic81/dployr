@@ -12,21 +12,21 @@ const upload = require('../middleware/upload');
 const { validateZipMiddleware } = require('../middleware/upload');
 const { logger } = require('../config/logger');
 
-// Alle Projekte anzeigen
+// Show all projects
 router.get('/', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
         const userId = req.session.user.id;
 
-        // Eigene Projekte laden
+        // Load own projects
         const projects = await projectService.getUserProjects(systemUsername);
 
-        // Git-Status für jedes Projekt hinzufügen
+        // Add Git status for each project
         for (const project of projects) {
             project.gitConnected = gitService.isGitRepository(project.path);
         }
 
-        // Geteilte Projekte laden
+        // Load shared projects
         const sharedProjectInfos = await sharingService.getSharedProjects(userId);
         const sharedProjects = [];
 
@@ -46,36 +46,36 @@ router.get('/', requireAuth, async (req, res) => {
         }
 
         res.render('projects/index', {
-            title: 'Projekte',
+            title: 'Projects',
             projects,
             sharedProjects
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der Projekte', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der Projekte');
+        logger.error('Error loading projects', { error: error.message });
+        req.flash('error', 'Error loading projects');
         res.redirect('/dashboard');
     }
 });
 
-// Neues Projekt erstellen - Formular
+// Create new project - Form
 router.get('/create', requireAuth, async (req, res) => {
     try {
         const templates = await projectService.getAvailableTemplates();
         const nextPort = await projectService.getNextAvailablePort();
 
         res.render('projects/create', {
-            title: 'Neues Projekt',
+            title: 'New Project',
             templates,
             nextPort
         });
     } catch (error) {
-        logger.error('Fehler beim Laden des Formulars', { error: error.message });
-        req.flash('error', 'Fehler beim Laden des Formulars');
+        logger.error('Error loading form', { error: error.message });
+        req.flash('error', 'Error loading form');
         res.redirect('/projects');
     }
 });
 
-// Neues Projekt erstellen - Verarbeitung
+// Create new project - Processing
 router.post('/', requireAuth, async (req, res) => {
     try {
         const { name, template, port } = req.body;
@@ -88,30 +88,30 @@ router.post('/', requireAuth, async (req, res) => {
             { port: parseInt(port) }
         );
 
-        req.flash('success', `Projekt "${name}" erfolgreich erstellt!`);
+        req.flash('success', `Project "${name}" created successfully!`);
         res.redirect(`/projects/${name}`);
     } catch (error) {
-        logger.error('Fehler beim Erstellen des Projekts', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Erstellen des Projekts');
+        logger.error('Error creating project', { error: error.message });
+        req.flash('error', error.message || 'Error creating project');
         res.redirect('/projects/create');
     }
 });
 
-// Neues Projekt von ZIP erstellen - Verarbeitung
+// Create new project from ZIP - Processing
 router.post('/from-zip', requireAuth, upload.single('zipfile'), validateZipMiddleware, async (req, res) => {
     try {
         const { name, port } = req.body;
         const systemUsername = req.session.user.system_username;
 
-        // Prüfen ob Datei hochgeladen wurde
+        // Check if file was uploaded
         if (!req.file) {
-            req.flash('error', 'Bitte wähle eine ZIP-Datei aus');
+            req.flash('error', 'Please select a ZIP file');
             return res.redirect('/projects/create');
         }
 
-        // Validierung
+        // Validation
         if (!/^[a-z0-9-]+$/.test(name)) {
-            req.flash('error', 'Projektname darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten');
+            req.flash('error', 'Project name may only contain lowercase letters, numbers, and hyphens');
             return res.redirect('/projects/create');
         }
 
@@ -123,7 +123,7 @@ router.post('/from-zip', requireAuth, upload.single('zipfile'), validateZipMiddl
         );
 
         const typeNames = {
-            static: 'Statische Website',
+            static: 'Static Website',
             php: 'PHP Website',
             nodejs: 'Node.js App',
             laravel: 'Laravel/Symfony',
@@ -131,16 +131,16 @@ router.post('/from-zip', requireAuth, upload.single('zipfile'), validateZipMiddl
             nextjs: 'Next.js (SSR)'
         };
 
-        req.flash('success', `Projekt "${name}" erfolgreich aus ZIP erstellt! Erkannt als: ${typeNames[result.projectType] || result.projectType}`);
+        req.flash('success', `Project "${name}" created successfully from ZIP! Detected as: ${typeNames[result.projectType] || result.projectType}`);
         res.redirect(`/projects/${name}`);
     } catch (error) {
-        logger.error('Fehler beim Erstellen des ZIP-Projekts', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Erstellen des Projekts');
+        logger.error('Error creating ZIP project', { error: error.message });
+        req.flash('error', error.message || 'Error creating project');
         res.redirect('/projects/create');
     }
 });
 
-// Neues Projekt von Git erstellen - Verarbeitung
+// Create new project from Git - Processing
 router.post('/from-git', requireAuth, async (req, res) => {
     const startTime = Date.now();
     const { name, repo_url, access_token, port } = req.body;
@@ -148,14 +148,14 @@ router.post('/from-git', requireAuth, async (req, res) => {
     const userId = req.session.user.id;
 
     try {
-        // Validierung
+        // Validation
         if (!/^[a-z0-9-]+$/.test(name)) {
-            req.flash('error', 'Projektname darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten');
+            req.flash('error', 'Project name may only contain lowercase letters, numbers, and hyphens');
             return res.redirect('/projects/create');
         }
 
         if (!gitService.isValidGitUrl(repo_url)) {
-            req.flash('error', 'Ungültige Repository-URL. Unterstützt werden GitHub, GitLab und Bitbucket HTTPS-URLs.');
+            req.flash('error', 'Invalid repository URL. Supported: GitHub, GitLab, and Bitbucket HTTPS URLs.');
             return res.redirect('/projects/create');
         }
 
@@ -167,20 +167,20 @@ router.post('/from-git', requireAuth, async (req, res) => {
             parseInt(port)
         );
 
-        // Deployment-Log für Clone erstellen
+        // Create deployment log for clone
         try {
             await autoDeployService.logDeployment(userId, name, 'clone', {
                 status: 'success',
                 newCommitHash: result.commitHash || null,
-                commitMessage: `Repository geklont: ${repo_url.replace(/\/\/[^:]+:[^@]+@/, '//')}`,
+                commitMessage: `Repository cloned: ${repo_url.replace(/\/\/[^:]+:[^@]+@/, '//')}`,
                 durationMs: Date.now() - startTime
             });
         } catch (logError) {
-            logger.warn('Deployment-Log konnte nicht erstellt werden', { error: logError.message });
+            logger.warn('Could not create deployment log', { error: logError.message });
         }
 
         const typeNames = {
-            static: 'Statische Website',
+            static: 'Static Website',
             php: 'PHP Website',
             nodejs: 'Node.js App',
             laravel: 'Laravel/Symfony',
@@ -188,10 +188,10 @@ router.post('/from-git', requireAuth, async (req, res) => {
             nextjs: 'Next.js (SSR)'
         };
 
-        req.flash('success', `Projekt "${name}" erfolgreich von Git erstellt! Erkannt als: ${typeNames[result.projectType] || result.projectType}`);
+        req.flash('success', `Project "${name}" created successfully from Git! Detected as: ${typeNames[result.projectType] || result.projectType}`);
         res.redirect(`/projects/${name}`);
     } catch (error) {
-        // Fehlgeschlagenes Clone loggen
+        // Log failed clone
         try {
             await autoDeployService.logDeployment(userId, name, 'clone', {
                 status: 'failed',
@@ -199,29 +199,29 @@ router.post('/from-git', requireAuth, async (req, res) => {
                 durationMs: Date.now() - startTime
             });
         } catch (logError) {
-            // Ignorieren falls Logging fehlschlägt
+            // Ignore if logging fails
         }
 
-        logger.error('Fehler beim Erstellen des Git-Projekts', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Erstellen des Projekts');
+        logger.error('Error creating Git project', { error: error.message });
+        req.flash('error', error.message || 'Error creating project');
         res.redirect('/projects/create');
     }
 });
 
-// Einzelnes Projekt anzeigen
+// Show single project
 router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         const access = req.projectAccess;
         const project = access.project;
         const systemUsername = access.systemUsername;
 
-        // Git-Status abrufen
+        // Fetch Git status
         const gitStatus = await gitService.getGitStatus(project.path);
 
-        // Projekttyp automatisch erkennen und mit aktuellem vergleichen
+        // Auto-detect project type and compare with current
         const detectedType = gitService.detectProjectType(project.path);
 
-        // Mapping von erkannten Typen zu Template-Namen
+        // Mapping from detected types to template names
         const typeToTemplate = {
             static: 'static-website',
             php: 'php-website',
@@ -234,19 +234,19 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
         const detectedTemplateType = typeToTemplate[detectedType] || 'static-website';
         const typeMismatch = project.templateType !== detectedTemplateType;
 
-        // Umgebungsvariablen laden
+        // Load environment variables
         const envContent = await projectService.readEnvFile(systemUsername, req.params.name);
 
-        // .env.example prüfen
+        // Check for .env.example
         const envExample = await projectService.checkEnvExample(systemUsername, req.params.name);
 
-        // Datenbanken des Users laden (nur für Besitzer oder manage/full)
+        // Load user's databases (only for owner or manage/full permission)
         let userDatabases = [];
         if (access.isOwner || access.permission === 'manage' || access.permission === 'full') {
             userDatabases = await projectService.getUserDbCredentials(req.session.user.system_username);
         }
 
-        // Auto-Deploy Konfiguration laden (nur für Besitzer bei Git-Projekten)
+        // Load auto-deploy config (only for owner with Git projects)
         let autoDeployConfig = null;
         let deploymentHistory = [];
         if (access.isOwner && gitStatus && gitStatus.connected) {
@@ -256,13 +256,13 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
             }
         }
 
-        // Sharing-Informationen laden (nur für Besitzer)
+        // Load sharing information (only for owner)
         let projectShares = [];
         let availableUsers = [];
         if (access.isOwner) {
             projectShares = await sharingService.getProjectShares(req.session.user.id, req.params.name);
             availableUsers = await sharingService.getAllUsersExcept(req.session.user.id);
-            // User die bereits Zugriff haben aus der Liste entfernen
+            // Remove users who already have access from the list
             const sharedUserIds = projectShares.map(s => s.shared_with_id);
             availableUsers = availableUsers.filter(u => !sharedUserIds.includes(u.id));
         }
@@ -279,73 +279,73 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
             userDatabases,
             autoDeployConfig,
             deploymentHistory,
-            // Sharing-Daten
+            // Sharing data
             projectAccess: access,
             projectShares,
             availableUsers,
             permissionLabels: {
-                read: 'Ansehen',
-                manage: 'Verwalten',
-                full: 'Vollzugriff'
+                read: 'View',
+                manage: 'Manage',
+                full: 'Full Access'
             }
         });
     } catch (error) {
-        logger.error('Fehler beim Laden des Projekts', { error: error.message });
-        req.flash('error', 'Fehler beim Laden des Projekts');
+        logger.error('Error loading project', { error: error.message });
+        req.flash('error', 'Error loading project');
         res.redirect('/projects');
     }
 });
 
-// Projekt starten (manage oder höher)
+// Start project (manage or higher)
 router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
         await dockerService.startProject(project.path);
-        req.flash('success', `Projekt "${req.params.name}" gestartet`);
+        req.flash('success', `Project "${req.params.name}" started`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Starten', { error: error.message });
-        req.flash('error', 'Fehler beim Starten: ' + error.message);
+        logger.error('Error starting project', { error: error.message });
+        req.flash('error', 'Error starting: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Projekt stoppen (manage oder höher)
+// Stop project (manage or higher)
 router.post('/:name/stop', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
         await dockerService.stopProject(project.path);
-        req.flash('success', `Projekt "${req.params.name}" gestoppt`);
+        req.flash('success', `Project "${req.params.name}" stopped`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Stoppen', { error: error.message });
-        req.flash('error', 'Fehler beim Stoppen: ' + error.message);
+        logger.error('Error stopping project', { error: error.message });
+        req.flash('error', 'Error stopping: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Projekt neustarten (manage oder höher)
+// Restart project (manage or higher)
 router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
         await dockerService.restartProject(project.path);
-        req.flash('success', `Projekt "${req.params.name}" neugestartet`);
+        req.flash('success', `Project "${req.params.name}" restarted`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Neustarten', { error: error.message });
-        req.flash('error', 'Fehler beim Neustarten: ' + error.message);
+        logger.error('Error restarting project', { error: error.message });
+        req.flash('error', 'Error restarting: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Projekttyp ändern (full oder Besitzer)
+// Change project type (full or owner)
 router.post('/:name/change-type', requireAuth, getProjectAccess(), requirePermission('full'), async (req, res) => {
     try {
         const systemUsername = req.projectAccess.systemUsername;
         const { type } = req.body;
 
         const typeNames = {
-            static: 'Statische Website',
+            static: 'Static Website',
             php: 'PHP Website',
             nodejs: 'Node.js App',
             laravel: 'Laravel/Symfony',
@@ -354,119 +354,119 @@ router.post('/:name/change-type', requireAuth, getProjectAccess(), requirePermis
         };
 
         if (!typeNames[type]) {
-            req.flash('error', 'Ungültiger Projekttyp');
+            req.flash('error', 'Invalid project type');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
         const result = await projectService.changeProjectType(systemUsername, req.params.name, type);
-        req.flash('success', `Projekttyp auf "${typeNames[type]}" geändert. Container wurde neu gestartet.`);
+        req.flash('success', `Project type changed to "${typeNames[type]}". Container was restarted.`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Ändern des Projekttyps', { error: error.message });
-        req.flash('error', 'Fehler beim Ändern: ' + error.message);
+        logger.error('Error changing project type', { error: error.message });
+        req.flash('error', 'Error changing: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Umgebungsvariablen speichern (manage oder höher)
+// Save environment variables (manage or higher)
 router.post('/:name/env', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const systemUsername = req.projectAccess.systemUsername;
         const { envContent } = req.body;
 
         await projectService.writeEnvFile(systemUsername, req.params.name, envContent);
-        req.flash('success', 'Umgebungsvariablen gespeichert. Container-Neustart empfohlen.');
+        req.flash('success', 'Environment variables saved. Container restart recommended.');
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Speichern der Umgebungsvariablen', { error: error.message });
-        req.flash('error', 'Fehler beim Speichern: ' + error.message);
+        logger.error('Error saving environment variables', { error: error.message });
+        req.flash('error', 'Error saving: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// .env.example zu .env kopieren (manage oder höher)
+// Copy .env.example to .env (manage or higher)
 router.post('/:name/env/copy-example', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const systemUsername = req.projectAccess.systemUsername;
 
         const result = await projectService.copyEnvExample(systemUsername, req.params.name);
-        req.flash('success', `${result.filename} wurde zu .env kopiert. Container-Neustart empfohlen.`);
+        req.flash('success', `${result.filename} was copied to .env. Container restart recommended.`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Kopieren der .env.example', { error: error.message });
-        req.flash('error', 'Fehler: ' + error.message);
+        logger.error('Error copying .env.example', { error: error.message });
+        req.flash('error', 'Error: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Datenbank-Credentials intelligent in .env einfügen (manage oder höher)
-// Nutzt .env.example als Vorlage falls vorhanden und ersetzt bekannte DB-Variablen
+// Intelligently insert database credentials into .env (manage or higher)
+// Uses .env.example as template if available and replaces known DB variables
 router.post('/:name/env/add-db', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const systemUsername = req.projectAccess.systemUsername;
         const { database } = req.body;
 
-        // Alle DB-Credentials des aktuellen Users laden
+        // Load all DB credentials of the current user
         const credentials = await projectService.getUserDbCredentials(req.session.user.system_username);
         const dbCredentials = credentials.find(c => c.database === database);
 
         if (!dbCredentials) {
-            req.flash('error', 'Datenbank nicht gefunden');
+            req.flash('error', 'Database not found');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
         const result = await projectService.mergeDbCredentials(systemUsername, req.params.name, dbCredentials);
 
-        // Benutzerfreundliche Erfolgsmeldung
-        let message = 'Datenbank-Credentials eingerichtet';
+        // User-friendly success message
+        let message = 'Database credentials configured';
         if (result.usedExample) {
-            message += ` (${result.exampleFile} als Vorlage)`;
+            message += ` (${result.exampleFile} as template)`;
         }
         if (result.replacedCount > 0) {
-            message += `, ${result.replacedCount} Variable${result.replacedCount > 1 ? 'n' : ''} ersetzt`;
+            message += `, ${result.replacedCount} variable${result.replacedCount > 1 ? 's' : ''} replaced`;
         }
         if (result.addedCount > 0) {
-            message += `, ${result.addedCount} hinzugefügt`;
+            message += `, ${result.addedCount} added`;
         }
-        message += '. Container-Neustart empfohlen.';
+        message += '. Container restart recommended.';
 
         req.flash('success', message);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
-        logger.error('Fehler beim Einrichten der DB-Credentials', { error: error.message });
-        req.flash('error', 'Fehler: ' + error.message);
+        logger.error('Error setting up DB credentials', { error: error.message });
+        req.flash('error', 'Error: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Projekt löschen (nur Besitzer)
+// Delete project (owner only)
 router.delete('/:name', requireAuth, getProjectAccess(), async (req, res) => {
     try {
-        // Nur Besitzer darf löschen
+        // Only owner can delete
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann das Projekt löschen');
+            req.flash('error', 'Only the owner can delete the project');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
         const systemUsername = req.projectAccess.systemUsername;
 
-        // Alle Shares für dieses Projekt löschen
+        // Delete all shares for this project
         await sharingService.deleteAllSharesForProject(req.session.user.id, req.params.name);
 
-        // Auto-Deploy Daten löschen
+        // Delete auto-deploy data
         await autoDeployService.deleteAutoDeploy(req.session.user.id, req.params.name);
 
         await projectService.deleteProject(systemUsername, req.params.name);
-        req.flash('success', `Projekt "${req.params.name}" gelöscht`);
+        req.flash('success', `Project "${req.params.name}" deleted`);
         res.redirect('/projects');
     } catch (error) {
-        logger.error('Fehler beim Löschen', { error: error.message });
-        req.flash('error', 'Fehler beim Löschen: ' + error.message);
+        logger.error('Error deleting project', { error: error.message });
+        req.flash('error', 'Error deleting: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Git Pull durchführen (manage oder höher)
+// Perform Git pull (manage or higher)
 router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     const startTime = Date.now();
     const projectName = req.params.name;
@@ -477,11 +477,11 @@ router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermissio
         const projectPath = gitService.getProjectPath(systemUsername, projectName);
 
         if (!gitService.isGitRepository(projectPath)) {
-            req.flash('error', 'Kein Git-Repository verbunden');
+            req.flash('error', 'No Git repository connected');
             return res.redirect(`/projects/${projectName}`);
         }
 
-        // Alten Commit-Hash speichern
+        // Save old commit hash
         const { execSync } = require('child_process');
         const gitPath = gitService.getGitPath(projectPath);
         let oldCommitHash = null;
@@ -495,7 +495,7 @@ router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermissio
 
         const result = await gitService.pullChanges(projectPath);
 
-        // Neuen Commit-Hash und Message holen
+        // Get new commit hash and message
         let newCommitHash = null;
         let commitMessage = null;
         try {
@@ -512,28 +512,28 @@ router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermissio
             }).trim();
         } catch (e) {}
 
-        // Deployment-Log erstellen
+        // Create deployment log
         try {
             await autoDeployService.logDeployment(userId, projectName, 'pull', {
                 status: 'success',
                 oldCommitHash,
                 newCommitHash,
-                commitMessage: result.hasChanges ? commitMessage : 'Keine Änderungen',
+                commitMessage: result.hasChanges ? commitMessage : 'No changes',
                 durationMs: Date.now() - startTime
             });
         } catch (logError) {
-            logger.warn('Deployment-Log konnte nicht erstellt werden', { error: logError.message });
+            logger.warn('Could not create deployment log', { error: logError.message });
         }
 
         if (result.hasChanges) {
-            req.flash('success', 'Änderungen erfolgreich gepullt! Neustart des Projekts empfohlen.');
+            req.flash('success', 'Changes pulled successfully! Project restart recommended.');
         } else {
-            req.flash('info', 'Keine neuen Änderungen vorhanden.');
+            req.flash('info', 'No new changes available.');
         }
 
         res.redirect(`/projects/${projectName}`);
     } catch (error) {
-        // Fehlgeschlagenen Pull loggen
+        // Log failed pull
         try {
             await autoDeployService.logDeployment(userId, projectName, 'pull', {
                 status: 'failed',
@@ -541,7 +541,7 @@ router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermissio
                 durationMs: Date.now() - startTime
             });
         } catch (logError) {
-            // Ignorieren falls Logging fehlschlägt
+            // Ignore if logging fails
         }
 
         logger.error('Git pull error', { error: error.message });
@@ -550,12 +550,12 @@ router.post('/:name/git/pull', requireAuth, getProjectAccess(), requirePermissio
     }
 });
 
-// Git Verbindung trennen (nur Besitzer)
+// Disconnect Git repository (owner only)
 router.post('/:name/git/disconnect', requireAuth, getProjectAccess(), async (req, res) => {
     try {
-        // Nur Besitzer darf Git trennen
+        // Only owner can disconnect Git
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann die Git-Verbindung trennen');
+            req.flash('error', 'Only the owner can disconnect the Git repository');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -563,15 +563,15 @@ router.post('/:name/git/disconnect', requireAuth, getProjectAccess(), async (req
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
-            req.flash('error', 'Kein Git-Repository verbunden');
+            req.flash('error', 'No Git repository connected');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
-        // Auto-Deploy deaktivieren wenn Git getrennt wird
+        // Disable auto-deploy when Git is disconnected
         await autoDeployService.deleteAutoDeploy(req.session.user.id, req.params.name);
 
         gitService.disconnectRepository(projectPath);
-        req.flash('success', 'Git-Verbindung getrennt');
+        req.flash('success', 'Git connection disconnected');
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Git disconnect error', { error: error.message });
@@ -580,12 +580,12 @@ router.post('/:name/git/disconnect', requireAuth, getProjectAccess(), async (req
     }
 });
 
-// Auto-Deploy aktivieren (nur Besitzer)
+// Enable auto-deploy (owner only)
 router.post('/:name/autodeploy/enable', requireAuth, getProjectAccess(), async (req, res) => {
     try {
-        // Nur Besitzer darf Auto-Deploy konfigurieren
+        // Only owner can configure auto-deploy
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann Auto-Deploy konfigurieren');
+            req.flash('error', 'Only the owner can configure auto-deploy');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -593,73 +593,73 @@ router.post('/:name/autodeploy/enable', requireAuth, getProjectAccess(), async (
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
-            req.flash('error', 'Auto-Deploy ist nur für Git-Projekte verfügbar');
+            req.flash('error', 'Auto-deploy is only available for Git projects');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
-        // Branch aus Git-Status holen
+        // Get branch from Git status
         const gitStatus = await gitService.getGitStatus(projectPath);
         const branch = gitStatus?.branch || 'main';
 
         await autoDeployService.enableAutoDeploy(req.session.user.id, req.params.name, branch);
-        req.flash('success', `Auto-Deploy aktiviert. Prüft alle 5 Minuten auf Updates.`);
+        req.flash('success', `Auto-deploy enabled. Checks for updates every 5 minutes.`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Auto-Deploy enable error', { error: error.message });
-        req.flash('error', 'Fehler beim Aktivieren: ' + error.message);
+        req.flash('error', 'Error enabling: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Auto-Deploy deaktivieren (nur Besitzer)
+// Disable auto-deploy (owner only)
 router.post('/:name/autodeploy/disable', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann Auto-Deploy konfigurieren');
+            req.flash('error', 'Only the owner can configure auto-deploy');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
         await autoDeployService.disableAutoDeploy(req.session.user.id, req.params.name);
-        req.flash('success', 'Auto-Deploy deaktiviert');
+        req.flash('success', 'Auto-deploy disabled');
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Auto-Deploy disable error', { error: error.message });
-        req.flash('error', 'Fehler beim Deaktivieren: ' + error.message);
+        req.flash('error', 'Error disabling: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Auto-Deploy Intervall ändern (nur Besitzer)
+// Change auto-deploy interval (owner only)
 router.post('/:name/autodeploy/interval', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann Auto-Deploy konfigurieren');
+            req.flash('error', 'Only the owner can configure auto-deploy');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
         const interval = parseInt(req.body.interval);
         await autoDeployService.updateInterval(req.session.user.id, req.params.name, interval);
-        req.flash('success', `Intervall auf ${interval} Minuten gesetzt`);
+        req.flash('success', `Interval set to ${interval} minutes`);
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Auto-Deploy interval error', { error: error.message });
-        req.flash('error', 'Fehler beim Ändern des Intervalls: ' + error.message);
+        req.flash('error', 'Error changing interval: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Auto-Deploy manuell triggern (manage oder höher - auch für geteilte User)
+// Manually trigger auto-deploy (manage or higher - also for shared users)
 router.post('/:name/autodeploy/trigger', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const systemUsername = req.projectAccess.systemUsername;
         const projectPath = gitService.getProjectPath(systemUsername, req.params.name);
 
         if (!gitService.isGitRepository(projectPath)) {
-            req.flash('error', 'Kein Git-Repository verbunden');
+            req.flash('error', 'No Git repository connected');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
-        // Für geteilte Projekte: Owner-ID verwenden
+        // For shared projects: use owner ID
         const ownerId = req.projectAccess.isOwner ? req.session.user.id : req.projectAccess.ownerId;
 
         const result = await autoDeployService.executeDeploy(
@@ -670,26 +670,26 @@ router.post('/:name/autodeploy/trigger', requireAuth, getProjectAccess(), requir
         );
 
         if (result.skipped) {
-            req.flash('info', 'Ein Deployment läuft bereits');
+            req.flash('info', 'A deployment is already running');
         } else if (result.success) {
             if (result.hasChanges) {
-                req.flash('success', `Deployment erfolgreich: ${result.oldCommit} → ${result.newCommit}`);
+                req.flash('success', `Deployment successful: ${result.oldCommit} → ${result.newCommit}`);
             } else {
-                req.flash('info', 'Keine Änderungen vorhanden');
+                req.flash('info', 'No changes available');
             }
         } else {
-            req.flash('error', 'Deployment fehlgeschlagen: ' + result.error);
+            req.flash('error', 'Deployment failed: ' + result.error);
         }
 
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Auto-Deploy trigger error', { error: error.message });
-        req.flash('error', 'Fehler: ' + error.message);
+        req.flash('error', 'Error: ' + error.message);
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Deployment-Historie abrufen (JSON API) - read oder höher
+// Fetch deployment history (JSON API) - read or higher
 router.get('/:name/autodeploy/history', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         const ownerId = req.projectAccess.isOwner ? req.session.user.id : req.projectAccess.ownerId;
@@ -706,14 +706,14 @@ router.get('/:name/autodeploy/history', requireAuth, getProjectAccess(), async (
 });
 
 // ============================
-// PROJEKT-SHARING ENDPUNKTE
+// PROJECT SHARING ENDPOINTS
 // ============================
 
-// Projekt teilen - Neuen Share erstellen (nur Besitzer)
+// Share project - Create new share (owner only)
 router.post('/:name/shares', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann das Projekt teilen');
+            req.flash('error', 'Only the owner can share the project');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -721,7 +721,7 @@ router.post('/:name/shares', requireAuth, getProjectAccess(), async (req, res) =
         const sharedWithId = parseInt(userId);
 
         if (!sharedWithId || !['read', 'manage', 'full'].includes(permission)) {
-            req.flash('error', 'Ungültige Eingabe');
+            req.flash('error', 'Invalid input');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -733,20 +733,20 @@ router.post('/:name/shares', requireAuth, getProjectAccess(), async (req, res) =
             permission
         );
 
-        req.flash('success', 'Projekt erfolgreich geteilt');
+        req.flash('success', 'Project shared successfully');
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Share error', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Teilen');
+        req.flash('error', error.message || 'Error sharing');
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Share-Berechtigung ändern (nur Besitzer)
+// Change share permission (owner only)
 router.post('/:name/shares/:userId/update', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann Berechtigungen ändern');
+            req.flash('error', 'Only the owner can change permissions');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -754,7 +754,7 @@ router.post('/:name/shares/:userId/update', requireAuth, getProjectAccess(), asy
         const sharedWithId = parseInt(req.params.userId);
 
         if (!['read', 'manage', 'full'].includes(permission)) {
-            req.flash('error', 'Ungültige Berechtigung');
+            req.flash('error', 'Invalid permission');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -765,20 +765,20 @@ router.post('/:name/shares/:userId/update', requireAuth, getProjectAccess(), asy
             permission
         );
 
-        req.flash('success', 'Berechtigung aktualisiert');
+        req.flash('success', 'Permission updated');
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Update share error', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Aktualisieren');
+        req.flash('error', error.message || 'Error updating');
         res.redirect(`/projects/${req.params.name}`);
     }
 });
 
-// Share entfernen (nur Besitzer)
+// Remove share (owner only)
 router.post('/:name/shares/:userId/delete', requireAuth, getProjectAccess(), async (req, res) => {
     try {
         if (!req.projectAccess.isOwner) {
-            req.flash('error', 'Nur der Besitzer kann Freigaben entfernen');
+            req.flash('error', 'Only the owner can remove shares');
             return res.redirect(`/projects/${req.params.name}`);
         }
 
@@ -790,11 +790,11 @@ router.post('/:name/shares/:userId/delete', requireAuth, getProjectAccess(), asy
             sharedWithId
         );
 
-        req.flash('success', 'Freigabe entfernt');
+        req.flash('success', 'Share removed');
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
         logger.error('Delete share error', { error: error.message });
-        req.flash('error', error.message || 'Fehler beim Entfernen');
+        req.flash('error', error.message || 'Error removing');
         res.redirect(`/projects/${req.params.name}`);
     }
 });

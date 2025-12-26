@@ -1,6 +1,6 @@
 /**
- * Middleware für Projekt-Zugriffsprüfung
- * Zentrale Stelle für Berechtigungsprüfung bei Projekten
+ * Middleware for project access control
+ * Central point for permission checking on projects
  */
 
 const projectService = require('../services/project');
@@ -9,10 +9,10 @@ const { PERMISSION_LEVELS } = require('../config/constants');
 const { logger } = require('../config/logger');
 
 /**
- * Middleware: Prüft Projekt-Zugriff (eigenes oder geteiltes Projekt)
- * Setzt req.projectAccess mit Berechtigungsinformationen
+ * Middleware: Check project access (own or shared project)
+ * Sets req.projectAccess with permission information
  *
- * @param {string} paramName - Name des URL-Parameters für den Projektnamen (default: 'name')
+ * @param {string} paramName - Name of the URL parameter for the project name (default: 'name')
  */
 function getProjectAccess(paramName = 'name') {
     return async (req, res, next) => {
@@ -21,7 +21,7 @@ function getProjectAccess(paramName = 'name') {
         const systemUsername = req.session.user.system_username;
 
         try {
-            // 1. Prüfen ob eigenes Projekt
+            // 1. Check if own project
             const ownProject = await projectService.getProjectInfo(systemUsername, projectName);
             if (ownProject) {
                 req.projectAccess = {
@@ -33,7 +33,7 @@ function getProjectAccess(paramName = 'name') {
                 return next();
             }
 
-            // 2. Prüfen ob geteiltes Projekt
+            // 2. Check if shared project
             const shareInfo = await sharingService.getShareInfoByProjectName(userId, projectName);
             if (shareInfo) {
                 const sharedProject = await projectService.getProjectInfo(
@@ -54,30 +54,30 @@ function getProjectAccess(paramName = 'name') {
                 }
             }
 
-            // 3. Kein Zugriff
-            req.flash('error', 'Projekt nicht gefunden');
+            // 3. No access
+            req.flash('error', 'Project not found');
             return res.redirect('/projects');
         } catch (error) {
-            logger.error('Fehler bei Projektzugriffsprüfung', { error: error.message });
-            req.flash('error', 'Fehler beim Laden des Projekts');
+            logger.error('Error checking project access', { error: error.message });
+            req.flash('error', 'Error loading project');
             return res.redirect('/projects');
         }
     };
 }
 
 /**
- * Prüft ob User mindestens die angegebene Berechtigung hat
- * @param {string} minLevel - Mindestberechtigungsstufe ('read', 'manage', 'full')
+ * Check if user has at least the specified permission level
+ * @param {string} minLevel - Minimum permission level ('read', 'manage', 'full')
  */
 function requirePermission(minLevel) {
     return (req, res, next) => {
         const access = req.projectAccess;
         if (!access) {
-            req.flash('error', 'Kein Zugriff');
+            req.flash('error', 'No access');
             return res.redirect('/projects');
         }
 
-        // Owner hat immer alle Rechte
+        // Owner always has all permissions
         if (access.isOwner) {
             return next();
         }
@@ -89,7 +89,7 @@ function requirePermission(minLevel) {
             return next();
         }
 
-        req.flash('error', 'Keine Berechtigung für diese Aktion');
+        req.flash('error', 'No permission for this action');
         const projectName = req.params.name || req.params.projectName;
         return res.redirect(`/projects/${projectName}`);
     };

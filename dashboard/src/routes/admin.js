@@ -12,14 +12,14 @@ const { pool } = require('../config/database');
 
 const LOG_DIR = process.env.LOG_DIR || '/app/logs';
 
-// Alle Admin-Routen erfordern Admin-Rechte
+// All admin routes require admin privileges
 router.use(requireAuth);
 router.use(requireAdmin);
 
-// Admin Dashboard - Übersicht
+// Admin Dashboard - Overview
 router.get('/', async (req, res) => {
     try {
-        // Alle Counts parallel abrufen
+        // Fetch all counts in parallel
         const [userCount, adminCount, pendingCount, users] = await Promise.all([
             userService.getUserCount(),
             userService.getAdminCount(),
@@ -27,14 +27,14 @@ router.get('/', async (req, res) => {
             userService.getAllUsers()
         ]);
 
-        // Alle Projekt-Counts parallel abrufen
+        // Fetch all project counts in parallel
         const projectCounts = await Promise.all(
             users.map(user => projectService.getUserProjects(user.system_username))
         );
         const totalProjects = projectCounts.reduce((sum, projects) => sum + projects.length, 0);
 
         res.render('admin/index', {
-            title: 'Admin-Bereich',
+            title: 'Admin Area',
             stats: {
                 users: userCount,
                 admins: adminCount,
@@ -43,66 +43,66 @@ router.get('/', async (req, res) => {
             }
         });
     } catch (error) {
-        logger.error('Fehler im Admin-Dashboard', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der Admin-Übersicht');
+        logger.error('Error in admin dashboard', { error: error.message });
+        req.flash('error', 'Error loading admin overview');
         res.redirect('/dashboard');
     }
 });
 
-// Ausstehende Registrierungen anzeigen
+// Show pending registrations
 router.get('/pending', async (req, res) => {
     try {
         const pendingUsers = await userService.getPendingUsers();
 
         res.render('admin/pending', {
-            title: 'Ausstehende Registrierungen',
+            title: 'Pending Registrations',
             pendingUsers
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der ausstehenden Registrierungen', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der ausstehenden Registrierungen');
+        logger.error('Error loading pending registrations', { error: error.message });
+        req.flash('error', 'Error loading pending registrations');
         res.redirect('/admin');
     }
 });
 
-// User freischalten
+// Approve user
 router.post('/users/:id/approve', async (req, res) => {
     try {
         const user = await userService.approveUser(req.params.id);
 
         if (user) {
-            req.flash('success', `User "${user.username}" wurde freigeschaltet`);
+            req.flash('success', `User "${user.username}" has been approved`);
         } else {
-            req.flash('error', 'User nicht gefunden');
+            req.flash('error', 'User not found');
         }
 
         res.redirect('/admin/pending');
     } catch (error) {
-        logger.error('Fehler beim Freischalten', { error: error.message });
-        req.flash('error', 'Fehler beim Freischalten: ' + error.message);
+        logger.error('Error approving user', { error: error.message });
+        req.flash('error', 'Error approving user: ' + error.message);
         res.redirect('/admin/pending');
     }
 });
 
-// User-Registrierung ablehnen
+// Reject user registration
 router.post('/users/:id/reject', async (req, res) => {
     try {
         await userService.rejectUser(req.params.id);
-        req.flash('success', 'Registrierung wurde abgelehnt');
+        req.flash('success', 'Registration has been rejected');
         res.redirect('/admin/pending');
     } catch (error) {
-        logger.error('Fehler beim Ablehnen', { error: error.message });
-        req.flash('error', 'Fehler beim Ablehnen: ' + error.message);
+        logger.error('Error rejecting user', { error: error.message });
+        req.flash('error', 'Error rejecting user: ' + error.message);
         res.redirect('/admin/pending');
     }
 });
 
-// User-Verwaltung - Liste
+// User management - List
 router.get('/users', async (req, res) => {
     try {
         const users = await userService.getAllUsers();
 
-        // Projekte pro User parallel zählen
+        // Count projects per user in parallel
         const projectCounts = await Promise.all(
             users.map(user => projectService.getUserProjects(user.system_username))
         );
@@ -112,98 +112,98 @@ router.get('/users', async (req, res) => {
         });
 
         res.render('admin/users', {
-            title: 'User-Verwaltung',
+            title: 'User Management',
             users
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der User', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der User-Liste');
+        logger.error('Error loading users', { error: error.message });
+        req.flash('error', 'Error loading user list');
         res.redirect('/admin');
     }
 });
 
-// Neuen User erstellen - Formular
+// Create new user - Form
 router.get('/users/create', (req, res) => {
     res.render('admin/users-create', {
-        title: 'Neuer User'
+        title: 'New User'
     });
 });
 
-// Neuen User erstellen - Verarbeitung
+// Create new user - Processing
 router.post('/users', async (req, res) => {
     try {
         const { username, password, system_username, is_admin } = req.body;
 
-        // Validierung
+        // Validation
         if (!username || !password || !system_username) {
-            req.flash('error', 'Alle Pflichtfelder müssen ausgefüllt sein');
+            req.flash('error', 'All required fields must be filled');
             return res.redirect('/admin/users/create');
         }
 
         if (!/^[a-z0-9_-]+$/.test(username)) {
-            req.flash('error', 'Benutzername darf nur Kleinbuchstaben, Zahlen, Unterstriche und Bindestriche enthalten');
+            req.flash('error', 'Username may only contain lowercase letters, numbers, underscores, and hyphens');
             return res.redirect('/admin/users/create');
         }
 
         if (!/^[a-z0-9_-]+$/.test(system_username)) {
-            req.flash('error', 'System-Username darf nur Kleinbuchstaben, Zahlen, Unterstriche und Bindestriche enthalten');
+            req.flash('error', 'System username may only contain lowercase letters, numbers, underscores, and hyphens');
             return res.redirect('/admin/users/create');
         }
 
-        // Prüfen ob User existiert
+        // Check if user exists
         if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
-            req.flash('error', 'Benutzername oder System-Username existiert bereits');
+            req.flash('error', 'Username or system username already exists');
             return res.redirect('/admin/users/create');
         }
 
-        // Admin-erstellte User werden automatisch freigeschaltet
+        // Admin-created users are automatically approved
         await userService.createUser(username, password, system_username, is_admin === 'on', true);
 
-        req.flash('success', `User "${username}" erfolgreich erstellt`);
+        req.flash('success', `User "${username}" created successfully`);
         res.redirect('/admin/users');
     } catch (error) {
-        logger.error('Fehler beim Erstellen des Users', { error: error.message });
-        req.flash('error', 'Fehler beim Erstellen des Users');
+        logger.error('Error creating user', { error: error.message });
+        req.flash('error', 'Error creating user');
         res.redirect('/admin/users/create');
     }
 });
 
-// User bearbeiten - Formular
+// Edit user - Form
 router.get('/users/:id/edit', async (req, res) => {
     try {
         const editUser = await userService.getUserById(req.params.id);
 
         if (!editUser) {
-            req.flash('error', 'User nicht gefunden');
+            req.flash('error', 'User not found');
             return res.redirect('/admin/users');
         }
 
         res.render('admin/users-edit', {
-            title: 'User bearbeiten',
+            title: 'Edit User',
             editUser
         });
     } catch (error) {
-        logger.error('Fehler beim Laden des Users', { error: error.message });
-        req.flash('error', 'Fehler beim Laden des Users');
+        logger.error('Error loading user', { error: error.message });
+        req.flash('error', 'Error loading user');
         res.redirect('/admin/users');
     }
 });
 
-// User bearbeiten - Verarbeitung
+// Edit user - Processing
 router.put('/users/:id', async (req, res) => {
     try {
         const { username, password, system_username, is_admin } = req.body;
         const userId = req.params.id;
 
-        // Validierung
+        // Validation
         if (!username || !system_username) {
-            req.flash('error', 'Benutzername und System-Username sind erforderlich');
+            req.flash('error', 'Username and system username are required');
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
-        // Prüfen ob Username/System-Username bereits verwendet wird
+        // Check if username/system username is already in use
         if (await userService.existsUsernameOrSystemUsername(username, system_username, userId)) {
-            req.flash('error', 'Benutzername oder System-Username wird bereits verwendet');
+            req.flash('error', 'Username or system username is already in use');
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
@@ -214,54 +214,54 @@ router.put('/users/:id', async (req, res) => {
             isAdmin: is_admin === 'on'
         });
 
-        req.flash('success', 'User erfolgreich aktualisiert');
+        req.flash('success', 'User updated successfully');
         res.redirect('/admin/users');
     } catch (error) {
-        logger.error('Fehler beim Aktualisieren des Users', { error: error.message });
-        req.flash('error', 'Fehler beim Aktualisieren des Users');
+        logger.error('Error updating user', { error: error.message });
+        req.flash('error', 'Error updating user');
         res.redirect(`/admin/users/${req.params.id}/edit`);
     }
 });
 
-// User löschen
+// Delete user
 router.delete('/users/:id', async (req, res) => {
     try {
         const userId = req.params.id;
 
-        // Eigenen Account nicht löschen
+        // Cannot delete own account
         if (parseInt(userId) === req.session.user.id) {
-            req.flash('error', 'Sie können Ihren eigenen Account nicht löschen');
+            req.flash('error', 'You cannot delete your own account');
             return res.redirect('/admin/users');
         }
 
-        // Prüfen ob es der letzte Admin ist
+        // Check if this is the last admin
         if (await userService.isLastAdmin(userId)) {
-            req.flash('error', 'Der letzte Admin-Account kann nicht gelöscht werden');
+            req.flash('error', 'The last admin account cannot be deleted');
             return res.redirect('/admin/users');
         }
 
         await userService.deleteUser(userId);
 
-        req.flash('success', 'User erfolgreich gelöscht');
+        req.flash('success', 'User deleted successfully');
         res.redirect('/admin/users');
     } catch (error) {
-        logger.error('Fehler beim Löschen des Users', { error: error.message });
-        req.flash('error', 'Fehler beim Löschen des Users');
+        logger.error('Error deleting user', { error: error.message });
+        req.flash('error', 'Error deleting user');
         res.redirect('/admin/users');
     }
 });
 
-// Alle Projekte aller User anzeigen
+// Show all projects of all users
 router.get('/projects', async (req, res) => {
     try {
         const users = await userService.getAllUsers();
 
-        // Alle Projekte parallel abrufen
+        // Fetch all projects in parallel
         const projectsPerUser = await Promise.all(
             users.map(user => projectService.getUserProjects(user.system_username))
         );
 
-        // Projekte mit Owner-Infos zusammenführen
+        // Merge projects with owner info
         const allProjects = users.flatMap((user, index) =>
             projectsPerUser[index].map(project => ({
                 ...project,
@@ -271,12 +271,12 @@ router.get('/projects', async (req, res) => {
         );
 
         res.render('admin/projects', {
-            title: 'Alle Projekte',
+            title: 'All Projects',
             projects: allProjects
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der Projekte', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der Projekte');
+        logger.error('Error loading projects', { error: error.message });
+        req.flash('error', 'Error loading projects');
         res.redirect('/admin');
     }
 });
@@ -285,7 +285,7 @@ router.get('/projects', async (req, res) => {
 // System-Logs
 // ============================================
 
-// Hilfsfunktion: Letzte N Zeilen einer Datei lesen (effizient)
+// Helper function: Read last N lines of a file (efficiently)
 async function readLastLines(filePath, maxLines = 500) {
     return new Promise((resolve, reject) => {
         const lines = [];
@@ -297,7 +297,7 @@ async function readLastLines(filePath, maxLines = 500) {
 
         rl.on('line', (line) => {
             lines.push(line);
-            // Nur die letzten maxLines behalten
+            // Keep only the last maxLines
             if (lines.length > maxLines) {
                 lines.shift();
             }
@@ -308,7 +308,7 @@ async function readLastLines(filePath, maxLines = 500) {
     });
 }
 
-// Hilfsfunktion: Log-Zeile parsen (JSON-Format von Winston)
+// Helper function: Parse log line (Winston JSON format)
 function parseLogLine(line) {
     try {
         const parsed = JSON.parse(line);
@@ -319,7 +319,7 @@ function parseLogLine(line) {
             meta: { ...parsed, timestamp: undefined, level: undefined, message: undefined, service: undefined }
         };
     } catch {
-        // Fallback für nicht-JSON Zeilen
+        // Fallback for non-JSON lines
         return {
             timestamp: '',
             level: 'info',
@@ -329,10 +329,10 @@ function parseLogLine(line) {
     }
 }
 
-// System-Logs anzeigen
+// Show system logs
 router.get('/logs', async (req, res) => {
     try {
-        const logType = req.query.type || 'combined'; // combined oder error
+        const logType = req.query.type || 'combined'; // combined or error
         const levelFilter = req.query.level || 'all'; // all, error, warn, info
         const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
 
@@ -354,9 +354,9 @@ router.get('/logs', async (req, res) => {
                 .reverse(); // Neueste zuerst
         } catch (err) {
             if (err.code === 'ENOENT') {
-                error = `Log-Datei nicht gefunden: ${logFile}`;
+                error = `Log file not found: ${logFile}`;
             } else {
-                error = `Fehler beim Lesen der Logs: ${err.message}`;
+                error = `Error reading logs: ${err.message}`;
             }
         }
 
@@ -371,13 +371,13 @@ router.get('/logs', async (req, res) => {
             }
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der System-Logs', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der System-Logs');
+        logger.error('Error loading system logs', { error: error.message });
+        req.flash('error', 'Error loading system logs');
         res.redirect('/admin');
     }
 });
 
-// System-Logs als JSON API (für Live-Refresh)
+// System logs as JSON API (for live refresh)
 router.get('/logs/api', async (req, res) => {
     try {
         const logType = req.query.type || 'combined';
@@ -407,7 +407,7 @@ router.get('/logs/api', async (req, res) => {
 // Deployment-Historie
 // ============================================
 
-// Deployment-Historie anzeigen
+// Show deployment history
 router.get('/deployments', async (req, res) => {
     try {
         const statusFilter = req.query.status || 'all';
@@ -436,7 +436,7 @@ router.get('/deployments', async (req, res) => {
 
         const [deployments] = await pool.execute(query, params);
 
-        // Statistiken berechnen
+        // Calculate statistics
         const [stats] = await pool.execute(`
             SELECT
                 COUNT(*) as total,
@@ -448,7 +448,7 @@ router.get('/deployments', async (req, res) => {
         `);
 
         res.render('admin/deployments', {
-            title: 'Deployment-Historie',
+            title: 'Deployment History',
             deployments,
             stats: stats[0],
             filters: {
@@ -457,8 +457,8 @@ router.get('/deployments', async (req, res) => {
             }
         });
     } catch (error) {
-        logger.error('Fehler beim Laden der Deployment-Historie', { error: error.message });
-        req.flash('error', 'Fehler beim Laden der Deployment-Historie');
+        logger.error('Error loading deployment history', { error: error.message });
+        req.flash('error', 'Error loading deployment history');
         res.redirect('/admin');
     }
 });

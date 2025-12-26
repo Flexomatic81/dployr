@@ -7,17 +7,17 @@ const userService = require('../services/user');
 const sharingService = require('../services/sharing');
 const { logger } = require('../config/logger');
 
-// Dashboard Hauptseite
+// Dashboard main page
 router.get('/', requireAuth, async (req, res) => {
     try {
         const systemUsername = req.session.user.system_username;
         const userId = req.session.user.id;
         const isAdmin = req.session.user.is_admin;
 
-        // Eigene Projekte laden
+        // Load own projects
         const projects = await projectService.getUserProjects(systemUsername);
 
-        // Geteilte Projekte laden
+        // Load shared projects
         const sharedProjectInfos = await sharingService.getSharedProjects(userId);
         const sharedProjects = [];
 
@@ -34,10 +34,10 @@ router.get('/', requireAuth, async (req, res) => {
             }
         }
 
-        // Datenbanken laden
+        // Load databases
         const databases = await databaseService.getUserDatabases(systemUsername);
 
-        // Statistiken berechnen (inkl. geteilte Projekte)
+        // Calculate statistics (including shared projects)
         const allProjects = [...projects, ...sharedProjects];
         const stats = {
             totalProjects: projects.length,
@@ -47,7 +47,7 @@ router.get('/', requireAuth, async (req, res) => {
             totalDatabases: databases.length
         };
 
-        // Für Admins: Anzahl ausstehender Registrierungen
+        // For admins: count of pending registrations
         const pendingUsersCount = isAdmin ? await userService.getPendingCount() : 0;
 
         res.render('dashboard', {
@@ -59,8 +59,8 @@ router.get('/', requireAuth, async (req, res) => {
             pendingUsersCount
         });
     } catch (error) {
-        logger.error('Dashboard-Fehler', { error: error.message });
-        req.flash('error', 'Fehler beim Laden des Dashboards');
+        logger.error('Dashboard error', { error: error.message });
+        req.flash('error', 'Error loading dashboard');
         res.render('dashboard', {
             title: 'Dashboard',
             projects: [],

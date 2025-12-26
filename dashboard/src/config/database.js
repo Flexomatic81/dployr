@@ -4,7 +4,7 @@ const { logger } = require('./logger');
 let pool = null;
 
 /**
- * Erstellt den Connection Pool (Lazy Initialization)
+ * Creates the connection pool (lazy initialization)
  */
 function getPool() {
     if (!pool) {
@@ -19,11 +19,11 @@ function getPool() {
             queueLimit: 0
         });
 
-        // Error-Handler für Verbindungsprobleme
+        // Error handler for connection issues
         pool.on('error', (err) => {
             logger.error('Database pool error', { error: err.message, code: err.code });
             if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNREFUSED') {
-                pool = null; // Pool zurücksetzen für Reconnect
+                pool = null; // Reset pool for reconnect
             }
         });
     }
@@ -31,8 +31,8 @@ function getPool() {
 }
 
 /**
- * Proxy-Objekt das automatisch getPool() aufruft
- * Erlaubt Zugriff auf pool.query() etc. ohne expliziten getPool() Aufruf
+ * Proxy object that automatically calls getPool()
+ * Allows access to pool.query() etc. without explicit getPool() call
  */
 const poolProxy = new Proxy({}, {
     get(target, prop) {
@@ -46,13 +46,13 @@ const poolProxy = new Proxy({}, {
 });
 
 /**
- * Datenbank-Schema initialisieren
+ * Initialize database schema
  */
 async function initDatabase() {
     try {
         const connection = await getPool().getConnection();
 
-        // Dashboard Users Tabelle erstellen
+        // Create dashboard users table
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS dashboard_users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -65,19 +65,19 @@ async function initDatabase() {
             )
         `);
 
-        // Migration: approved-Spalte hinzufügen falls nicht vorhanden
+        // Migration: Add approved column if not exists
         try {
             await connection.execute(`
                 ALTER TABLE dashboard_users ADD COLUMN approved BOOLEAN DEFAULT FALSE
             `);
-            // Bestehende User automatisch freischalten
+            // Auto-approve existing users
             await connection.execute(`UPDATE dashboard_users SET approved = TRUE WHERE approved IS NULL OR id > 0`);
-            logger.info('Migration: approved-Spalte hinzugefügt, bestehende User freigeschaltet');
+            logger.info('Migration: Added approved column, existing users approved');
         } catch (e) {
-            // Spalte existiert bereits - ignorieren
+            // Column already exists - ignore
         }
 
-        // Sessions Tabelle für express-session (optional, falls DB-Sessions gewünscht)
+        // Sessions table for express-session (optional, if DB sessions desired)
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id VARCHAR(128) PRIMARY KEY,
@@ -86,7 +86,7 @@ async function initDatabase() {
             )
         `);
 
-        // Auto-Deploy Konfiguration Tabelle
+        // Auto-deploy configuration table
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS project_autodeploy (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,17 +104,17 @@ async function initDatabase() {
             )
         `);
 
-        // Migration: interval_minutes Spalte hinzufügen falls nicht vorhanden
+        // Migration: Add interval_minutes column if not exists
         try {
             await connection.execute(`
                 ALTER TABLE project_autodeploy ADD COLUMN interval_minutes INT DEFAULT 5
             `);
-            logger.info('Migration: interval_minutes-Spalte hinzugefügt');
+            logger.info('Migration: Added interval_minutes column');
         } catch (e) {
-            // Spalte existiert bereits - ignorieren
+            // Column already exists - ignore
         }
 
-        // Deployment-Logs Tabelle
+        // Deployment logs table
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS deployment_logs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -134,7 +134,7 @@ async function initDatabase() {
             )
         `);
 
-        // Migration: trigger_type ENUM erweitern für clone/pull
+        // Migration: Extend trigger_type ENUM for clone/pull
         try {
             await connection.execute(`
                 ALTER TABLE deployment_logs MODIFY COLUMN trigger_type ENUM('auto', 'manual', 'clone', 'pull') DEFAULT 'auto'
@@ -143,10 +143,10 @@ async function initDatabase() {
                 ALTER TABLE deployment_logs MODIFY COLUMN status ENUM('pending', 'pulling', 'cloning', 'restarting', 'success', 'failed') NOT NULL
             `);
         } catch (e) {
-            // ENUM bereits erweitert - ignorieren
+            // ENUM already extended - ignore
         }
 
-        // Project Shares Tabelle für Projekt-Freigaben
+        // Project shares table for project sharing
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS project_shares (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -164,15 +164,15 @@ async function initDatabase() {
         `);
 
         connection.release();
-        logger.info('Datenbank-Schema initialisiert');
+        logger.info('Database schema initialized');
     } catch (error) {
-        logger.error('Datenbank-Initialisierung fehlgeschlagen', { error: error.message });
+        logger.error('Database initialization failed', { error: error.message });
         throw error;
     }
 }
 
 /**
- * Testet die Datenbankverbindung
+ * Tests the database connection
  */
 async function testConnection() {
     try {
@@ -186,7 +186,7 @@ async function testConnection() {
 }
 
 /**
- * Schließt den Pool (für graceful shutdown)
+ * Closes the pool (for graceful shutdown)
  */
 async function closePool() {
     if (pool) {
@@ -196,7 +196,7 @@ async function closePool() {
 }
 
 module.exports = {
-    pool: poolProxy,  // Exportiert Proxy für Rückwärtskompatibilität
+    pool: poolProxy,  // Export proxy for backwards compatibility
     getPool,
     initDatabase,
     testConnection,

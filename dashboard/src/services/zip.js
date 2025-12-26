@@ -8,7 +8,7 @@ const { logger } = require('../config/logger');
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
 /**
- * Entpackt eine ZIP-Datei in ein Zielverzeichnis
+ * Extracts a ZIP file to a target directory
  */
 function extractZip(zipPath, destPath) {
     const zip = new AdmZip(zipPath);
@@ -16,24 +16,24 @@ function extractZip(zipPath, destPath) {
 }
 
 /**
- * Prüft ob das Verzeichnis nur einen einzigen Unterordner enthält
- * und verschiebt dessen Inhalt nach oben (z.B. projekt-main/ -> .)
+ * Checks if the directory contains only a single subfolder
+ * and moves its contents up (e.g., project-main/ -> .)
  */
 function flattenIfNeeded(destPath) {
     const entries = fs.readdirSync(destPath);
 
-    // Ignoriere versteckte Dateien wie .DS_Store
+    // Ignore hidden files like .DS_Store
     const visibleEntries = entries.filter(e => !e.startsWith('.'));
 
-    // Nur wenn genau ein Eintrag existiert und es ein Verzeichnis ist
+    // Only if exactly one entry exists and it's a directory
     if (visibleEntries.length === 1) {
         const singleEntry = visibleEntries[0];
         const singleEntryPath = path.join(destPath, singleEntry);
 
         if (fs.statSync(singleEntryPath).isDirectory()) {
-            logger.debug('ZIP-Struktur: Verschiebe Inhalt nach oben', { folder: singleEntry });
+            logger.debug('ZIP structure: Moving contents up', { folder: singleEntry });
 
-            // Alle Dateien aus dem Unterordner verschieben
+            // Move all files from the subfolder
             const subEntries = fs.readdirSync(singleEntryPath);
             for (const entry of subEntries) {
                 const src = path.join(singleEntryPath, entry);
@@ -41,7 +41,7 @@ function flattenIfNeeded(destPath) {
                 fs.renameSync(src, dest);
             }
 
-            // Leeren Unterordner löschen
+            // Delete empty subfolder
             fs.rmdirSync(singleEntryPath);
 
             return true;
@@ -52,38 +52,38 @@ function flattenIfNeeded(destPath) {
 }
 
 /**
- * Erstellt ein neues Projekt aus einer ZIP-Datei
+ * Creates a new project from a ZIP file
  */
 async function createProjectFromZip(systemUsername, projectName, zipPath, port) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
-    // Prüfen ob Projekt bereits existiert
+    // Check if project already exists
     if (fs.existsSync(projectPath)) {
-        // ZIP-Datei löschen
+        // Delete ZIP file
         cleanupZip(zipPath);
-        throw new Error('Ein Projekt mit diesem Namen existiert bereits');
+        throw new Error('A project with this name already exists');
     }
 
     try {
-        // User-Verzeichnis erstellen
+        // Create user directory
         const userPath = path.join(USERS_PATH, systemUsername);
         fs.mkdirSync(userPath, { recursive: true });
 
-        // Projekt-Verzeichnis erstellen
+        // Create project directory
         fs.mkdirSync(projectPath, { recursive: true });
 
-        // ZIP entpacken
-        logger.info('Entpacke ZIP', { projectPath });
+        // Extract ZIP
+        logger.info('Extracting ZIP', { projectPath });
         extractZip(zipPath, projectPath);
 
-        // Prüfen ob nur ein Unterordner existiert und ggf. flatten
+        // Check if only one subfolder exists and flatten if needed
         flattenIfNeeded(projectPath);
 
-        // Projekttyp erkennen (nutzt git.js Funktion)
+        // Detect project type (uses git.js function)
         const projectType = gitService.detectProjectType(projectPath);
-        logger.info('Projekttyp erkannt', { projectType });
+        logger.info('Project type detected', { projectType });
 
-        // docker-compose.yml generieren (nutzt git.js Funktion)
+        // Generate docker-compose.yml (uses git.js function)
         const dockerCompose = gitService.generateDockerCompose(
             projectType,
             `${systemUsername}-${projectName}`,
@@ -91,11 +91,11 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
         );
         fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
 
-        // .env generieren
+        // Generate .env
         const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
         fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
-        // nginx-Config für statische Websites
+        // nginx config for static websites
         if (projectType === 'static') {
             const nginxDir = path.join(projectPath, 'nginx');
             fs.mkdirSync(nginxDir, { recursive: true });
@@ -105,7 +105,7 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
             );
         }
 
-        // ZIP-Datei löschen
+        // Delete ZIP file
         cleanupZip(zipPath);
 
         return {
@@ -116,7 +116,7 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
         };
 
     } catch (error) {
-        // Aufräumen bei Fehler
+        // Cleanup on error
         try {
             fs.rmSync(projectPath, { recursive: true, force: true });
         } catch {}
@@ -128,7 +128,7 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
 }
 
 /**
- * Löscht die temporäre ZIP-Datei
+ * Deletes the temporary ZIP file
  */
 function cleanupZip(zipPath) {
     try {
@@ -136,7 +136,7 @@ function cleanupZip(zipPath) {
             fs.unlinkSync(zipPath);
         }
     } catch (error) {
-        logger.warn('Fehler beim Löschen der ZIP-Datei', { error: error.message });
+        logger.warn('Error deleting ZIP file', { error: error.message });
     }
 }
 

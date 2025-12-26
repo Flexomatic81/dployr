@@ -5,10 +5,10 @@ const DB_HOST = 'dployr-postgresql';
 const DB_PORT = 5432;
 
 /**
- * PostgreSQL Provider für Datenbank-Operationen
+ * PostgreSQL Provider for database operations
  */
 
-// Root-Pool für Admin-Operationen
+// Root pool for admin operations
 function getRootPool() {
     return new Pool({
         host: DB_HOST,
@@ -20,9 +20,9 @@ function getRootPool() {
     });
 }
 
-// Neue Datenbank erstellen
+// Create new database
 async function createDatabase(systemUsername, databaseName) {
-    // PostgreSQL erlaubt keine Bindestriche in Identifier ohne Quotes
+    // PostgreSQL doesn't allow hyphens in identifiers without quotes
     const safeName = databaseName.replace(/-/g, '_');
     const fullDbName = `${systemUsername}_${safeName}`;
     const dbUser = `${systemUsername}_${safeName}`;
@@ -31,37 +31,37 @@ async function createDatabase(systemUsername, databaseName) {
     const pool = getRootPool();
 
     try {
-        // Prüfen ob User bereits existiert
+        // Check if user already exists
         const userExists = await pool.query(
             `SELECT 1 FROM pg_roles WHERE rolname = $1`,
             [dbUser]
         );
 
-        // User erstellen oder Passwort aktualisieren
+        // Create user or update password
         if (userExists.rows.length === 0) {
-            // Passwort muss escaped werden für SQL
+            // Password must be escaped for SQL
             await pool.query(
                 `CREATE USER "${dbUser}" WITH PASSWORD '${dbPassword}'`
             );
         } else {
-            // User existiert bereits - Passwort aktualisieren
+            // User already exists - update password
             await pool.query(
                 `ALTER USER "${dbUser}" WITH PASSWORD '${dbPassword}'`
             );
         }
 
-        // Prüfen ob Datenbank bereits existiert
+        // Check if database already exists
         const dbExists = await pool.query(
             `SELECT 1 FROM pg_database WHERE datname = $1`,
             [fullDbName]
         );
 
-        // Datenbank erstellen falls nicht vorhanden
+        // Create database if not present
         if (dbExists.rows.length === 0) {
             await pool.query(`CREATE DATABASE "${fullDbName}" OWNER "${dbUser}"`);
         }
 
-        // Alle Rechte vergeben
+        // Grant all privileges
         await pool.query(`GRANT ALL PRIVILEGES ON DATABASE "${fullDbName}" TO "${dbUser}"`);
 
         return {
@@ -77,12 +77,12 @@ async function createDatabase(systemUsername, databaseName) {
     }
 }
 
-// Datenbank löschen
+// Delete database
 async function deleteDatabase(databaseName, username) {
     const pool = getRootPool();
 
     try {
-        // Alle Verbindungen zur Datenbank trennen
+        // Disconnect all connections to the database
         await pool.query(`
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
@@ -90,12 +90,12 @@ async function deleteDatabase(databaseName, username) {
             AND pid <> pg_backend_pid()
         `, [databaseName]);
 
-        // Datenbank löschen
+        // Delete database
         await pool.query(`DROP DATABASE IF EXISTS "${databaseName}"`);
 
-        // User löschen
+        // Delete user
         if (username) {
-            // Erst alle Rechte entfernen
+            // First remove all privileges
             await pool.query(`DROP OWNED BY "${username}" CASCADE`).catch(() => {});
             await pool.query(`DROP USER IF EXISTS "${username}"`);
         }
@@ -106,7 +106,7 @@ async function deleteDatabase(databaseName, username) {
     }
 }
 
-// Verbindung testen
+// Test connection
 async function testConnection() {
     const pool = getRootPool();
 
@@ -120,7 +120,7 @@ async function testConnection() {
     }
 }
 
-// Verbindungsinfo abrufen
+// Get connection info
 function getConnectionInfo() {
     return {
         host: DB_HOST,

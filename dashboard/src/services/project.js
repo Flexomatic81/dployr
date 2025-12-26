@@ -9,7 +9,7 @@ const USERS_PATH = process.env.USERS_PATH || '/app/users';
 const SCRIPTS_PATH = process.env.SCRIPTS_PATH || '/app/scripts';
 const TEMPLATES_PATH = process.env.TEMPLATES_PATH || '/app/templates';
 
-// Alle Projekte eines Users abrufen
+// Get all projects for a user
 async function getUserProjects(systemUsername) {
     const userPath = path.join(USERS_PATH, systemUsername);
 
@@ -30,21 +30,21 @@ async function getUserProjects(systemUsername) {
         return projects;
     } catch (error) {
         if (error.code === 'ENOENT') {
-            return []; // User-Verzeichnis existiert noch nicht
+            return []; // User directory doesn't exist yet
         }
         throw error;
     }
 }
 
-// Projekt-Details abrufen
+// Get project details
 async function getProjectInfo(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
     try {
-        // Prüfen ob Projektverzeichnis existiert
+        // Check if project directory exists
         await fs.access(projectPath);
 
-        // .env Datei lesen
+        // Read .env file
         const envPath = path.join(projectPath, '.env');
         let envData = {};
 
@@ -52,13 +52,13 @@ async function getProjectInfo(systemUsername, projectName) {
             const envContent = await fs.readFile(envPath, 'utf8');
             envData = parseEnvFile(envContent);
         } catch (e) {
-            // .env existiert nicht
+            // .env doesn't exist
         }
 
-        // Template-Typ ermitteln
+        // Determine template type
         const templateType = await detectTemplateType(projectPath);
 
-        // Container-Status abrufen
+        // Get container status
         const containerName = envData.PROJECT_NAME || `${systemUsername}-${projectName}`;
         const containers = await dockerService.getProjectContainers(containerName);
 
@@ -79,20 +79,20 @@ async function getProjectInfo(systemUsername, projectName) {
             database: envData.DB_DATABASE || null
         };
     } catch (error) {
-        logger.error('Fehler beim Laden von Projekt', { projectName, error: error.message });
+        logger.error('Error loading project', { projectName, error: error.message });
         return null;
     }
 }
 
-// Template-Typ aus docker-compose.yml erkennen (konfigurierter Typ)
-// Unterschied zu git.js detectProjectType(): Diese Funktion liest den konfigurierten Typ,
-// während detectProjectType() den Typ anhand der Quelldateien erkennt
+// Detect template type from docker-compose.yml (configured type)
+// Difference to git.js detectProjectType(): This function reads the configured type,
+// while detectProjectType() detects the type based on source files
 async function detectTemplateType(projectPath) {
     try {
         const composePath = path.join(projectPath, 'docker-compose.yml');
         const content = await fs.readFile(composePath, 'utf8');
 
-        // Neue erweiterte Typen erkennen
+        // Detect new extended types
         if (content.includes('composer install') || content.includes('APACHE_DOCUMENT_ROOT')) {
             return 'laravel';
         } else if (content.includes('next') || (content.includes('npm run build') && content.includes('npm start') && content.includes('3000'))) {
@@ -111,7 +111,7 @@ async function detectTemplateType(projectPath) {
     }
 }
 
-// .env Datei parsen
+// Parse .env file
 function parseEnvFile(content) {
     const result = {};
     const lines = content.split('\n');
@@ -129,7 +129,7 @@ function parseEnvFile(content) {
     return result;
 }
 
-// Verfügbare Templates abrufen
+// Get available templates
 async function getAvailableTemplates() {
     try {
         const entries = await fs.readdir(TEMPLATES_PATH, { withFileTypes: true });
@@ -140,20 +140,20 @@ async function getAvailableTemplates() {
                 displayName: getTemplateDisplayName(entry.name)
             }));
     } catch (error) {
-        logger.error('Fehler beim Laden der Templates', { error: error.message });
+        logger.error('Error loading templates', { error: error.message });
         return [
-            { name: 'static-website', displayName: 'Statische Website (HTML/CSS/JS)' },
+            { name: 'static-website', displayName: 'Static Website (HTML/CSS/JS)' },
             { name: 'php-website', displayName: 'PHP Website' },
-            { name: 'nodejs-app', displayName: 'Node.js Anwendung' }
+            { name: 'nodejs-app', displayName: 'Node.js Application' }
         ];
     }
 }
 
 function getTemplateDisplayName(name) {
     const names = {
-        'static-website': 'Statische Website (HTML/CSS/JS)',
+        'static-website': 'Static Website (HTML/CSS/JS)',
         'php-website': 'PHP Website',
-        'nodejs-app': 'Node.js Anwendung',
+        'nodejs-app': 'Node.js Application',
         'laravel': 'Laravel (PHP Framework)',
         'nodejs-static': 'Node.js Static (React, Vue, Vite)',
         'nextjs': 'Next.js (SSR)'
@@ -161,7 +161,7 @@ function getTemplateDisplayName(name) {
     return names[name] || name;
 }
 
-// Nächsten freien Port finden
+// Find next available port
 async function getNextAvailablePort() {
     const usedPorts = new Set();
 
@@ -183,17 +183,17 @@ async function getNextAvailablePort() {
                                 usedPorts.add(parseInt(env.EXPOSED_PORT));
                             }
                         } catch (e) {
-                            // .env nicht vorhanden
+                            // .env not present
                         }
                     }
                 }
             }
         }
     } catch (error) {
-        logger.error('Fehler beim Ermitteln der Ports', { error: error.message });
+        logger.error('Error determining ports', { error: error.message });
     }
 
-    // Starte bei Port 8001 und finde den nächsten freien
+    // Start at port 8001 and find the next free one
     let port = 8001;
     while (usedPorts.has(port)) {
         port++;
@@ -202,33 +202,33 @@ async function getNextAvailablePort() {
     return port;
 }
 
-// Neues Projekt erstellen
+// Create new project
 async function createProject(systemUsername, projectName, templateType, options = {}) {
-    // Validierung
+    // Validation
     if (!/^[a-z0-9-]+$/.test(projectName)) {
-        throw new Error('Projektname darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten');
+        throw new Error('Project name may only contain lowercase letters, numbers and hyphens');
     }
 
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
-    // Prüfen ob Projekt bereits existiert
+    // Check if project already exists
     try {
         await fs.access(projectPath);
-        throw new Error('Ein Projekt mit diesem Namen existiert bereits');
+        throw new Error('A project with this name already exists');
     } catch (error) {
         if (error.code !== 'ENOENT') {
             throw error;
         }
     }
 
-    // Port ermitteln
+    // Determine port
     const port = options.port || await getNextAvailablePort();
 
-    // Template kopieren
+    // Copy template
     const templatePath = path.join(TEMPLATES_PATH, templateType);
     await copyDirectory(templatePath, projectPath);
 
-    // .env Datei anpassen
+    // Adjust .env file
     const envPath = path.join(projectPath, '.env');
     let envContent = '';
 
@@ -242,7 +242,7 @@ async function createProject(systemUsername, projectName, templateType, options 
         .replace(/PROJECT_NAME=.*/, `PROJECT_NAME=${systemUsername}-${projectName}`)
         .replace(/EXPOSED_PORT=.*/, `EXPOSED_PORT=${port}`);
 
-    // Falls kein PROJECT_NAME existiert, hinzufügen
+    // If no PROJECT_NAME exists, add it
     if (!envContent.includes('PROJECT_NAME=')) {
         envContent = `PROJECT_NAME=${systemUsername}-${projectName}\n` + envContent;
     }
@@ -252,7 +252,7 @@ async function createProject(systemUsername, projectName, templateType, options 
 
     await fs.writeFile(envPath, envContent);
 
-    // User-Verzeichnis erstellen falls nicht vorhanden
+    // Create user directory if not present
     const userPath = path.join(USERS_PATH, systemUsername);
     await fs.mkdir(userPath, { recursive: true });
 
@@ -264,7 +264,7 @@ async function createProject(systemUsername, projectName, templateType, options 
     };
 }
 
-// Verzeichnis rekursiv kopieren
+// Copy directory recursively
 async function copyDirectory(src, dest) {
     await fs.mkdir(dest, { recursive: true });
     const entries = await fs.readdir(src, { withFileTypes: true });
@@ -281,78 +281,78 @@ async function copyDirectory(src, dest) {
     }
 }
 
-// Projekt löschen
+// Delete project
 async function deleteProject(systemUsername, projectName, deleteDatabase = false) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
-    // Prüfen ob Projekt existiert
+    // Check if project exists
     try {
         await fs.access(projectPath);
     } catch (error) {
-        throw new Error('Projekt nicht gefunden');
+        throw new Error('Project not found');
     }
 
-    // Container stoppen
+    // Stop containers
     try {
         await dockerService.stopProject(projectPath);
     } catch (error) {
-        logger.error('Fehler beim Stoppen der Container', { error: error.message });
+        logger.error('Error stopping containers', { error: error.message });
     }
 
-    // Projekt-Verzeichnis löschen
+    // Delete project directory
     await fs.rm(projectPath, { recursive: true, force: true });
 
     return { success: true };
 }
 
-// Projekttyp ändern
+// Change project type
 async function changeProjectType(systemUsername, projectName, newType) {
     const validTypes = ['static', 'php', 'nodejs', 'laravel', 'nodejs-static', 'nextjs'];
     if (!validTypes.includes(newType)) {
-        throw new Error(`Ungültiger Projekttyp. Erlaubt: ${validTypes.join(', ')}`);
+        throw new Error(`Invalid project type. Allowed: ${validTypes.join(', ')}`);
     }
 
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
-    // Prüfen ob Projekt existiert
+    // Check if project exists
     try {
         await fs.access(projectPath);
     } catch (error) {
-        throw new Error('Projekt nicht gefunden');
+        throw new Error('Project not found');
     }
 
-    // Aktuellen Typ ermitteln
+    // Determine current type
     const oldType = await detectTemplateType(projectPath);
 
-    // .env lesen für Port und Projektname
+    // Read .env for port and project name
     const envPath = path.join(projectPath, '.env');
     let envData = {};
     try {
         const envContent = await fs.readFile(envPath, 'utf8');
         envData = parseEnvFile(envContent);
     } catch (e) {
-        // .env existiert nicht
+        // .env doesn't exist
     }
 
     const port = parseInt(envData.EXPOSED_PORT) || 8001;
     const containerName = envData.PROJECT_NAME || `${systemUsername}-${projectName}`;
 
-    // Container stoppen
+    // Stop containers
     try {
         await dockerService.stopProject(projectPath);
     } catch (error) {
-        logger.error('Fehler beim Stoppen', { error: error.message });
+        logger.error('Error stopping containers', { error: error.message });
     }
 
-    // Neue docker-compose.yml generieren
+    // Generate new docker-compose.yml
     let newCompose = generateDockerCompose(newType, containerName, port);
 
-    // Bei alten Git-Projekten (Git im Root statt html/): Pfade anpassen
+    // For old Git projects (Git in root instead of html/): adjust paths
     if (isGitRepository(projectPath)) {
         const gitPath = getGitPath(projectPath);
         if (gitPath === projectPath) {
-            // Altes Projekt: Git liegt im Root, nicht in html/
-            // Pfade von ./html auf . ändern
+            // Old project: Git is in root, not in html/
+            // Change paths from ./html to .
             newCompose = newCompose
                 .replace(/\.\/html:/g, './:')
                 .replace(/context: \.\/html/g, 'context: .');
@@ -362,7 +362,7 @@ async function changeProjectType(systemUsername, projectName, newType) {
     const composePath = path.join(projectPath, 'docker-compose.yml');
     await fs.writeFile(composePath, newCompose);
 
-    // nginx-Config für statische Websites erstellen
+    // Create nginx config for static websites
     if (newType === 'static') {
         const nginxDir = path.join(projectPath, 'nginx');
         await fs.mkdir(nginxDir, { recursive: true });
@@ -372,7 +372,7 @@ async function changeProjectType(systemUsername, projectName, newType) {
         );
     }
 
-    // Container starten
+    // Start containers
     await dockerService.startProject(projectPath);
 
     return {
@@ -382,24 +382,24 @@ async function changeProjectType(systemUsername, projectName, newType) {
     };
 }
 
-// Docker-System-Variablen die nicht vom User geändert werden sollen
+// Docker system variables that shouldn't be changed by user
 const SYSTEM_ENV_VARS = ['PROJECT_NAME', 'EXPOSED_PORT'];
 
-// Ermitteln wo die App-.env Datei liegt (html/ oder Git-Pfad oder Root)
+// Determine where the app .env file is located (html/ or Git path or root)
 async function getAppEnvPath(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
-    // Bei Git-Projekten: getGitPath verwenden (unterstützt alte und neue Struktur)
+    // For Git projects: use getGitPath (supports old and new structure)
     if (isGitRepository(projectPath)) {
         const gitPath = getGitPath(projectPath);
         return path.join(gitPath, '.env');
     }
 
-    // Für nicht-Git-Projekte: html/ Ordner prüfen
+    // For non-Git projects: check html/ folder
     const htmlPath = path.join(projectPath, 'html');
     try {
         await fs.access(htmlPath);
-        // html/ existiert, prüfen ob dort App-Dateien sind
+        // html/ exists, check if app files are there
         const htmlFiles = await fs.readdir(htmlPath);
         const hasAppFiles = htmlFiles.some(f =>
             ['package.json', 'composer.json', 'index.php', 'index.html', 'artisan', '.env.example'].includes(f)
@@ -408,27 +408,27 @@ async function getAppEnvPath(systemUsername, projectName) {
             return path.join(htmlPath, '.env');
         }
     } catch (e) {
-        // Kein html/ Ordner
+        // No html/ folder
     }
 
-    // Fallback: Projekt-Root
+    // Fallback: project root
     return path.join(projectPath, '.env');
 }
 
-// Umgebungsvariablen aus .env lesen (ohne Docker-System-Variablen)
+// Read environment variables from .env (without Docker system variables)
 async function readEnvFile(systemUsername, projectName) {
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
     try {
         const content = await fs.readFile(envPath, 'utf8');
 
-        // System-Variablen herausfiltern für die Anzeige
+        // Filter out system variables for display
         const lines = content.split('\n');
         const filteredLines = lines.filter(line => {
             const trimmed = line.trim();
-            // Kommentare und leere Zeilen behalten
+            // Keep comments and empty lines
             if (trimmed.startsWith('#') || trimmed === '') return true;
-            // System-Variablen ausschließen
+            // Exclude system variables
             const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
             if (match && SYSTEM_ENV_VARS.includes(match[1])) return false;
             return true;
@@ -437,26 +437,26 @@ async function readEnvFile(systemUsername, projectName) {
         return filteredLines.join('\n').trim();
     } catch (error) {
         if (error.code === 'ENOENT') {
-            return ''; // Leere Datei wenn nicht vorhanden
+            return ''; // Empty file if not present
         }
         throw error;
     }
 }
 
-// Umgebungsvariablen in .env schreiben (System-Variablen werden erhalten)
+// Write environment variables to .env (system variables are preserved)
 async function writeEnvFile(systemUsername, projectName, content) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
 
-    // Prüfen ob Projekt existiert
+    // Check if project exists
     try {
         await fs.access(projectPath);
     } catch (error) {
-        throw new Error('Projekt nicht gefunden');
+        throw new Error('Project not found');
     }
 
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
-    // Existierende System-Variablen aus der aktuellen .env lesen
+    // Read existing system variables from current .env
     let systemVarsBlock = '';
     try {
         const existingContent = await fs.readFile(envPath, 'utf8');
@@ -470,21 +470,21 @@ async function writeEnvFile(systemUsername, projectName, content) {
             systemVarsBlock = systemLines.join('\n') + '\n\n';
         }
     } catch (e) {
-        // .env existiert nicht
+        // .env doesn't exist
     }
 
-    // System-Variablen + User-Content zusammenführen
+    // Merge system variables + user content
     const finalContent = systemVarsBlock + content;
     await fs.writeFile(envPath, finalContent, 'utf8');
     return { success: true };
 }
 
-// Prüfen ob .env.example existiert (im Git-Pfad, html/ oder Projekt-Root)
+// Check if .env.example exists (in Git path, html/ or project root)
 async function checkEnvExample(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
     const envExampleNames = ['.env.example', '.env.sample', '.env.dist', '.env.template'];
 
-    // Bei Git-Projekten: Im Git-Pfad suchen (unterstützt alte und neue Struktur)
+    // For Git projects: search in Git path (supports old and new structure)
     if (isGitRepository(projectPath)) {
         const gitPath = getGitPath(projectPath);
         for (const name of envExampleNames) {
@@ -494,12 +494,12 @@ async function checkEnvExample(systemUsername, projectName) {
                 const content = await fs.readFile(examplePath, 'utf8');
                 return { exists: true, filename: name, content, inGit: true };
             } catch (e) {
-                // Datei existiert nicht, weiter prüfen
+                // File doesn't exist, continue checking
             }
         }
     }
 
-    // Für nicht-Git-Projekte: html/ Unterordner suchen
+    // For non-Git projects: search in html/ subfolder
     const htmlPath = path.join(projectPath, 'html');
     for (const name of envExampleNames) {
         const examplePath = path.join(htmlPath, name);
@@ -508,11 +508,11 @@ async function checkEnvExample(systemUsername, projectName) {
             const content = await fs.readFile(examplePath, 'utf8');
             return { exists: true, filename: name, content, inHtml: true };
         } catch (e) {
-            // Datei existiert nicht, weiter prüfen
+            // File doesn't exist, continue checking
         }
     }
 
-    // Falls nicht gefunden, im Projekt-Root suchen (für Template-Projekte)
+    // If not found, search in project root (for template projects)
     for (const name of envExampleNames) {
         const examplePath = path.join(projectPath, name);
         try {
@@ -520,49 +520,49 @@ async function checkEnvExample(systemUsername, projectName) {
             const content = await fs.readFile(examplePath, 'utf8');
             return { exists: true, filename: name, content, inHtml: false };
         } catch (e) {
-            // Datei existiert nicht, weiter prüfen
+            // File doesn't exist, continue checking
         }
     }
 
     return { exists: false, filename: null, content: null, inHtml: false };
 }
 
-// .env.example zu .env kopieren (im gleichen Ordner wie .env.example)
+// Copy .env.example to .env (in the same folder as .env.example)
 async function copyEnvExample(systemUsername, projectName) {
     const example = await checkEnvExample(systemUsername, projectName);
     if (!example.exists) {
-        throw new Error('Keine .env.example Datei gefunden');
+        throw new Error('No .env.example file found');
     }
 
-    // .env Pfad im gleichen Ordner wie .env.example
+    // .env path in same folder as .env.example
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
-    // Existierenden .env Inhalt laden (falls vorhanden)
+    // Load existing .env content (if present)
     let existingContent = '';
     try {
         existingContent = await fs.readFile(envPath, 'utf8');
     } catch (e) {
-        // .env existiert nicht
+        // .env doesn't exist
     }
 
-    // Example-Inhalt + existierenden Inhalt mergen
-    // Existierende Variablen nicht überschreiben
+    // Merge example content + existing content
+    // Don't overwrite existing variables
     const existingVars = parseEnvFile(existingContent);
     const exampleLines = example.content.split('\n');
     const resultLines = [];
 
     for (const line of exampleLines) {
         const trimmed = line.trim();
-        // Kommentare und leere Zeilen übernehmen
+        // Keep comments and empty lines
         if (trimmed.startsWith('#') || trimmed === '') {
             resultLines.push(line);
             continue;
         }
-        // Variable parsen
+        // Parse variable
         const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
         if (match) {
             const varName = match[1];
-            // Wenn Variable bereits existiert, bestehenden Wert behalten
+            // If variable already exists, keep existing value
             if (existingVars[varName] !== undefined) {
                 resultLines.push(`${varName}=${existingVars[varName]}`);
             } else {
@@ -577,7 +577,7 @@ async function copyEnvExample(systemUsername, projectName) {
     return { success: true, filename: example.filename };
 }
 
-// Datenbank-Credentials zu .env hinzufügen (App-Ebene) - Legacy-Funktion
+// Add database credentials to .env (app level) - Legacy function
 async function appendDbCredentials(systemUsername, projectName, dbCredentials) {
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
@@ -585,19 +585,19 @@ async function appendDbCredentials(systemUsername, projectName, dbCredentials) {
     try {
         content = await fs.readFile(envPath, 'utf8');
     } catch (e) {
-        // .env existiert nicht
+        // .env doesn't exist
     }
 
-    // Prüfen ob DB-Credentials schon vorhanden
+    // Check if DB credentials already present
     if (content.includes('# === Dployr Datenbank-Credentials ===')) {
-        // Bestehende Credentials ersetzen
+        // Replace existing credentials
         content = content.replace(
             /# === Dployr Datenbank-Credentials ===[\s\S]*?(?=\n\n|\n#(?! ===)|$)/,
             ''
         ).trim();
     }
 
-    // Credentials-Block erstellen
+    // Create credentials block
     const credentialsBlock = `
 
 # === Dployr Datenbank-Credentials ===
@@ -614,38 +614,38 @@ DB_PASSWORD=${dbCredentials.password}
 }
 
 /**
- * Intelligentes Einfügen von DB-Credentials in .env
- * - Nutzt .env.example als Vorlage falls vorhanden
- * - Ersetzt bekannte DB-Variablen-Aliase mit den Dployr-Werten
- * - Hängt fehlende Credentials am Ende an
+ * Intelligent insertion of DB credentials into .env
+ * - Uses .env.example as template if available
+ * - Replaces known DB variable aliases with Dployr values
+ * - Appends missing credentials at the end
  *
- * @param {string} systemUsername - System-Username
- * @param {string} projectName - Projektname
- * @param {Object} dbCredentials - Datenbank-Credentials aus Dployr
- * @returns {Object} Ergebnis mit Statistiken
+ * @param {string} systemUsername - System username
+ * @param {string} projectName - Project name
+ * @param {Object} dbCredentials - Database credentials from Dployr
+ * @returns {Object} Result with statistics
  */
 async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
     const envPath = await getAppEnvPath(systemUsername, projectName);
 
-    // Basis-Inhalt laden: .env.example falls vorhanden, sonst bestehende .env
+    // Load base content: .env.example if available, otherwise existing .env
     let baseContent = '';
     let usedExample = false;
 
     const envExample = await checkEnvExample(systemUsername, projectName);
     if (envExample.exists) {
-        // .env.example als Basis verwenden
+        // Use .env.example as base
         baseContent = envExample.content;
         usedExample = true;
 
-        // Aber existierende .env-Werte (außer DB) beibehalten
+        // But keep existing .env values (except DB)
         try {
             const existingEnv = await fs.readFile(envPath, 'utf8');
             const existingVars = parseEnvFile(existingEnv);
 
-            // Nicht-DB-Variablen aus existierender .env übernehmen
+            // Carry over non-DB variables from existing .env
             for (const [key, value] of Object.entries(existingVars)) {
                 if (!isDbVariable(key)) {
-                    // Variable in baseContent ersetzen falls vorhanden
+                    // Replace variable in baseContent if present
                     const regex = new RegExp(`^${key}=.*$`, 'm');
                     if (regex.test(baseContent)) {
                         baseContent = baseContent.replace(regex, `${key}=${value}`);
@@ -653,19 +653,19 @@ async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
                 }
             }
         } catch (e) {
-            // .env existiert nicht - nur .env.example verwenden
+            // .env doesn't exist - use only .env.example
         }
     } else {
-        // Keine .env.example - bestehende .env verwenden
+        // No .env.example - use existing .env
         try {
             baseContent = await fs.readFile(envPath, 'utf8');
         } catch (e) {
-            // .env existiert nicht - leer starten
+            // .env doesn't exist - start empty
             baseContent = '';
         }
     }
 
-    // Credential-Mapping: welcher Dployr-Wert gehört zu welcher Kategorie
+    // Credential mapping: which Dployr value belongs to which category
     const credentialMap = {
         host: dbCredentials.host,
         port: String(dbCredentials.port),
@@ -674,25 +674,25 @@ async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
         password: dbCredentials.password
     };
 
-    // Statistiken
+    // Statistics
     let replacedCount = 0;
     let addedCount = 0;
     const replaced = { host: false, port: false, database: false, username: false, password: false };
 
-    // Zeile für Zeile verarbeiten
+    // Process line by line
     const lines = baseContent.split('\n');
     const resultLines = [];
 
     for (const line of lines) {
         const trimmed = line.trim();
 
-        // Kommentare und leere Zeilen behalten
+        // Keep comments and empty lines
         if (trimmed === '' || trimmed.startsWith('#')) {
             resultLines.push(line);
             continue;
         }
 
-        // Variable parsen
+        // Parse variable
         const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
         if (!match) {
             resultLines.push(line);
@@ -702,10 +702,10 @@ async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
         const varName = match[1];
         let wasReplaced = false;
 
-        // Prüfen ob Variable ein bekannter DB-Alias ist
+        // Check if variable is a known DB alias
         for (const [credKey, aliases] of Object.entries(DB_VARIABLE_ALIASES)) {
             if (aliases.includes(varName)) {
-                // Wert ersetzen
+                // Replace value
                 resultLines.push(`${varName}=${credentialMap[credKey]}`);
                 replaced[credKey] = true;
                 replacedCount++;
@@ -719,7 +719,7 @@ async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
         }
     }
 
-    // Fehlende Credentials anhängen
+    // Append missing credentials
     const missing = [];
     if (!replaced.host) missing.push(`DB_HOST=${dbCredentials.host}`);
     if (!replaced.port) missing.push(`DB_PORT=${dbCredentials.port}`);
@@ -734,7 +734,7 @@ async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
         missing.forEach(line => resultLines.push(line));
     }
 
-    // Ergebnis speichern
+    // Save result
     await fs.writeFile(envPath, resultLines.join('\n'), 'utf8');
 
     return {
@@ -747,7 +747,7 @@ async function mergeDbCredentials(systemUsername, projectName, dbCredentials) {
 }
 
 /**
- * Prüft ob eine Variable eine DB-Variable ist (basierend auf bekannten Aliasen)
+ * Checks if a variable is a DB variable (based on known aliases)
  */
 function isDbVariable(varName) {
     for (const aliases of Object.values(DB_VARIABLE_ALIASES)) {
@@ -758,21 +758,21 @@ function isDbVariable(varName) {
     return false;
 }
 
-// Datenbank-Credentials für einen User laden
+// Load database credentials for a user
 async function getUserDbCredentials(systemUsername) {
     const credentialsPath = path.join(USERS_PATH, systemUsername, '.db-credentials');
     const credentials = [];
 
     try {
         const content = await fs.readFile(credentialsPath, 'utf8');
-        // Unterstützt sowohl "# Datenbank:" (aktuell) als auch "# Database:" (legacy)
+        // Supports both "# Datenbank:" (current) and "# Database:" (legacy)
         const blocks = content.split(/\n(?=# (?:Datenbank|Database):)/);
 
         for (const block of blocks) {
             if (!block.trim()) continue;
 
             const lines = block.split('\n');
-            // Unterstützt sowohl "# Datenbank:" als auch "# Database:"
+            // Supports both "# Datenbank:" and "# Database:"
             const headerMatch = lines[0].match(/# (?:Datenbank|Database):\s*([^\s(]+)/);
             if (!headerMatch) continue;
 
@@ -799,7 +799,7 @@ async function getUserDbCredentials(systemUsername) {
             }
         }
     } catch (e) {
-        // Keine Credentials-Datei
+        // No credentials file
     }
 
     return credentials;

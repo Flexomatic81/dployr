@@ -3,22 +3,22 @@ const path = require('path');
 const fs = require('fs');
 const { logger } = require('../config/logger');
 
-// Upload-Verzeichnis erstellen falls nicht vorhanden
+// Create upload directory if not exists
 const uploadDir = process.env.UPLOAD_TEMP_PATH || '/tmp/dployr-uploads';
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ZIP Magic Bytes: PK (0x50, 0x4B) gefolgt von 0x03, 0x04 (lokaler File Header)
-// oder 0x05, 0x06 (End of Central Directory) oder 0x07, 0x08 (Spanned Archive)
+// ZIP Magic Bytes: PK (0x50, 0x4B) followed by 0x03, 0x04 (local file header)
+// or 0x05, 0x06 (end of central directory) or 0x07, 0x08 (spanned archive)
 const ZIP_MAGIC_BYTES = [
-    [0x50, 0x4B, 0x03, 0x04], // Normaler ZIP-Header
-    [0x50, 0x4B, 0x05, 0x06], // Leere ZIP-Datei
-    [0x50, 0x4B, 0x07, 0x08]  // Spanned Archive
+    [0x50, 0x4B, 0x03, 0x04], // Normal ZIP header
+    [0x50, 0x4B, 0x05, 0x06], // Empty ZIP file
+    [0x50, 0x4B, 0x07, 0x08]  // Spanned archive
 ];
 
 /**
- * Prüft ob eine Datei eine gültige ZIP-Datei ist anhand der Magic Bytes
+ * Checks if a file is a valid ZIP file based on magic bytes
  */
 function isValidZipFile(filePath) {
     try {
@@ -27,7 +27,7 @@ function isValidZipFile(filePath) {
         fs.readSync(fd, buffer, 0, 4, 0);
         fs.closeSync(fd);
 
-        // Prüfe gegen alle gültigen ZIP-Header
+        // Check against all valid ZIP headers
         return ZIP_MAGIC_BYTES.some(magic =>
             buffer[0] === magic[0] &&
             buffer[1] === magic[1] &&
@@ -35,13 +35,13 @@ function isValidZipFile(filePath) {
             buffer[3] === magic[3]
         );
     } catch (error) {
-        logger.warn('Fehler beim Prüfen der ZIP-Magic-Bytes', { error: error.message });
+        logger.warn('Error checking ZIP magic bytes', { error: error.message });
         return false;
     }
 }
 
 /**
- * Prüft ZIP-Datei auf gefährliche Inhalte
+ * Validates ZIP file contents for dangerous content
  */
 function validateZipContents(filePath) {
     const AdmZip = require('adm-zip');
@@ -51,39 +51,39 @@ function validateZipContents(filePath) {
         const zip = new AdmZip(filePath);
         const entries = zip.getEntries();
 
-        // Gefährliche Dateiendungen
+        // Dangerous file extensions
         const dangerousExtensions = [
             '.exe', '.bat', '.cmd', '.com', '.msi', '.scr', '.pif',
             '.vbs', '.vbe', '.js', '.jse', '.ws', '.wsf', '.wsc', '.wsh',
             '.ps1', '.psm1', '.psd1'
         ];
 
-        // Prüfe auf Zip-Slip (Path Traversal)
+        // Check for Zip-Slip (path traversal)
         for (const entry of entries) {
             const entryName = entry.entryName;
 
-            // Path Traversal prüfen
+            // Check for path traversal
             if (entryName.includes('..') || entryName.startsWith('/') || entryName.startsWith('\\')) {
-                errors.push(`Verdächtiger Pfad gefunden: ${entryName}`);
+                errors.push(`Suspicious path found: ${entryName}`);
                 continue;
             }
 
-            // Gefährliche Dateien prüfen (nur warnen, nicht blockieren)
+            // Check for dangerous files (warn only, don't block)
             const ext = path.extname(entryName).toLowerCase();
             if (dangerousExtensions.includes(ext)) {
-                logger.warn('Potentiell gefährliche Datei in ZIP', {
+                logger.warn('Potentially dangerous file in ZIP', {
                     file: entryName,
                     extension: ext
                 });
             }
 
-            // Sehr große Dateien prüfen (> 500MB entpackt)
+            // Check for very large files (> 500MB uncompressed)
             if (entry.header.size > 500 * 1024 * 1024) {
-                errors.push(`Datei zu groß: ${entryName} (${Math.round(entry.header.size / 1024 / 1024)}MB)`);
+                errors.push(`File too large: ${entryName} (${Math.round(entry.header.size / 1024 / 1024)}MB)`);
             }
         }
 
-        // Zip-Bomb Erkennung: Prüfe Kompressionsrate
+        // Zip-bomb detection: Check compression ratio
         const stats = fs.statSync(filePath);
         const compressedSize = stats.size;
         let uncompressedSize = 0;
@@ -92,18 +92,18 @@ function validateZipContents(filePath) {
             uncompressedSize += entry.header.size;
         }
 
-        // Warnung wenn Kompressionsrate > 100:1 (typisch für Zip-Bombs)
+        // Warning if compression ratio > 100:1 (typical for zip bombs)
         if (compressedSize > 0 && uncompressedSize / compressedSize > 100) {
-            errors.push(`Verdächtige Kompressionsrate: ${Math.round(uncompressedSize / compressedSize)}:1`);
+            errors.push(`Suspicious compression ratio: ${Math.round(uncompressedSize / compressedSize)}:1`);
         }
 
-        // Maximal entpackte Größe: 1GB
+        // Maximum uncompressed size: 1GB
         if (uncompressedSize > 1024 * 1024 * 1024) {
-            errors.push(`Entpackte Größe zu groß: ${Math.round(uncompressedSize / 1024 / 1024)}MB (max. 1GB)`);
+            errors.push(`Uncompressed size too large: ${Math.round(uncompressedSize / 1024 / 1024)}MB (max 1GB)`);
         }
 
     } catch (error) {
-        errors.push(`ZIP-Datei konnte nicht gelesen werden: ${error.message}`);
+        errors.push(`ZIP file could not be read: ${error.message}`);
     }
 
     return {
@@ -117,7 +117,7 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        // Eindeutiger Dateiname mit Timestamp
+        // Unique filename with timestamp
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + '-' + file.originalname);
     }
@@ -129,7 +129,7 @@ const upload = multer({
         fileSize: 100 * 1024 * 1024 // 100 MB
     },
     fileFilter: (req, file, cb) => {
-        // Nur ZIP-Dateien erlauben (MIME-Type und Extension)
+        // Only allow ZIP files (MIME type and extension)
         const isZip = file.mimetype === 'application/zip' ||
                       file.mimetype === 'application/x-zip-compressed' ||
                       file.originalname.toLowerCase().endsWith('.zip');
@@ -137,13 +137,13 @@ const upload = multer({
         if (isZip) {
             cb(null, true);
         } else {
-            cb(new Error('Nur ZIP-Dateien sind erlaubt'));
+            cb(new Error('Only ZIP files are allowed'));
         }
     }
 });
 
 /**
- * Middleware die nach dem Upload die ZIP-Datei validiert
+ * Middleware that validates ZIP file after upload
  */
 function validateZipMiddleware(req, res, next) {
     if (!req.file) {
@@ -152,33 +152,33 @@ function validateZipMiddleware(req, res, next) {
 
     const filePath = req.file.path;
 
-    // 1. Magic Bytes prüfen
+    // 1. Check magic bytes
     if (!isValidZipFile(filePath)) {
-        // Datei löschen
+        // Delete file
         try { fs.unlinkSync(filePath); } catch {}
 
-        logger.warn('Ungültige ZIP-Datei hochgeladen (Magic Bytes)', {
+        logger.warn('Invalid ZIP file uploaded (magic bytes)', {
             originalName: req.file.originalname,
             ip: req.ip
         });
 
-        req.flash('error', 'Die hochgeladene Datei ist keine gültige ZIP-Datei');
+        req.flash('error', 'The uploaded file is not a valid ZIP file');
         return res.redirect('back');
     }
 
-    // 2. ZIP-Inhalte validieren
+    // 2. Validate ZIP contents
     const validation = validateZipContents(filePath);
     if (!validation.valid) {
-        // Datei löschen
+        // Delete file
         try { fs.unlinkSync(filePath); } catch {}
 
-        logger.warn('ZIP-Validierung fehlgeschlagen', {
+        logger.warn('ZIP validation failed', {
             originalName: req.file.originalname,
             errors: validation.errors,
             ip: req.ip
         });
 
-        req.flash('error', `ZIP-Datei ungültig: ${validation.errors.join(', ')}`);
+        req.flash('error', `Invalid ZIP file: ${validation.errors.join(', ')}`);
         return res.redirect('back');
     }
 

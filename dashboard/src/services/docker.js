@@ -5,7 +5,7 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 const HOST_USERS_PATH = process.env.HOST_USERS_PATH || '/opt/dployr/users';
 
-// Konvertiert Container-Pfad zu Host-Pfad für Docker-Befehle
+// Converts container path to host path for Docker commands
 function toHostPath(containerPath) {
     if (containerPath.startsWith(USERS_PATH)) {
         return containerPath.replace(USERS_PATH, HOST_USERS_PATH);
@@ -13,24 +13,24 @@ function toHostPath(containerPath) {
     return containerPath;
 }
 
-// Container-Liste für einen User abrufen
+// Get container list for a user
 async function getUserContainers(systemUsername) {
     try {
         const containers = await docker.listContainers({ all: true });
 
-        // Filter Container die zum User gehören (basierend auf Container-Namen)
+        // Filter containers belonging to the user (based on container name)
         return containers.filter(container => {
             const name = container.Names[0].replace('/', '');
             return name.startsWith(systemUsername + '-') ||
                    container.Labels['com.webserver.user'] === systemUsername;
         });
     } catch (error) {
-        logger.error('Fehler beim Abrufen der Container', { error: error.message });
+        logger.error('Error fetching containers', { error: error.message });
         return [];
     }
 }
 
-// Container-Status für ein Projekt abrufen
+// Get container status for a project
 async function getProjectContainers(projectName) {
     try {
         const containers = await docker.listContainers({ all: true });
@@ -40,12 +40,12 @@ async function getProjectContainers(projectName) {
             return name === projectName || name.startsWith(projectName + '-');
         });
     } catch (error) {
-        logger.error('Fehler beim Abrufen der Projekt-Container', { error: error.message });
+        logger.error('Error fetching project containers', { error: error.message });
         return [];
     }
 }
 
-// Container starten
+// Start container
 async function startContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
@@ -56,7 +56,7 @@ async function startContainer(containerId) {
     }
 }
 
-// Container stoppen
+// Stop container
 async function stopContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
@@ -67,7 +67,7 @@ async function stopContainer(containerId) {
     }
 }
 
-// Container neustarten
+// Restart container
 async function restartContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
@@ -78,7 +78,7 @@ async function restartContainer(containerId) {
     }
 }
 
-// Container-Logs abrufen
+// Get container logs
 async function getContainerLogs(containerId, lines = 100) {
     try {
         const container = docker.getContainer(containerId);
@@ -89,19 +89,19 @@ async function getContainerLogs(containerId, lines = 100) {
             timestamps: true
         });
 
-        // Buffer zu String konvertieren und bereinigen
+        // Convert buffer to string and clean up
         return logs.toString('utf8')
             .split('\n')
-            .map(line => line.substring(8)) // Docker log prefix entfernen
+            .map(line => line.substring(8)) // Remove Docker log prefix
             .filter(line => line.trim())
             .join('\n');
     } catch (error) {
-        logger.error('Fehler beim Abrufen der Logs', { error: error.message });
-        return 'Fehler beim Laden der Logs: ' + error.message;
+        logger.error('Error fetching logs', { error: error.message });
+        return 'Error loading logs: ' + error.message;
     }
 }
 
-// Projekt mit docker-compose starten
+// Start project with docker-compose
 async function startProject(projectPath) {
     const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
@@ -116,7 +116,7 @@ async function startProject(projectPath) {
     });
 }
 
-// Projekt mit docker-compose stoppen
+// Stop project with docker-compose
 async function stopProject(projectPath) {
     const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
@@ -131,7 +131,7 @@ async function stopProject(projectPath) {
     });
 }
 
-// Projekt mit docker-compose neustarten
+// Restart project with docker-compose
 async function restartProject(projectPath) {
     const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);

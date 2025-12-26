@@ -1,21 +1,21 @@
 const { csrfSync } = require('csrf-sync');
 const { logger } = require('../config/logger');
 
-// CSRF Protection mit csrf-sync (Synchronizer Token Pattern für Session-basierte Apps)
+// CSRF Protection with csrf-sync (Synchronizer Token Pattern for session-based apps)
 const {
     csrfSynchronisedProtection,
     generateToken
 } = csrfSync({
     getTokenFromRequest: (req) => {
-        // Token aus Body, Header oder Query lesen
+        // Read token from body, header or query
         return req.body._csrf || req.headers['x-csrf-token'] || req.query._csrf;
     },
     getTokenFromState: (req) => {
-        // Token aus Session lesen
+        // Read token from session
         return req.session?.csrfToken;
     },
     storeTokenInState: (req, token) => {
-        // Token in Session speichern
+        // Store token in session
         if (req.session) {
             req.session.csrfToken = token;
         }
@@ -23,9 +23,9 @@ const {
     size: 64
 });
 
-// Middleware die CSRF-Token in res.locals verfügbar macht
+// Middleware that makes CSRF token available in res.locals
 function csrfTokenMiddleware(req, res, next) {
-    // Token generieren falls nicht vorhanden
+    // Generate token if not present
     let token = req.session?.csrfToken;
     if (!token) {
         token = generateToken(req);
@@ -37,29 +37,29 @@ function csrfTokenMiddleware(req, res, next) {
     next();
 }
 
-// Error Handler für CSRF-Fehler
+// Error handler for CSRF errors
 function csrfErrorHandler(err, req, res, next) {
     if (err.code === 'EBADCSRFTOKEN' ||
         err.message === 'invalid csrf token' ||
         err.message?.includes('CSRF')) {
 
-        logger.warn('CSRF-Token ungültig', {
+        logger.warn('Invalid CSRF token', {
             ip: req.ip,
             url: req.originalUrl,
             method: req.method,
             userAgent: req.get('User-Agent')
         });
 
-        // Bei AJAX-Requests JSON zurückgeben
+        // Return JSON for AJAX requests
         if (req.xhr || req.headers.accept?.includes('application/json')) {
             return res.status(403).json({
                 success: false,
-                error: 'Ungültiges Sicherheitstoken. Bitte Seite neu laden.'
+                error: 'Invalid security token. Please reload the page.'
             });
         }
 
-        // Bei normalen Requests Flash-Message und Redirect
-        req.flash('error', 'Sicherheitstoken ungültig oder abgelaufen. Bitte erneut versuchen.');
+        // Flash message and redirect for normal requests
+        req.flash('error', 'Security token invalid or expired. Please try again.');
         return res.redirect('back');
     }
 
