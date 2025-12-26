@@ -197,6 +197,12 @@ Admins can view system logs and deployment history via the admin panel:
 - Deployment-Statistiken (letzte 24h)
 - Expandierbare Meta-Daten und Fehlermeldungen
 
+**Deployment Trigger-Types:**
+- `auto` - Automatisches Deployment durch Polling
+- `manual` - Manuell ausgelöstes Deployment (Button)
+- `clone` - Initiales Git-Clone beim Projekt erstellen
+- `pull` - Manueller Git-Pull
+
 Log files in `dashboard/logs/`:
 - `combined.log` - All logs
 - `error.log` - Errors only
@@ -327,6 +333,8 @@ Git-Projekte können automatisch aktualisiert werden, wenn neue Commits gepusht 
 - `GET /projects/:name/autodeploy/history` - Deployment-Historie (JSON API)
 
 **Service:** `autodeploy.js` - Polling-Logik, Deployment-Ausführung, Historie-Logging
+
+**Logging-Funktion:** `logDeployment(userId, projectName, triggerType, data)` - Wiederverwendbare Funktion zum Loggen aller Deployment-Typen (auto, manual, clone, pull)
 
 ## Project Sharing
 
