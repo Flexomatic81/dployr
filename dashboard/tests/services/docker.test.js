@@ -189,7 +189,7 @@ describe('Docker Service', () => {
 
             const logs = await dockerService.getContainerLogs('container-id');
 
-            expect(logs).toContain('Fehler beim Laden der Logs');
+            expect(logs).toContain('Error loading logs');
             expect(logs).toContain('Logs unavailable');
         });
     });

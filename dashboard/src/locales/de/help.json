@@ -1,0 +1,286 @@
+{
+  "title": "Hilfe",
+
+  "nav": {
+    "gettingStarted": "Erste Schritte",
+    "projects": "Projekte",
+    "projectTypes": "Projekttypen",
+    "git": "Git-Integration",
+    "autoDeploy": "Auto-Deploy",
+    "databases": "Datenbanken",
+    "sharing": "Projekt-Sharing",
+    "admin": "Administration",
+    "faq": "FAQ"
+  },
+
+  "gettingStarted": {
+    "title": "Erste Schritte",
+    "welcome": "Willkommen bei Dployr! Mit dieser Plattform kannst du einfach Webprojekte deployen und verwalten.",
+    "quickstart": "Schnellstart",
+    "steps": {
+      "create": "Projekt erstellen: Gehe zu Projekte → Neues Projekt",
+      "method": "Methode wählen: Git-Repository, ZIP-Upload oder leeres Template",
+      "start": "Projekt starten: Klicke auf \"Starten\" in der Projektansicht",
+      "access": "Zugreifen: Dein Projekt läuft unter http://SERVER-IP:PORT"
+    },
+    "tip": "Tipp: Für Git-Projekte wird der Projekttyp automatisch erkannt!"
+  },
+
+  "projects": {
+    "title": "Projekte",
+    "createTitle": "Projekt erstellen",
+    "createIntro": "Es gibt drei Wege, ein Projekt zu erstellen:",
+    "methods": {
+      "git": {
+        "title": "Git-Repository",
+        "desc": "Klone ein Repository von GitHub, GitLab, etc."
+      },
+      "zip": {
+        "title": "ZIP-Upload",
+        "desc": "Lade eine ZIP-Datei mit deinem Projekt hoch."
+      },
+      "template": {
+        "title": "Leeres Template",
+        "desc": "Starte mit einem leeren Projekt."
+      }
+    },
+    "actionsTitle": "Projekt-Aktionen",
+    "actions": {
+      "start": "Startet alle Container des Projekts",
+      "stop": "Stoppt alle Container",
+      "restart": "Startet die Container neu (z.B. nach Code-Änderungen)",
+      "logs": "Zeigt die Container-Logs an"
+    }
+  },
+
+  "projectTypes": {
+    "title": "Projekttypen",
+    "intro": "Dployr unterstützt verschiedene Projekttypen:",
+    "columns": {
+      "type": "Typ",
+      "description": "Beschreibung",
+      "detection": "Erkennung"
+    },
+    "types": {
+      "static": {
+        "name": "Statisch",
+        "desc": "HTML, CSS, JavaScript - wird mit Nginx ausgeliefert",
+        "detect": "index.html"
+      },
+      "php": {
+        "name": "PHP",
+        "desc": "PHP-Anwendungen mit PHP-FPM und Nginx",
+        "detect": "*.php oder composer.json"
+      },
+      "nodejs": {
+        "name": "Node.js",
+        "desc": "Node.js-Apps mit npm start",
+        "detect": "package.json"
+      },
+      "laravel": {
+        "name": "Laravel/Symfony",
+        "desc": "PHP-Frameworks mit Artisan/Console",
+        "detect": "artisan oder symfony.lock"
+      },
+      "nodejsStatic": {
+        "name": "React/Vue (Static)",
+        "desc": "Frontend-Apps die zu statischen Dateien gebaut werden",
+        "detect": "package.json mit Build-Script + dist/"
+      },
+      "nextjs": {
+        "name": "Next.js",
+        "desc": "Next.js-Anwendungen",
+        "detect": "next.config.js oder next.config.mjs"
+      }
+    },
+    "typeDetectionNote": "Typ-Erkennung: Wenn der falsche Typ erkannt wurde, kannst du ihn in den Projekteinstellungen ändern."
+  },
+
+  "git": {
+    "title": "Git-Integration",
+    "connectTitle": "Repository verbinden",
+    "connectIntro": "Beim Erstellen eines Git-Projekts:",
+    "connectSteps": {
+      "url": "Gib die Repository-URL ein (HTTPS)",
+      "token": "Für private Repos: Füge einen Access Token hinzu",
+      "clone": "Das Repository wird automatisch geklont"
+    },
+    "privateTitle": "Private Repositories",
+    "privateIntro": "Für private Repos brauchst du einen Personal Access Token:",
+    "privateProviders": {
+      "github": "GitHub: Settings → Developer settings → Personal access tokens",
+      "gitlab": "GitLab: Preferences → Access Tokens"
+    },
+    "privateNote": "Der Token wird sicher gespeichert und für Pull-Operationen verwendet.",
+    "actionsTitle": "Git-Aktionen",
+    "actions": {
+      "pull": "Holt die neuesten Änderungen vom Remote",
+      "deploy": "Pull + Container-Neustart in einem Schritt"
+    }
+  },
+
+  "autoDeploy": {
+    "title": "Auto-Deploy",
+    "intro": "Auto-Deploy prüft automatisch auf neue Commits und deployed sie.",
+    "howItWorksTitle": "Funktionsweise",
+    "howItWorks": {
+      "check": "Dployr prüft regelmäßig das Repository (konfigurierbar: 5-60 Min)",
+      "pull": "Bei neuen Commits: Automatischer Pull",
+      "restart": "Container werden neu gestartet",
+      "log": "Deployment wird in der Historie protokolliert"
+    },
+    "enableTitle": "Aktivieren",
+    "enableDesc": "In der Projektansicht unter \"Git-Verbindung\" auf Aktivieren klicken.",
+    "note": "Hinweis: Auto-Deploy ist nur für Git-Projekte verfügbar und kann nur vom Projektbesitzer konfiguriert werden."
+  },
+
+  "databases": {
+    "title": "Datenbanken",
+    "supportedTitle": "Unterstützte Datenbanken",
+    "types": {
+      "mariadb": {
+        "name": "MariaDB",
+        "desc": "MySQL-kompatibel, ideal für PHP/Laravel"
+      },
+      "postgresql": {
+        "name": "PostgreSQL",
+        "desc": "Erweiterte Features, ideal für komplexe Anwendungen"
+      }
+    },
+    "createTitle": "Datenbank erstellen",
+    "createSteps": {
+      "goto": "Gehe zu Datenbanken",
+      "click": "Klicke auf \"Neue Datenbank\"",
+      "type": "Wähle den Typ (MariaDB oder PostgreSQL)",
+      "name": "Vergib einen Namen"
+    },
+    "createNote": "Die Zugangsdaten werden automatisch generiert und gespeichert.",
+    "connectTitle": "Datenbank mit Projekt verbinden",
+    "connectIntro": "Damit deine Anwendung auf die Datenbank zugreifen kann, müssen die Zugangsdaten in der .env-Datei deines Projekts hinterlegt werden.",
+    "connectHowTitle": "So funktioniert es:",
+    "connectSteps": {
+      "goto": "Gehe zur Projektansicht und scrolle zu \"Umgebungsvariablen\"",
+      "click": "Klicke auf den Button DB einrichten",
+      "select": "Wähle eine deiner Datenbanken aus dem Dropdown",
+      "auto": "Die Credentials werden automatisch in die .env geschrieben",
+      "restart": "Starte den Container neu, damit die Änderungen wirksam werden"
+    },
+    "backgroundTitle": "Was passiert im Hintergrund?",
+    "backgroundIntro": "Beim Klick auf \"DB einrichten\" führt das System folgende Schritte aus:",
+    "backgroundSteps": {
+      "template": "Vorlage laden: Falls eine .env.example existiert, wird diese als Basis verwendet",
+      "detect": "Variablen erkennen: Das System durchsucht die Datei nach bekannten Datenbank-Variablennamen",
+      "replace": "Werte ersetzen: Gefundene DB-Variablen werden mit den korrekten Dployr-Credentials ersetzt",
+      "append": "Fehlende ergänzen: Nicht gefundene Credentials werden am Ende der Datei hinzugefügt",
+      "keep": "Andere behalten: Alle anderen Variablen (API-Keys, App-Settings, etc.) bleiben unverändert"
+    },
+    "variablesTitle": "Erkannte Variablennamen",
+    "variablesIntro": "Das System erkennt automatisch verschiedene Schreibweisen für Datenbank-Credentials:",
+    "variableColumns": {
+      "credential": "Credential",
+      "variables": "Erkannte Variablen"
+    },
+    "exampleTitle": "Beispiel",
+    "exampleBefore": "Angenommen dein Projekt hat folgende .env.example:",
+    "exampleAfter": "Nach Auswahl deiner Datenbank wird die .env zu:",
+    "exampleNote": "Die App-Variablen bleiben erhalten, nur die DB-Variablen werden ersetzt.",
+    "tipEnvExample": "Tipp: Wenn dein Projekt eine .env.example hat, wird diese automatisch als Vorlage verwendet. Du musst die Datei nicht vorher manuell kopieren!",
+    "noteRestart": "Wichtig: Nach dem Einrichten der Datenbank muss der Container neu gestartet werden, damit die Anwendung die neuen Umgebungsvariablen lädt.",
+    "noteButton": "Der Button erscheint nur, wenn du mindestens eine Datenbank erstellt hast. Du kannst die .env-Datei auch jederzeit manuell im Editor bearbeiten."
+  },
+
+  "sharing": {
+    "title": "Projekt-Sharing",
+    "intro": "Teile Projekte mit anderen Benutzern und verwalte ihre Berechtigungen.",
+    "levelsTitle": "Berechtigungsstufen",
+    "columns": {
+      "level": "Stufe",
+      "description": "Beschreibung",
+      "actions": "Aktionen"
+    },
+    "levels": {
+      "read": {
+        "name": "Ansehen",
+        "desc": "Nur lesen",
+        "actions": "Status, Logs, Projektinfos ansehen"
+      },
+      "manage": {
+        "name": "Verwalten",
+        "desc": "Operationen erlaubt",
+        "actions": "+ Start/Stop, Pull, Deploy, .env bearbeiten"
+      },
+      "full": {
+        "name": "Vollzugriff",
+        "desc": "Fast alle Rechte",
+        "actions": "+ Projekttyp ändern"
+      }
+    },
+    "ownerOnly": "Nur der Besitzer kann: Projekt löschen, Git-Verbindung trennen, Auto-Deploy konfigurieren, Freigaben verwalten"
+  },
+
+  "admin": {
+    "title": "Administration",
+    "userManagementTitle": "Benutzerverwaltung",
+    "userManagementIntro": "Als Admin kannst du:",
+    "userManagementActions": {
+      "approve": "Registrierungen freigeben: Neue Benutzer müssen von einem Admin genehmigt werden",
+      "manage": "Benutzer verwalten: Rechte ändern, Benutzer löschen",
+      "adminRights": "Admin-Rechte vergeben: Andere Benutzer zu Admins machen"
+    },
+    "pendingTitle": "Ausstehende Registrierungen",
+    "pendingDesc": "Im Admin-Bereich siehst du alle ausstehenden Registrierungen und kannst sie genehmigen oder ablehnen."
+  },
+
+  "faq": {
+    "title": "Häufige Fragen",
+    "questions": {
+      "notStarting": {
+        "q": "Mein Projekt startet nicht - was tun?",
+        "a": {
+          "logs": "Prüfe die Logs auf Fehlermeldungen",
+          "type": "Stelle sicher, dass der Projekttyp korrekt ist",
+          "env": "Prüfe die .env-Datei auf fehlende Variablen",
+          "nodejs": "Bei Node.js: Ist eine package.json mit start-Script vorhanden?"
+        }
+      },
+      "database": {
+        "q": "Wie verbinde ich meine App mit der Datenbank?",
+        "a": {
+          "create": "Erstelle eine Datenbank unter Datenbanken",
+          "goto": "Gehe zur Projektansicht",
+          "click": "Klicke auf DB einrichten und wähle eine Datenbank",
+          "auto": "Die Credentials werden intelligent in deine .env eingefügt",
+          "restart": "Starte den Container neu"
+        },
+        "hosts": {
+          "title": "Hosts (intern):",
+          "mariadb": "MariaDB: dployr-mariadb",
+          "postgresql": "PostgreSQL: dployr-postgresql"
+        },
+        "tip": "Tipp: Wenn dein Projekt eine .env.example mit anderen Variablennamen hat (z.B. DB_USER statt DB_USERNAME), werden diese automatisch erkannt und ersetzt!"
+      },
+      "changes": {
+        "q": "Warum sehe ich meine Änderungen nicht?",
+        "a": {
+          "git": "Git-Projekte: Hast du einen Pull gemacht?",
+          "restart": "Nach Pull: Container mit Neustart aktualisieren",
+          "env": ".env-Änderungen: Erfordern einen Container-Neustart",
+          "cache": "Browser-Cache: Versuche einen Hard-Refresh (Ctrl+Shift+R)"
+        }
+      },
+      "access": {
+        "q": "Wie erreiche ich mein Projekt von außen?",
+        "a": "Jedes Projekt bekommt einen eigenen Port. Die URL ist: http://<SERVER-IP>:<PORT>. Den Port findest du in den Projekt-Details."
+      },
+      "ssh": {
+        "q": "Kann ich SSH/SFTP auf mein Projekt zugreifen?",
+        "a": {
+          "intro": "Aktuell wird kein direkter SSH/SFTP-Zugang angeboten. Optionen:",
+          "git": "Git: Änderungen über Git-Repository pushen",
+          "zip": "ZIP-Upload: Dateien als ZIP hochladen",
+          "env": ".env-Editor: Umgebungsvariablen direkt im Dashboard bearbeiten"
+        }
+      }
+    }
+  }
+}

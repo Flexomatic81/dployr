@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error in admin dashboard', { error: error.message });
-        req.flash('error', 'Error loading admin overview');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/dashboard');
     }
 });
@@ -60,7 +60,7 @@ router.get('/pending', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading pending registrations', { error: error.message });
-        req.flash('error', 'Error loading pending registrations');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/admin');
     }
 });
@@ -71,15 +71,15 @@ router.post('/users/:id/approve', async (req, res) => {
         const user = await userService.approveUser(req.params.id);
 
         if (user) {
-            req.flash('success', `User "${user.username}" has been approved`);
+            req.flash('success', req.t('admin:flash.userApproved', { username: user.username }));
         } else {
-            req.flash('error', 'User not found');
+            req.flash('error', req.t('admin:errors.userNotFound'));
         }
 
         res.redirect('/admin/pending');
     } catch (error) {
         logger.error('Error approving user', { error: error.message });
-        req.flash('error', 'Error approving user: ' + error.message);
+        req.flash('error', error.message);
         res.redirect('/admin/pending');
     }
 });
@@ -88,11 +88,11 @@ router.post('/users/:id/approve', async (req, res) => {
 router.post('/users/:id/reject', async (req, res) => {
     try {
         await userService.rejectUser(req.params.id);
-        req.flash('success', 'Registration has been rejected');
+        req.flash('success', req.t('admin:flash.userRejected', { username: '' }));
         res.redirect('/admin/pending');
     } catch (error) {
         logger.error('Error rejecting user', { error: error.message });
-        req.flash('error', 'Error rejecting user: ' + error.message);
+        req.flash('error', error.message);
         res.redirect('/admin/pending');
     }
 });
@@ -117,7 +117,7 @@ router.get('/users', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading users', { error: error.message });
-        req.flash('error', 'Error loading user list');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/admin');
     }
 });
@@ -136,34 +136,34 @@ router.post('/users', async (req, res) => {
 
         // Validation
         if (!username || !password || !system_username) {
-            req.flash('error', 'All required fields must be filled');
+            req.flash('error', req.t('common:validation.required'));
             return res.redirect('/admin/users/create');
         }
 
         if (!/^[a-z0-9_-]+$/.test(username)) {
-            req.flash('error', 'Username may only contain lowercase letters, numbers, underscores, and hyphens');
+            req.flash('error', req.t('common:validation.lowercaseOnly'));
             return res.redirect('/admin/users/create');
         }
 
         if (!/^[a-z0-9_-]+$/.test(system_username)) {
-            req.flash('error', 'System username may only contain lowercase letters, numbers, underscores, and hyphens');
+            req.flash('error', req.t('common:validation.lowercaseOnly'));
             return res.redirect('/admin/users/create');
         }
 
         // Check if user exists
         if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
-            req.flash('error', 'Username or system username already exists');
+            req.flash('error', req.t('auth:errors.usernameExists'));
             return res.redirect('/admin/users/create');
         }
 
         // Admin-created users are automatically approved
         await userService.createUser(username, password, system_username, is_admin === 'on', true);
 
-        req.flash('success', `User "${username}" created successfully`);
+        req.flash('success', req.t('admin:flash.userCreated', { username }));
         res.redirect('/admin/users');
     } catch (error) {
         logger.error('Error creating user', { error: error.message });
-        req.flash('error', 'Error creating user');
+        req.flash('error', req.t('common:errors.createError'));
         res.redirect('/admin/users/create');
     }
 });
@@ -174,7 +174,7 @@ router.get('/users/:id/edit', async (req, res) => {
         const editUser = await userService.getUserById(req.params.id);
 
         if (!editUser) {
-            req.flash('error', 'User not found');
+            req.flash('error', req.t('admin:errors.userNotFound'));
             return res.redirect('/admin/users');
         }
 
@@ -184,7 +184,7 @@ router.get('/users/:id/edit', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading user', { error: error.message });
-        req.flash('error', 'Error loading user');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/admin/users');
     }
 });
@@ -197,13 +197,13 @@ router.put('/users/:id', async (req, res) => {
 
         // Validation
         if (!username || !system_username) {
-            req.flash('error', 'Username and system username are required');
+            req.flash('error', req.t('common:validation.required'));
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
         // Check if username/system username is already in use
         if (await userService.existsUsernameOrSystemUsername(username, system_username, userId)) {
-            req.flash('error', 'Username or system username is already in use');
+            req.flash('error', req.t('auth:errors.usernameExists'));
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
@@ -214,11 +214,11 @@ router.put('/users/:id', async (req, res) => {
             isAdmin: is_admin === 'on'
         });
 
-        req.flash('success', 'User updated successfully');
+        req.flash('success', req.t('admin:flash.userUpdated', { username }));
         res.redirect('/admin/users');
     } catch (error) {
         logger.error('Error updating user', { error: error.message });
-        req.flash('error', 'Error updating user');
+        req.flash('error', error.message);
         res.redirect(`/admin/users/${req.params.id}/edit`);
     }
 });
@@ -230,23 +230,23 @@ router.delete('/users/:id', async (req, res) => {
 
         // Cannot delete own account
         if (parseInt(userId) === req.session.user.id) {
-            req.flash('error', 'You cannot delete your own account');
+            req.flash('error', req.t('admin:errors.cannotDeleteSelf'));
             return res.redirect('/admin/users');
         }
 
         // Check if this is the last admin
         if (await userService.isLastAdmin(userId)) {
-            req.flash('error', 'The last admin account cannot be deleted');
+            req.flash('error', req.t('admin:errors.cannotDeleteLastAdmin'));
             return res.redirect('/admin/users');
         }
 
         await userService.deleteUser(userId);
 
-        req.flash('success', 'User deleted successfully');
+        req.flash('success', req.t('admin:flash.userDeleted', { username: '' }));
         res.redirect('/admin/users');
     } catch (error) {
         logger.error('Error deleting user', { error: error.message });
-        req.flash('error', 'Error deleting user');
+        req.flash('error', error.message);
         res.redirect('/admin/users');
     }
 });
@@ -276,7 +276,7 @@ router.get('/projects', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading projects', { error: error.message });
-        req.flash('error', 'Error loading projects');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/admin');
     }
 });
@@ -372,7 +372,7 @@ router.get('/logs', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading system logs', { error: error.message });
-        req.flash('error', 'Error loading system logs');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/admin');
     }
 });
@@ -458,7 +458,7 @@ router.get('/deployments', async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading deployment history', { error: error.message });
-        req.flash('error', 'Error loading deployment history');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/admin');
     }
 });

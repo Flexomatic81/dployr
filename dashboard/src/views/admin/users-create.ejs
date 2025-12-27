@@ -1,9 +1,9 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-        <li class="breadcrumb-item"><a href="/admin/users">User-Verwaltung</a></li>
-        <li class="breadcrumb-item active">Neuer User</li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin/users"><%= t('admin:users.title') %></a></li>
+        <li class="breadcrumb-item active"><%= t('admin:users.newUser') %></li>
     </ol>
 </nav>
 
@@ -11,19 +11,19 @@
     <div class="col-md-8 col-lg-6">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-person-plus"></i> Neuen User erstellen
+                <i class="bi bi-person-plus"></i> <%= t('admin:createUser.title') %>
             </div>
             <div class="card-body">
                 <form action="/admin/users" method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Benutzername *</label>
+                        <label for="username" class="form-label"><%= t('common:labels.username') %> *</label>
                         <input type="text" class="form-control" id="username" name="username"
                                required pattern="[a-z0-9_-]+" placeholder="max.mustermann">
-                        <div class="form-text">Nur Kleinbuchstaben, Zahlen, Unterstriche und Bindestriche.</div>
+                        <div class="form-text"><%= t('auth:register.usernameHint') %></div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="password" class="form-label">Passwort *</label>
+                        <label for="password" class="form-label"><%= t('common:labels.password') %> *</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="password" name="password"
                                    required minlength="6">
@@ -31,32 +31,32 @@
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
-                        <div class="form-text">Mindestens 6 Zeichen.</div>
+                        <div class="form-text"><%= t('admin:createUser.passwordHelp') %></div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="system_username" class="form-label">System-Username *</label>
+                        <label for="system_username" class="form-label"><%= t('admin:users.columns.systemUsername') %> *</label>
                         <input type="text" class="form-control" id="system_username" name="system_username"
                                required pattern="[a-z0-9_-]+" placeholder="mmustermann">
-                        <div class="form-text">Wird für Projektpfade verwendet. Nur Kleinbuchstaben, Zahlen, Unterstriche und Bindestriche.</div>
+                        <div class="form-text"><%= t('admin:createUser.usernameHelp') %></div>
                     </div>
 
                     <div class="mb-4">
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin">
                             <label class="form-check-label" for="is_admin">
-                                <i class="bi bi-shield-lock"></i> Administrator-Rechte
+                                <i class="bi bi-shield-lock"></i> <%= t('admin:createUser.makeAdmin') %>
                             </label>
                         </div>
-                        <div class="form-text">Admins können alle Projekte sehen und User verwalten.</div>
+                        <div class="form-text"><%= t('auth:register.adminHint') %></div>
                     </div>
 
                     <div class="d-flex justify-content-between">
                         <a href="/admin/users" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Abbrechen
+                            <i class="bi bi-arrow-left"></i> <%= t('common:buttons.cancel') %>
                         </a>
                         <button type="submit" class="btn btn-success">
-                            <i class="bi bi-person-plus"></i> User erstellen
+                            <i class="bi bi-person-plus"></i> <%= t('admin:createUser.submit') %>
                         </button>
                     </div>
                 </form>

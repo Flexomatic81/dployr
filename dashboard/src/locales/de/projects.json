@@ -1,0 +1,266 @@
+{
+  "title": "Projekte",
+  "myProjects": "Meine Projekte",
+  "sharedProjects": "Geteilte Projekte",
+  "newProject": "Neues Projekt",
+  "noProjects": "Noch keine Projekte vorhanden",
+  "noProjectsHint": "Erstelle dein erstes Projekt um loszulegen.",
+  "createFirst": "Erstes Projekt erstellen",
+  "details": "Projekt-Details",
+
+  "stats": {
+    "myProjects": "Meine Projekte",
+    "running": "Laufend",
+    "stopped": "Gestoppt",
+    "shared": "Geteilt"
+  },
+  "settings": "Projekteinstellungen",
+  "dangerZone": "Gefahrenzone",
+
+  "create": {
+    "title": "Neues Projekt erstellen",
+    "fromGit": "Von Git-Repository",
+    "fromZip": "ZIP-Upload",
+    "fromTemplate": "Von Template",
+    "gitTitle": "Neues Projekt von Git-Repository",
+    "zipTitle": "Neues Projekt aus ZIP-Datei",
+    "templateTitle": "Neues Projekt von Template",
+    "projectName": "Projektname",
+    "projectNameHelp": "Der Projektname wird als Ordnername und Container-Präfix verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt.",
+    "projectNameHint": "Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt",
+    "projectNamePlaceholder": "mein-projekt",
+    "repoUrl": "Repository URL",
+    "repoUrlHelp": "Die HTTPS-URL des Git-Repositories. SSH-URLs werden nicht unterstützt.",
+    "repoUrlHint": "HTTPS-URL von GitHub, GitLab oder Bitbucket",
+    "accessToken": "Access Token",
+    "accessTokenOptional": "(optional)",
+    "accessTokenHelp": "Personal Access Token für private Repositories. Bei GitHub unter Settings → Developer settings → Personal access tokens erstellen.",
+    "accessTokenHint": "Erforderlich für private Repositories.",
+    "createGitHubToken": "GitHub Token erstellen",
+    "portHelp": "Der HTTP-Port, unter dem das Projekt erreichbar sein wird. Jedes Projekt benötigt einen eindeutigen Port.",
+    "nextFreePort": "Nächster freier Port: {{port}}",
+    "zipFile": "ZIP-Datei",
+    "zipFileHelp": "ZIP-Datei mit den Projektdateien. Verschachtelte Ordner (z.B. projekt-main/) werden automatisch entpackt.",
+    "zipFileHint": "Maximale Dateigröße: 100 MB",
+    "template": "Template",
+    "templateHelp": "Wähle eine Vorlage basierend auf der Technologie deines Projekts. Der Typ kann später geändert werden.",
+    "autoDetection": "Automatische Erkennung:",
+    "autoDetectionInfo": "Der Projekttyp wird automatisch erkannt:",
+    "autoDetectNode": "package.json vorhanden → Node.js App",
+    "autoDetectPhp": "index.php oder composer.json → PHP Website",
+    "autoDetectStatic": "index.html → Statische Website",
+    "zipStructure": "ZIP-Struktur:",
+    "zipStructureInfo": "Falls die ZIP einen einzelnen Ordner enthält (z.B. projekt-main/), wird der Inhalt automatisch korrekt extrahiert.",
+    "submitGit": "Projekt von Git erstellen",
+    "submitZip": "Projekt hochladen",
+    "submitTemplate": "Projekt erstellen"
+  },
+
+  "types": {
+    "static": "Statische Website",
+    "php": "PHP Website",
+    "nodejs": "Node.js App",
+    "laravel": "Laravel/Symfony",
+    "nodejsStatic": "React/Vue (Static Build)",
+    "nextjs": "Next.js (SSR)"
+  },
+
+  "templateInfo": {
+    "title": "Template-Informationen",
+    "static": {
+      "title": "Statische Website",
+      "features": ["Nginx Webserver", "HTML, CSS, JavaScript", "Ideal für einfache Websites", "Keine Datenbank"]
+    },
+    "php": {
+      "title": "PHP Website",
+      "features": ["Nginx + PHP 8.3 FPM", "MariaDB Unterstützung", "Ideal für WordPress, Laravel, etc.", "Datenbank optional"]
+    },
+    "nodejs": {
+      "title": "Node.js App",
+      "features": ["Node.js 20", "Express.js vorinstalliert", "MariaDB Unterstützung", "Ideal für APIs, Web-Apps"]
+    }
+  },
+
+  "info": {
+    "type": "Typ",
+    "port": "Port",
+    "container": "Container",
+    "containers": "Container",
+    "containerActive": "{{running}}/{{total}} aktiv",
+    "git": "Git",
+    "database": "Datenbank",
+    "name": "Name",
+    "path": "Pfad",
+    "containerName": "Container-Name",
+    "noContainers": "Keine Container gefunden",
+    "noContainersHint": "Starte das Projekt um Container zu erstellen",
+    "localChanges": "Lokale Änderungen vorhanden"
+  },
+
+  "show": {
+    "shared": "Geteilt",
+    "sharedProject": "Geteiltes Projekt",
+    "sharedFrom": "von",
+    "typeRecommendation": "Projekttyp-Empfehlung:",
+    "typeMismatchInfo": "Basierend auf den Projektdateien wurde ein anderer Typ erkannt.",
+    "currentType": "Aktuell",
+    "recommendedType": "Empfohlen",
+    "adjustType": "Typ anpassen",
+    "projectType": "Projekttyp",
+    "projectTypeHelp": "Der Projekttyp bestimmt die Docker-Konfiguration (Webserver, Runtime, etc.). Bei Änderung wird der Container neu erstellt.",
+    "typeMatchOk": "Erkannter Projekttyp stimmt mit Konfiguration überein.",
+    "typeChangeInfo": "Beim Ändern des Typs wird die docker-compose.yml neu generiert und der Container neu gestartet.",
+    "envTitle": "Umgebungsvariablen (.env)",
+    "envHelp": "Bearbeite die .env-Datei des Projekts. Änderungen werden erst nach einem Container-Neustart wirksam.",
+    "dbConnection": "Datenbank-Verbindung",
+    "setupDb": "DB einrichten",
+    "setupDbHelp": "Nutzt {{filename}} als Vorlage und ersetzt DB-Variablen",
+    "setupDbHelpNoExample": "Fügt DB-Credentials ein und ersetzt bekannte Variablen",
+    "usesTemplate": "Nutzt {{filename}} als Vorlage",
+    "envTip": "Es wurde eine {{filename}} gefunden.",
+    "envTipDb": "Wähle oben eine Datenbank aus - die Vorlage wird automatisch verwendet und DB-Variablen werden ersetzt.",
+    "useAsTemplate": "Als Vorlage verwenden",
+    "envPlaceholder": "# Umgebungsvariablen im Format KEY=value\nDB_HOST=localhost\nAPI_KEY=geheim",
+    "envRestartHint": "Nach dem Speichern muss der Container neu gestartet werden, damit die Änderungen wirksam werden.",
+    "sharedWithNone": "Dieses Projekt ist noch nicht mit anderen Benutzern geteilt.",
+    "noUsersToShare": "Keine weiteren Benutzer verfügbar zum Teilen.",
+    "addNewUser": "Neuen Benutzer hinzufügen:",
+    "selectUser": "-- Benutzer wählen --",
+    "permissionLabels": "Ansehen: Status und Logs sehen | Verwalten: + Start/Stop, Pull, .env | Vollzugriff: + Typ ändern",
+    "deleteProject": "Projekt löschen",
+    "deleteProjectDesc": "Das Projekt und alle Dateien werden unwiderruflich gelöscht.",
+    "deleteConfirmTitle": "Projekt löschen",
+    "deleteConfirmText": "Bist du sicher, dass du das Projekt \"{{name}}\" löschen möchtest?",
+    "deleteConfirmWarning": "Diese Aktion kann nicht rückgängig gemacht werden!",
+    "deleteConfirmList1": "Alle Container werden gestoppt und entfernt",
+    "deleteConfirmList2": "Alle Projekt-Dateien werden gelöscht",
+    "deleteConfirmList3": "Die Datenbank wird nicht automatisch gelöscht",
+    "confirmDelete": "Ja, löschen",
+    "gitDisconnectTitle": "Git-Verbindung trennen",
+    "gitDisconnectConfirm": "Möchtest du die Git-Verbindung wirklich trennen?",
+    "gitDisconnectNote": "Die Projekt-Dateien bleiben erhalten, aber Git-Informationen und gespeicherte Zugangsdaten werden gelöscht.",
+    "disconnect": "Trennen",
+    "autoDeployHelp": "Aktiviere Auto-Deploy, um automatisch bei neuen Commits im Repository zu deployen. Der Server prüft regelmäßig auf Änderungen.",
+    "autoDeployActive": "Aktiv",
+    "autoDeployInactive": "Inaktiv",
+    "intervalTooltip": "Wie oft der Server das Repository auf neue Commits prüft",
+    "noDeploymentsYet": "Noch keine Deployments",
+    "autoDeployInfo": "Aktiviere Auto-Deploy um automatisch bei neuen Commits zu deployen.",
+    "deployHistory": "Deployment-Historie",
+    "deployType": "Typ",
+    "deployCommit": "Commit",
+    "deployStatus": "Status",
+    "deployDuration": "Dauer",
+    "deployAuto": "Auto",
+    "deployManual": "Manuell",
+    "noChanges": "Keine Änderungen"
+  },
+
+  "git": {
+    "title": "GitHub",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "repository": "Repository",
+    "branch": "Branch",
+    "lastCommit": "Letzter Commit",
+    "disconnect": "Trennen",
+    "pull": "Pull",
+    "connectRepo": "Repository verbinden",
+    "disconnectConfirm": "Git-Verbindung wirklich trennen? Die Projektdateien bleiben erhalten."
+  },
+
+  "autoDeploy": {
+    "title": "Auto-Deploy",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "interval": "Intervall",
+    "lastCheck": "Letzte Prüfung",
+    "triggerNow": "Jetzt deployen",
+    "history": "Deploy-Historie",
+    "noHistory": "Noch keine Deployments"
+  },
+
+  "env": {
+    "title": "Umgebungsvariablen (.env)",
+    "noFile": "Keine .env-Datei vorhanden",
+    "save": "Speichern",
+    "copyExample": "Von .env.example kopieren",
+    "exampleFound": ".env.example gefunden",
+    "configureDb": "DB konfigurieren",
+    "selectDatabase": "Datenbank auswählen",
+    "restartHint": "Nach dem Speichern Container neustarten"
+  },
+
+  "sharing": {
+    "title": "Projekt teilen",
+    "sharedWith": "Geteilt mit",
+    "noShares": "Dieses Projekt ist mit niemandem geteilt.",
+    "addUser": "Benutzer hinzufügen",
+    "selectUser": "Benutzer auswählen",
+    "selectPermission": "Berechtigung auswählen",
+    "permissions": {
+      "read": "Ansehen",
+      "manage": "Verwalten",
+      "full": "Vollzugriff"
+    },
+    "permissionHelp": "Ansehen: Nur Status/Logs. Verwalten: + Start/Stop, Pull, .env. Vollzugriff: + Typ ändern.",
+    "removeConfirm": "Freigabe für {{username}} wirklich entfernen?"
+  },
+
+  "typeChange": {
+    "title": "Projekttyp ändern",
+    "current": "Aktueller Typ",
+    "detected": "Erkannter Typ",
+    "mismatch": "Typ-Abweichung erkannt",
+    "changeType": "Typ ändern"
+  },
+
+  "delete": {
+    "title": "Projekt löschen",
+    "warning": "Damit wird das gesamte Projekt unwiderruflich gelöscht, inklusive aller Dateien und Container.",
+    "confirmText": "Projektname zum Bestätigen eingeben",
+    "submit": "Projekt endgültig löschen"
+  },
+
+  "flash": {
+    "created": "Projekt \"{{name}}\" erfolgreich erstellt!",
+    "deleted": "Projekt \"{{name}}\" wurde gelöscht",
+    "started": "Projekt \"{{name}}\" gestartet",
+    "stopped": "Projekt \"{{name}}\" gestoppt",
+    "restarted": "Projekt \"{{name}}\" neugestartet",
+    "typeChanged": "Projekttyp zu \"{{type}}\" geändert. Container wurde neugestartet.",
+    "envSaved": "Umgebungsvariablen gespeichert. Container-Neustart empfohlen.",
+    "envCopied": ".env.example wurde nach .env kopiert",
+    "dbConfigured": "Datenbank-Credentials wurden in .env eingefügt",
+    "gitConnected": "Git-Repository erfolgreich verbunden",
+    "gitDisconnected": "Git-Verbindung getrennt",
+    "gitPulled": "Git Pull erfolgreich. {{commits}} neue Commits.",
+    "gitPulledNoChanges": "Keine neuen Änderungen im Repository.",
+    "shareAdded": "Projekt mit {{username}} geteilt",
+    "shareUpdated": "Berechtigung für {{username}} aktualisiert",
+    "shareRemoved": "Freigabe für {{username}} entfernt",
+    "autoDeployEnabled": "Auto-Deploy aktiviert (Intervall: {{interval}} Min.)",
+    "autoDeployDisabled": "Auto-Deploy deaktiviert",
+    "autoDeployTriggered": "Deployment wurde gestartet",
+    "deploySuccess": "Deployment erfolgreich abgeschlossen",
+    "deployFailed": "Deployment fehlgeschlagen: {{error}}"
+  },
+
+  "errors": {
+    "notFound": "Projekt nicht gefunden",
+    "loadError": "Fehler beim Laden des Projekts",
+    "nameExists": "Ein Projekt mit diesem Namen existiert bereits",
+    "invalidName": "Projektname darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten",
+    "invalidType": "Ungültiger Projekttyp",
+    "ownerOnly": "Nur der Besitzer kann das Projekt löschen",
+    "noAccess": "Kein Zugriff auf dieses Projekt",
+    "noPermission": "Keine Berechtigung für diese Aktion",
+    "noGitRepo": "Kein Git-Repository verbunden",
+    "gitCloneFailed": "Git Clone fehlgeschlagen: {{error}}",
+    "gitAlreadyConnected": "Projekt ist bereits mit einem Git-Repository verbunden",
+    "zipInvalid": "Ungültige ZIP-Datei",
+    "zipTooLarge": "ZIP-Datei ist zu groß (max. 100 MB)"
+  }
+}

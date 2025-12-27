@@ -1,23 +1,23 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-        <li class="breadcrumb-item active">Deployment-Historie</li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item active"><%= t('admin:deployments.title') %></li>
     </ol>
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-rocket-takeoff"></i> Deployment-Historie</h1>
+    <h1><i class="bi bi-rocket-takeoff"></i> <%= t('admin:deployments.title') %></h1>
 </div>
 
-<!-- Statistiken (letzte 24h) -->
+<!-- Statistics (last 24h) -->
 <div class="row g-4 mb-4">
     <div class="col-md-3">
         <div class="card bg-primary text-white h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Deployments (24h)</h6>
+                        <h6 class="text-white-50"><%= t('admin:deployments.stats.title') %></h6>
                         <h2 class="mb-0"><%= stats.total || 0 %></h2>
                     </div>
                     <i class="bi bi-rocket-takeoff fs-1 opacity-50"></i>
@@ -30,7 +30,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Erfolgreich</h6>
+                        <h6 class="text-white-50"><%= t('admin:deployments.stats.success') %></h6>
                         <h2 class="mb-0"><%= stats.successful || 0 %></h2>
                     </div>
                     <i class="bi bi-check-circle fs-1 opacity-50"></i>
@@ -43,7 +43,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Fehlgeschlagen</h6>
+                        <h6 class="text-white-50"><%= t('admin:deployments.stats.failed') %></h6>
                         <h2 class="mb-0"><%= stats.failed || 0 %></h2>
                     </div>
                     <i class="bi bi-x-circle fs-1 opacity-50"></i>
@@ -56,7 +56,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Avg. Dauer</h6>
+                        <h6 class="text-white-50"><%= t('admin:deployments.stats.avgDuration') %></h6>
                         <h2 class="mb-0">
                             <% if (stats.avg_duration) { %>
                             <%= (stats.avg_duration / 1000).toFixed(1) %>s
@@ -77,15 +77,15 @@
     <div class="card-body">
         <form method="GET" action="/admin/deployments" class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label for="status" class="form-label">Status</label>
+                <label for="status" class="form-label"><%= t('common:labels.status') %></label>
                 <select name="status" id="status" class="form-select">
-                    <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>Alle</option>
-                    <option value="success" <%= filters.status === 'success' ? 'selected' : '' %>>Erfolgreich</option>
-                    <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>Fehlgeschlagen</option>
+                    <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>><%= t('admin:logs.levels.all') %></option>
+                    <option value="success" <%= filters.status === 'success' ? 'selected' : '' %>><%= t('common:status.success') %></option>
+                    <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>><%= t('common:status.failed') %></option>
                 </select>
             </div>
             <div class="col-md-4">
-                <label for="limit" class="form-label">Anzahl</label>
+                <label for="limit" class="form-label"><%= t('common:labels.count') %></label>
                 <select name="limit" id="limit" class="form-select">
                     <option value="25" <%= filters.limit === 25 ? 'selected' : '' %>>25</option>
                     <option value="50" <%= filters.limit === 50 ? 'selected' : '' %>>50</option>
@@ -95,35 +95,35 @@
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-funnel"></i> Filtern
+                    <i class="bi bi-funnel"></i> <%= t('common:buttons.filter') %>
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Deployment-Liste -->
+<!-- Deployment list -->
 <div class="card">
     <div class="card-header">
-        <i class="bi bi-list-ul"></i> Deployments (<%= deployments.length %>)
+        <i class="bi bi-list-ul"></i> <%= t('admin:nav.deployments') %> (<%= deployments.length %>)
     </div>
     <div class="card-body p-0">
         <% if (deployments.length === 0) { %>
         <div class="text-center text-muted py-5">
             <i class="bi bi-inbox fs-1"></i>
-            <p class="mt-2">Keine Deployments gefunden</p>
+            <p class="mt-2"><%= t('admin:deployments.noDeployments') %></p>
         </div>
         <% } else { %>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 160px;">Zeitpunkt</th>
-                        <th>Benutzer</th>
-                        <th>Projekt</th>
-                        <th>Trigger</th>
-                        <th style="width: 100px;">Status</th>
-                        <th style="width: 100px;">Dauer</th>
+                        <th style="width: 160px;"><%= t('admin:logs.timestamp') %></th>
+                        <th><%= t('admin:deployments.columns.user') %></th>
+                        <th><%= t('admin:deployments.columns.project') %></th>
+                        <th><%= t('admin:deployments.columns.trigger') %></th>
+                        <th style="width: 100px;"><%= t('admin:deployments.columns.status') %></th>
+                        <th style="width: 100px;"><%= t('admin:deployments.columns.duration') %></th>
                         <th style="width: 50px;"></th>
                     </tr>
                 </thead>
@@ -131,7 +131,7 @@
                     <% deployments.forEach((deploy, index) => { %>
                     <tr>
                         <td class="text-muted small">
-                            <%= new Date(deploy.deployed_at).toLocaleString('de-DE') %>
+                            <%= new Date(deploy.deployed_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %>
                         </td>
                         <td>
                             <a href="/admin/users/<%= deploy.user_id %>/edit" class="text-decoration-none">
@@ -151,22 +151,22 @@
                         </td>
                         <td>
                             <% if (deploy.trigger_type === 'auto') { %>
-                            <span class="badge bg-info">Auto</span>
+                            <span class="badge bg-info"><%= t('admin:deployments.triggers.auto') %></span>
                             <% } else if (deploy.trigger_type === 'manual') { %>
-                            <span class="badge bg-secondary">Manuell</span>
+                            <span class="badge bg-secondary"><%= t('admin:deployments.triggers.manual') %></span>
                             <% } else if (deploy.trigger_type === 'clone') { %>
-                            <span class="badge bg-primary">Clone</span>
+                            <span class="badge bg-primary"><%= t('admin:deployments.triggers.clone') %></span>
                             <% } else if (deploy.trigger_type === 'pull') { %>
-                            <span class="badge bg-warning text-dark">Pull</span>
+                            <span class="badge bg-warning text-dark"><%= t('admin:deployments.triggers.pull') %></span>
                             <% } else { %>
                             <span class="badge bg-light text-dark"><%= deploy.trigger_type %></span>
                             <% } %>
                         </td>
                         <td>
                             <% if (deploy.status === 'success') { %>
-                            <span class="badge bg-success">Erfolgreich</span>
+                            <span class="badge bg-success"><%= t('common:status.success') %></span>
                             <% } else if (deploy.status === 'failed') { %>
-                            <span class="badge bg-danger">Fehlgeschlagen</span>
+                            <span class="badge bg-danger"><%= t('common:status.failed') %></span>
                             <% } else { %>
                             <span class="badge bg-warning text-dark"><%= deploy.status %></span>
                             <% } %>
@@ -190,13 +190,13 @@
                                 <div class="col-md-6">
                                     <% if (deploy.commit_before) { %>
                                     <p class="mb-1">
-                                        <strong>Vorheriger Commit:</strong><br>
+                                        <strong><%= t('admin:deployments.commitBefore') %>:</strong><br>
                                         <code class="small"><%= deploy.commit_before %></code>
                                     </p>
                                     <% } %>
                                     <% if (deploy.commit_after) { %>
                                     <p class="mb-1">
-                                        <strong>Neuer Commit:</strong><br>
+                                        <strong><%= t('admin:deployments.commitAfter') %>:</strong><br>
                                         <code class="small"><%= deploy.commit_after %></code>
                                     </p>
                                     <% } %>
@@ -204,7 +204,7 @@
                                 <div class="col-md-6">
                                     <% if (deploy.error_message) { %>
                                     <p class="mb-1">
-                                        <strong>Fehlermeldung:</strong><br>
+                                        <strong><%= t('admin:deployments.errorMessage') %>:</strong><br>
                                         <span class="text-danger"><%= deploy.error_message %></span>
                                     </p>
                                     <% } %>

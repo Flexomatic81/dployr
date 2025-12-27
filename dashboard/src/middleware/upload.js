@@ -162,7 +162,7 @@ function validateZipMiddleware(req, res, next) {
             ip: req.ip
         });
 
-        req.flash('error', 'The uploaded file is not a valid ZIP file');
+        req.flash('error', req.t('projects:errors.zipInvalid'));
         return res.redirect('back');
     }
 

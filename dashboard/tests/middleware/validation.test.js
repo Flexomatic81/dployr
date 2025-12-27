@@ -97,7 +97,7 @@ describe('Validation Middleware', () => {
 
             const { error } = schemas.register.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('Kleinbuchstaben');
+            expect(error.details[0].message).toContain('lowercase');
         });
 
         it('should reject username that is too short', () => {
@@ -109,7 +109,7 @@ describe('Validation Middleware', () => {
 
             const { error } = schemas.register.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('3 Zeichen');
+            expect(error.details[0].message).toContain('3 characters');
         });
 
         it('should reject password that is too short', () => {
@@ -121,7 +121,7 @@ describe('Validation Middleware', () => {
 
             const { error } = schemas.register.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('8 Zeichen');
+            expect(error.details[0].message).toContain('8 characters');
         });
 
         it('should reject mismatched passwords', () => {
@@ -133,7 +133,7 @@ describe('Validation Middleware', () => {
 
             const { error } = schemas.register.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('stimmen nicht überein');
+            expect(error.details[0].message).toContain('do not match');
         });
     });
 
@@ -166,7 +166,7 @@ describe('Validation Middleware', () => {
 
             const { error } = schemas.createProject.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('Ungültiger Projekttyp');
+            expect(error.details[0].message).toContain('Invalid project type');
         });
     });
 
@@ -200,7 +200,7 @@ describe('Validation Middleware', () => {
 
             const { error } = schemas.createProjectFromGit.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('GitHub, GitLab und Bitbucket');
+            expect(error.details[0].message).toContain('GitHub, GitLab and Bitbucket');
         });
     });
 

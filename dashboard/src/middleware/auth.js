@@ -3,7 +3,7 @@ function requireAuth(req, res, next) {
     if (req.session && req.session.user) {
         return next();
     }
-    req.flash('error', 'Please log in first');
+    req.flash('error', req.t('auth:flash.loginRequired'));
     res.redirect('/login');
 }
 
@@ -12,7 +12,7 @@ function requireAdmin(req, res, next) {
     if (req.session && req.session.user && req.session.user.is_admin) {
         return next();
     }
-    req.flash('error', 'Admin permission required');
+    req.flash('error', req.t('auth:flash.adminRequired'));
     res.redirect('/dashboard');
 }
 

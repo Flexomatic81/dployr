@@ -1,0 +1,78 @@
+{
+  "general": {
+    "unexpected": "Ein unerwarteter Fehler ist aufgetreten",
+    "tryAgain": "Bitte versuche es erneut",
+    "contactAdmin": "Falls das Problem weiterhin besteht, kontaktiere den Administrator"
+  },
+
+  "http": {
+    "400": "Ungültige Anfrage",
+    "401": "Nicht autorisiert",
+    "403": "Zugriff verweigert",
+    "404": "Nicht gefunden",
+    "500": "Interner Serverfehler"
+  },
+
+  "notFound": {
+    "title": "Nicht gefunden",
+    "message": "Die angeforderte Seite wurde nicht gefunden.",
+    "backToDashboard": "Zurück zum Dashboard"
+  },
+
+  "validation": {
+    "required": "{{field}} ist erforderlich",
+    "minLength": "{{field}} muss mindestens {{min}} Zeichen lang sein",
+    "maxLength": "{{field}} darf maximal {{max}} Zeichen lang sein",
+    "invalidFormat": "{{field}} hat ein ungültiges Format",
+    "invalidEmail": "Ungültige E-Mail-Adresse",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein",
+    "invalidUrl": "Ungültige URL",
+    "invalidPort": "Port muss zwischen {{min}} und {{max}} liegen",
+    "nameFormat": "Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt",
+    "usernameFormat": "Nur Kleinbuchstaben, Zahlen, Bindestriche und Unterstriche erlaubt"
+  },
+
+  "auth": {
+    "loginRequired": "Bitte melden Sie sich zuerst an",
+    "adminRequired": "Admin-Berechtigung erforderlich",
+    "invalidCredentials": "Ungültiger Benutzername oder Passwort",
+    "accountNotApproved": "Ihr Konto wurde noch nicht freigeschaltet",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
+  },
+
+  "csrf": {
+    "invalid": "Sicherheitstoken ungültig oder abgelaufen. Bitte versuchen Sie es erneut."
+  },
+
+  "project": {
+    "notFound": "Projekt nicht gefunden",
+    "loadError": "Fehler beim Laden des Projekts",
+    "noAccess": "Kein Zugriff auf dieses Projekt",
+    "noPermission": "Keine Berechtigung für diese Aktion"
+  },
+
+  "database": {
+    "notFound": "Datenbank nicht gefunden",
+    "connectionError": "Datenbankverbindung fehlgeschlagen"
+  },
+
+  "upload": {
+    "invalidZip": "Die hochgeladene Datei ist keine gültige ZIP-Datei",
+    "tooLarge": "Die Datei ist zu groß (maximal {{max}} MB)",
+    "extractError": "Fehler beim Entpacken der ZIP-Datei"
+  },
+
+  "docker": {
+    "startFailed": "Container konnte nicht gestartet werden",
+    "stopFailed": "Container konnte nicht gestoppt werden",
+    "restartFailed": "Container konnte nicht neugestartet werden",
+    "notRunning": "Container läuft nicht"
+  },
+
+  "git": {
+    "cloneFailed": "Git Clone fehlgeschlagen",
+    "pullFailed": "Git Pull fehlgeschlagen",
+    "notARepository": "Kein Git-Repository",
+    "invalidUrl": "Ungültige Repository-URL"
+  }
+}

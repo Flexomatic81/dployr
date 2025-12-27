@@ -227,14 +227,14 @@ describe('UserService', () => {
             mockPool.query.mockResolvedValueOnce([[{ id: 1, approved: true }]]);
 
             await expect(userService.rejectUser(1)).rejects.toThrow(
-                'Bereits freigeschaltete User können nicht abgelehnt werden'
+                'Already approved users cannot be rejected'
             );
         });
 
         it('should throw error if user not found', async () => {
             mockPool.query.mockResolvedValueOnce([[]]);
 
-            await expect(userService.rejectUser(999)).rejects.toThrow('User nicht gefunden');
+            await expect(userService.rejectUser(999)).rejects.toThrow('User not found');
         });
     });
 });

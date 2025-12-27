@@ -146,13 +146,13 @@ DB_PASSWORD=pass2
     describe('createDatabase', () => {
         it('should reject invalid database names', async () => {
             await expect(databaseService.createDatabase(testUser, 'Invalid-Name'))
-                .rejects.toThrow('Datenbankname darf nur Kleinbuchstaben, Zahlen und Unterstriche enthalten');
+                .rejects.toThrow('Database name may only contain lowercase letters, numbers and underscores');
 
             await expect(databaseService.createDatabase(testUser, 'has spaces'))
-                .rejects.toThrow('Datenbankname darf nur Kleinbuchstaben, Zahlen und Unterstriche enthalten');
+                .rejects.toThrow('Database name may only contain lowercase letters, numbers and underscores');
 
             await expect(databaseService.createDatabase(testUser, 'UPPERCASE'))
-                .rejects.toThrow('Datenbankname darf nur Kleinbuchstaben, Zahlen und Unterstriche enthalten');
+                .rejects.toThrow('Database name may only contain lowercase letters, numbers and underscores');
         });
 
         it('should accept valid database names', async () => {

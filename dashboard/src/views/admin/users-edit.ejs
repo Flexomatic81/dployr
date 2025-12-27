@@ -1,9 +1,9 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-        <li class="breadcrumb-item"><a href="/admin/users">User-Verwaltung</a></li>
-        <li class="breadcrumb-item active">Bearbeiten</li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin/users"><%= t('admin:users.title') %></a></li>
+        <li class="breadcrumb-item active"><%= t('common:buttons.edit') %></li>
     </ol>
 </nav>
 
@@ -11,37 +11,37 @@
     <div class="col-md-8 col-lg-6">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-pencil"></i> User bearbeiten: <%= editUser.username %>
+                <i class="bi bi-pencil"></i> <%= t('admin:editUser.title') %>: <%= editUser.username %>
             </div>
             <div class="card-body">
                 <form action="/admin/users/<%= editUser.id %>?_method=PUT" method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Benutzername *</label>
+                        <label for="username" class="form-label"><%= t('common:labels.username') %> *</label>
                         <input type="text" class="form-control" id="username" name="username"
                                required pattern="[a-z0-9_-]+" value="<%= editUser.username %>">
                     </div>
 
                     <div class="mb-3">
-                        <label for="password" class="form-label">Neues Passwort</label>
+                        <label for="password" class="form-label"><%= t('admin:editUser.newPassword') %></label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="password" name="password"
-                                   minlength="6" placeholder="Leer lassen um Passwort beizubehalten">
+                                   minlength="6" placeholder="<%= t('admin:editUser.newPasswordHint') %>">
                             <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
                                 <i class="bi bi-eye"></i>
                             </button>
                             <button class="btn btn-outline-primary" type="button" onclick="generatePassword()">
-                                <i class="bi bi-shuffle"></i> Generieren
+                                <i class="bi bi-shuffle"></i> <%= t('common:buttons.generate') %>
                             </button>
                         </div>
-                        <div class="form-text">Nur ausfüllen, wenn das Passwort geändert werden soll.</div>
+                        <div class="form-text"><%= t('admin:editUser.newPasswordHint') %></div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="system_username" class="form-label">System-Username *</label>
+                        <label for="system_username" class="form-label"><%= t('admin:users.columns.systemUsername') %> *</label>
                         <input type="text" class="form-control" id="system_username" name="system_username"
                                required pattern="[a-z0-9_-]+" value="<%= editUser.system_username %>">
                         <div class="form-text text-warning">
-                            <i class="bi bi-exclamation-triangle"></i> Änderungen können bestehende Projekte unzugänglich machen!
+                            <i class="bi bi-exclamation-triangle"></i> <%= t('admin:editUser.systemUsernameWarning') %>
                         </div>
                     </div>
 
@@ -50,17 +50,17 @@
                             <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin"
                                    <%= editUser.is_admin ? 'checked' : '' %>>
                             <label class="form-check-label" for="is_admin">
-                                <i class="bi bi-shield-lock"></i> Administrator-Rechte
+                                <i class="bi bi-shield-lock"></i> <%= t('admin:editUser.isAdmin') %>
                             </label>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between">
                         <a href="/admin/users" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Abbrechen
+                            <i class="bi bi-arrow-left"></i> <%= t('common:buttons.cancel') %>
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> Speichern
+                            <i class="bi bi-check-lg"></i> <%= t('admin:editUser.submit') %>
                         </button>
                     </div>
                 </form>

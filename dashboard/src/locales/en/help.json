@@ -1,0 +1,286 @@
+{
+  "title": "Help",
+
+  "nav": {
+    "gettingStarted": "Getting Started",
+    "projects": "Projects",
+    "projectTypes": "Project Types",
+    "git": "Git Integration",
+    "autoDeploy": "Auto‑Deploy",
+    "databases": "Databases",
+    "sharing": "Project Sharing",
+    "admin": "Administration",
+    "faq": "FAQ"
+  },
+
+  "gettingStarted": {
+    "title": "Getting Started",
+    "welcome": "Welcome to Dployr! With this platform you can easily deploy and manage web projects.",
+    "quickstart": "Quick Start",
+    "steps": {
+      "create": "Create a project: Go to Projects → New Project",
+      "method": "Choose a method: Git repository, ZIP upload or empty template",
+      "start": "Start the project: Click \"Start\" in the project view",
+      "access": "Access it: Your project runs under http://SERVER-IP:PORT"
+    },
+    "tip": "Tip: For Git projects the project type is automatically detected!"
+  },
+
+  "projects": {
+    "title": "Projects",
+    "createTitle": "Create Project",
+    "createIntro": "There are three ways to create a project:",
+    "methods": {
+      "git": {
+        "title": "Git Repository",
+        "desc": "Clone a repository from GitHub, GitLab, etc."
+      },
+      "zip": {
+        "title": "ZIP Upload",
+        "desc": "Upload a ZIP file with your project."
+      },
+      "template": {
+        "title": "Empty Template",
+        "desc": "Start with an empty project."
+      }
+    },
+    "actionsTitle": "Project Actions",
+    "actions": {
+      "start": "Starts all containers of the project",
+      "stop": "Stops all containers",
+      "restart": "Restarts the containers (e.g. after code changes)",
+      "logs": "Shows the container logs"
+    }
+  },
+
+  "projectTypes": {
+    "title": "Project Types",
+    "intro": "Dployr supports various project types:",
+    "columns": {
+      "type": "Type",
+      "description": "Description",
+      "detection": "Detection"
+    },
+    "types": {
+      "static": {
+        "name": "Static",
+        "desc": "HTML, CSS, JavaScript – served with Nginx",
+        "detect": "index.html"
+      },
+      "php": {
+        "name": "PHP",
+        "desc": "PHP applications with PHP‑FPM and Nginx",
+        "detect": "*.php or composer.json"
+      },
+      "nodejs": {
+        "name": "Node.js",
+        "desc": "Node.js apps with npm start",
+        "detect": "package.json"
+      },
+      "laravel": {
+        "name": "Laravel/Symfony",
+        "desc": "PHP frameworks with Artisan/Console",
+        "detect": "artisan or symfony.lock"
+      },
+      "nodejsStatic": {
+        "name": "React/Vue (Static)",
+        "desc": "Frontend apps that are built into static files",
+        "detect": "package.json with build script + dist/"
+      },
+      "nextjs": {
+        "name": "Next.js",
+        "desc": "Next.js applications",
+        "detect": "next.config.js or next.config.mjs"
+      }
+    },
+    "typeDetectionNote": "Type detection: If the wrong type was detected, you can change it in the project settings."
+  },
+
+  "git": {
+    "title": "Git Integration",
+    "connectTitle": "Connect Repository",
+    "connectIntro": "When creating a Git project:",
+    "connectSteps": {
+      "url": "Enter the repository URL (HTTPS)",
+      "token": "For private repos: Add an access token",
+      "clone": "The repository will be automatically cloned"
+    },
+    "privateTitle": "Private Repositories",
+    "privateIntro": "For private repos you need a personal access token:",
+    "privateProviders": {
+      "github": "GitHub: Settings → Developer settings → Personal access tokens",
+      "gitlab": "GitLab: Preferences → Access Tokens"
+    },
+    "privateNote": "The token is stored securely and used for pull operations.",
+    "actionsTitle": "Git Actions",
+    "actions": {
+      "pull": "Pull the latest changes from remote",
+      "deploy": "Pull + restart containers in one step"
+    }
+  },
+
+  "autoDeploy": {
+    "title": "Auto‑Deploy",
+    "intro": "Auto‑Deploy automatically checks for new commits and deploys them.",
+    "howItWorksTitle": "How it Works",
+    "howItWorks": {
+      "check": "Dployr periodically checks the repository (configurable: 5‑60 min)",
+      "pull": "On new commits: automatic pull",
+      "restart": "Containers are restarted",
+      "log": "Deployment is logged in history"
+    },
+    "enableTitle": "Enable",
+    "enableDesc": "In the project view under \"Git Connection\" click Enable.",
+    "note": "Note: Auto‑Deploy is only available for Git projects and can only be configured by the project owner."
+  },
+
+  "databases": {
+    "title": "Databases",
+    "supportedTitle": "Supported Databases",
+    "types": {
+      "mariadb": {
+        "name": "MariaDB",
+        "desc": "MySQL‑compatible, ideal for PHP/Laravel"
+      },
+      "postgresql": {
+        "name": "PostgreSQL",
+        "desc": "Advanced features, ideal for complex applications"
+      }
+    },
+    "createTitle": "Create Database",
+    "createSteps": {
+      "goto": "Go to Databases",
+      "click": "Click \"New Database\"",
+      "type": "Choose the type (MariaDB or PostgreSQL)",
+      "name": "Assign a name"
+    },
+    "createNote": "Login credentials are automatically generated and stored.",
+    "connectTitle": "Connect Database to Project",
+    "connectIntro": "To allow your application to access the database, the credentials must be added to the .env file of your project.",
+    "connectHowTitle": "How it works:",
+    "connectSteps": {
+      "goto": "Go to the project view and scroll to \"Environment Variables\"",
+      "click": "Click the DB setup button",
+      "select": "Choose one of your databases from the dropdown",
+      "auto": "The credentials are automatically written into .env",
+      "restart": "Restart the container so the changes take effect"
+    },
+    "backgroundTitle": "What happens in the background?",
+    "backgroundIntro": "When clicking \"Set up DB\" the system performs the following steps:",
+    "backgroundSteps": {
+      "template": "Load template: If a .env.example exists, it is used as base",
+      "detect": "Detect variables: The system searches the file for known database variable names",
+      "replace": "Replace values: Found DB variables are replaced with correct Dployr credentials",
+      "append": "Add missing: Credentials not found are appended at end of file",
+      "keep": "Keep others: All other variables (API keys, app settings, etc.) remain unchanged"
+    },
+    "variablesTitle": "Detected Variable Names",
+    "variablesIntro": "The system automatically recognizes various spellings for database credentials:",
+    "variableColumns": {
+      "credential": "Credential",
+      "variables": "Detected Variables"
+    },
+    "exampleTitle": "Example",
+    "exampleBefore": "Assume your project has the following .env.example:",
+    "exampleAfter": "After selecting your database, the .env becomes:",
+    "exampleNote": "App variables remain unchanged; only DB variables are replaced.",
+    "tipEnvExample": "Tip: If your project has a .env.example, it is automatically used as template. You do not need to copy it manually!",
+    "noteRestart": "Important: After setting up the database you must restart the container so the application loads the new environment variables.",
+    "noteButton": "The button only appears once you have created at least one database. You can also edit the .env file manually in the editor anytime."
+  },
+
+  "sharing": {
+    "title": "Project Sharing",
+    "intro": "Share projects with other users and manage their permissions.",
+    "levelsTitle": "Permission Levels",
+    "columns": {
+      "level": "Level",
+      "description": "Description",
+      "actions": "Actions"
+    },
+    "levels": {
+      "read": {
+        "name": "Read",
+        "desc": "View only",
+        "actions": "See status, logs, project info"
+      },
+      "manage": {
+        "name": "Manage",
+        "desc": "Allowed operations",
+        "actions": "+ Start/Stop, Pull, Deploy, Edit .env"
+      },
+      "full": {
+        "name": "Full Access",
+        "desc": "Almost all rights",
+        "actions": "+ Change project type"
+      }
+    },
+    "ownerOnly": "Only the owner can: delete project, disconnect Git connection, configure Auto‑Deploy, manage shares"
+  },
+
+  "admin": {
+    "title": "Administration",
+    "userManagementTitle": "User Management",
+    "userManagementIntro": "As an admin you can:",
+    "userManagementActions": {
+      "approve": "Approve registrations: New users must be approved by an admin",
+      "manage": "Manage users: change rights, delete users",
+      "adminRights": "Grant admin rights: make other users admins"
+    },
+    "pendingTitle": "Pending Registrations",
+    "pendingDesc": "In the admin area you see all pending registrations and can approve or reject them."
+  },
+
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "questions": {
+      "notStarting": {
+        "q": "My project won't start – what do I do?",
+        "a": {
+          "logs": "Check the logs for error messages",
+          "type": "Ensure the project type is correct",
+          "env": "Check the .env file for missing variables",
+          "nodejs": "For Node.js: Is there a package.json with a start script?"
+        }
+      },
+      "database": {
+        "q": "How do I connect my app to the database?",
+        "a": {
+          "create": "Create a database under Databases",
+          "goto": "Go to the project view",
+          "click": "Click DB setup and choose a database",
+          "auto": "Credentials are intelligently inserted into your .env",
+          "restart": "Restart the container"
+        },
+        "hosts": {
+          "title": "Hosts (internal):",
+          "mariadb": "MariaDB: dployr-mariadb",
+          "postgresql": "PostgreSQL: dployr-postgresql"
+        },
+        "tip": "Tip: If your project has a .env.example with different variable names (e.g. DB_USER instead of DB_USERNAME), they are automatically detected and replaced!"
+      },
+      "changes": {
+        "q": "Why don't I see my changes?",
+        "a": {
+          "git": "Git projects: Did you run a pull?",
+          "restart": "After pull: update containers with restart",
+          "env": ".env changes require a container restart",
+          "cache": "Browser cache: try a hard refresh (Ctrl+Shift+R)"
+        }
+      },
+      "access": {
+        "q": "How do I reach my project from outside?",
+        "a": "Each project gets its own port. The URL is: http://<SERVER-IP>:<PORT>. Find the port in the project details."
+      },
+      "ssh": {
+        "q": "Can I SSH/SFTP into my project?",
+        "a": {
+          "intro": "Currently no direct SSH/SFTP access is offered. Options:",
+          "git": "Git: push changes via Git repository",
+          "zip": "ZIP upload: upload files as ZIP",
+          "env": ".env editor: edit environment variables directly in the dashboard"
+        }
+      }
+    }
+  }
+}

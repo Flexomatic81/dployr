@@ -1,0 +1,78 @@
+{
+  "general": {
+    "unexpected": "An unexpected error has occurred",
+    "tryAgain": "Please try again",
+    "contactAdmin": "If the problem persists, contact the administrator"
+  },
+
+  "http": {
+    "400": "Bad Request",
+    "401": "Unauthorized",
+    "403": "Forbidden",
+    "404": "Not Found",
+    "500": "Internal Server Error"
+  },
+
+  "notFound": {
+    "title": "Not Found",
+    "message": "The requested page could not be found.",
+    "backToDashboard": "Back to Dashboard"
+  },
+
+  "validation": {
+    "required": "{{field}} is required",
+    "minLength": "{{field}} must be at least {{min}} characters long",
+    "maxLength": "{{field}} may be at most {{max}} characters long",
+    "invalidFormat": "{{field}} has an invalid format",
+    "invalidEmail": "Invalid email address",
+    "passwordMismatch": "Passwords do not match",
+    "invalidUrl": "Invalid URL",
+    "invalidPort": "Port must be between {{min}} and {{max}}",
+    "nameFormat": "Only lowercase letters, numbers, and hyphens allowed",
+    "usernameFormat": "Only lowercase letters, numbers, hyphens, and underscores allowed"
+  },
+
+  "auth": {
+    "loginRequired": "Please log in first",
+    "adminRequired": "Admin privileges required",
+    "invalidCredentials": "Invalid username or password",
+    "accountNotApproved": "Your account has not yet been approved",
+    "sessionExpired": "Your session has expired. Please log in again."
+  },
+
+  "csrf": {
+    "invalid": "Security token is invalid or expired. Please try again."
+  },
+
+  "project": {
+    "notFound": "Project not found",
+    "loadError": "Error loading project",
+    "noAccess": "No access to this project",
+    "noPermission": "You do not have permission for this action"
+  },
+
+  "database": {
+    "notFound": "Database not found",
+    "connectionError": "Database connection failed"
+  },
+
+  "upload": {
+    "invalidZip": "The uploaded file is not a valid ZIP file",
+    "tooLarge": "File is too large (maximum {{max}} MB)",
+    "extractError": "Error extracting the ZIP file"
+  },
+
+  "docker": {
+    "startFailed": "Container could not be started",
+    "stopFailed": "Container could not be stopped",
+    "restartFailed": "Container could not be restarted",
+    "notRunning": "Container is not running"
+  },
+
+  "git": {
+    "cloneFailed": "Git clone failed",
+    "pullFailed": "Git pull failed",
+    "notARepository": "Not a Git repository",
+    "invalidUrl": "Invalid repository URL"
+  }
+}

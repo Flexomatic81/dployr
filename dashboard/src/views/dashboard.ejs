@@ -1,35 +1,35 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    <h1><i class="bi bi-speedometer2"></i> <%= t('common:nav.dashboard') %></h1>
     <a href="/projects/create" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Neues Projekt
+        <i class="bi bi-plus-lg"></i> <%= t('projects:newProject') %>
     </a>
 </div>
 
 <% if (pendingUsersCount > 0) { %>
-<!-- Admin-Benachrichtigung: Ausstehende Registrierungen -->
+<!-- Admin notification: Pending registrations -->
 <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
     <div class="d-flex align-items-center">
         <i class="bi bi-person-exclamation me-2 fs-4"></i>
         <div class="flex-grow-1">
-            <strong><%= pendingUsersCount %> <%= pendingUsersCount === 1 ? 'neue Registrierung wartet' : 'neue Registrierungen warten' %> auf Freigabe!</strong>
-            <p class="mb-0 small">Bitte prüfe die ausstehenden Benutzeranfragen im Admin-Bereich.</p>
+            <strong><%= pendingUsersCount === 1 ? t('admin:pending.pendingCount', { count: pendingUsersCount }) : t('admin:pending.pendingCountPlural', { count: pendingUsersCount }) %></strong>
+            <p class="mb-0 small"><%= t('admin:pending.pendingHint') %></p>
         </div>
         <a href="/admin/users/pending" class="btn btn-warning btn-sm ms-3">
-            <i class="bi bi-person-check"></i> Jetzt prüfen
+            <i class="bi bi-person-check"></i> <%= t('common:buttons.checkNow') %>
         </a>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Schließen"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<%= t('common:buttons.close') %>"></button>
 </div>
 <% } %>
 
-<!-- Statistik-Karten -->
+<!-- Statistics cards -->
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Meine Projekte</h6>
+                        <h6 class="card-title"><%= t('projects:stats.myProjects') %></h6>
                         <h2 class="mb-0"><%= stats.totalProjects %></h2>
                     </div>
                     <i class="bi bi-folder display-4 opacity-50"></i>
@@ -42,7 +42,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Laufend</h6>
+                        <h6 class="card-title"><%= t('projects:stats.running') %></h6>
                         <h2 class="mb-0"><%= stats.runningProjects %></h2>
                     </div>
                     <i class="bi bi-play-circle display-4 opacity-50"></i>
@@ -55,7 +55,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Gestoppt</h6>
+                        <h6 class="card-title"><%= t('projects:stats.stopped') %></h6>
                         <h2 class="mb-0"><%= stats.stoppedProjects %></h2>
                     </div>
                     <i class="bi bi-stop-circle display-4 opacity-50"></i>
@@ -68,7 +68,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Geteilt</h6>
+                        <h6 class="card-title"><%= t('projects:stats.shared') %></h6>
                         <h2 class="mb-0"><%= stats.sharedProjects %></h2>
                     </div>
                     <i class="bi bi-share display-4 opacity-50"></i>
@@ -78,19 +78,19 @@
     </div>
 </div>
 
-<!-- Projekte -->
+<!-- Projects -->
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-folder"></i> Meine Projekte</h5>
-        <a href="/projects" class="btn btn-sm btn-outline-primary">Alle anzeigen</a>
+        <h5 class="mb-0"><i class="bi bi-folder"></i> <%= t('projects:myProjects') %></h5>
+        <a href="/projects" class="btn btn-sm btn-outline-primary"><%= t('common:buttons.showAll') %></a>
     </div>
     <div class="card-body">
         <% if (projects.length === 0) { %>
             <div class="text-center py-4 text-muted">
                 <i class="bi bi-folder-x display-4"></i>
-                <p class="mt-2">Noch keine Projekte vorhanden</p>
+                <p class="mt-2"><%= t('projects:noProjects') %></p>
                 <a href="/projects/create" class="btn btn-primary">
-                    <i class="bi bi-plus-lg"></i> Erstes Projekt erstellen
+                    <i class="bi bi-plus-lg"></i> <%= t('projects:createFirst') %>
                 </a>
             </div>
         <% } else { %>
@@ -98,11 +98,11 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Typ</th>
-                            <th>Port</th>
-                            <th>Status</th>
-                            <th>Aktionen</th>
+                            <th><%= t('common:labels.name') %></th>
+                            <th><%= t('common:labels.type') %></th>
+                            <th><%= t('common:labels.port') %></th>
+                            <th><%= t('common:labels.status') %></th>
+                            <th><%= t('common:labels.actions') %></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -127,35 +127,35 @@
                                 <td>
                                     <% if (project.status === 'running') { %>
                                         <span class="badge bg-success">
-                                            <i class="bi bi-check-circle"></i> Läuft
+                                            <i class="bi bi-check-circle"></i> <%= t('common:status.running') %>
                                             (<%= project.runningContainers %>/<%= project.totalContainers %>)
                                         </span>
                                     <% } else { %>
                                         <span class="badge bg-secondary">
-                                            <i class="bi bi-stop-circle"></i> Gestoppt
+                                            <i class="bi bi-stop-circle"></i> <%= t('common:status.stopped') %>
                                         </span>
                                     <% } %>
                                 </td>
                                 <td>
                                     <% if (project.status === 'running') { %>
                                         <form action="/projects/<%= project.name %>/stop" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Stoppen">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="<%= t('common:buttons.stop') %>">
                                                 <i class="bi bi-stop-fill"></i>
                                             </button>
                                         </form>
                                         <form action="/projects/<%= project.name %>/restart" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Neustarten">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="<%= t('common:buttons.restart') %>">
                                                 <i class="bi bi-arrow-clockwise"></i>
                                             </button>
                                         </form>
                                     <% } else { %>
                                         <form action="/projects/<%= project.name %>/start" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Starten">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="<%= t('common:buttons.start') %>">
                                                 <i class="bi bi-play-fill"></i>
                                             </button>
                                         </form>
                                     <% } %>
-                                    <a href="/logs/<%= project.name %>" class="btn btn-sm btn-outline-info" title="Logs">
+                                    <a href="/logs/<%= project.name %>" class="btn btn-sm btn-outline-info" title="<%= t('common:buttons.logs') %>">
                                         <i class="bi bi-terminal"></i>
                                     </a>
                                 </td>
@@ -169,22 +169,22 @@
 </div>
 
 <% if (sharedProjects && sharedProjects.length > 0) { %>
-<!-- Geteilte Projekte -->
+<!-- Shared Projects -->
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-share"></i> Geteilte Projekte</h5>
-        <a href="/projects" class="btn btn-sm btn-outline-info">Alle anzeigen</a>
+        <h5 class="mb-0"><i class="bi bi-share"></i> <%= t('projects:sharedProjects') %></h5>
+        <a href="/projects" class="btn btn-sm btn-outline-info"><%= t('common:buttons.showAll') %></a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Besitzer</th>
-                        <th>Berechtigung</th>
-                        <th>Status</th>
-                        <th>Aktionen</th>
+                        <th><%= t('common:labels.name') %></th>
+                        <th><%= t('common:labels.owner') %></th>
+                        <th><%= t('common:labels.permission') %></th>
+                        <th><%= t('common:labels.status') %></th>
+                        <th><%= t('common:labels.actions') %></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -206,11 +206,11 @@
                             <td>
                                 <% if (project.status === 'running') { %>
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Läuft
+                                        <i class="bi bi-check-circle"></i> <%= t('common:status.running') %>
                                     </span>
                                 <% } else { %>
                                     <span class="badge bg-secondary">
-                                        <i class="bi bi-stop-circle"></i> Gestoppt
+                                        <i class="bi bi-stop-circle"></i> <%= t('common:status.stopped') %>
                                     </span>
                                 <% } %>
                             </td>
@@ -219,19 +219,19 @@
                                 <% if (canManage) { %>
                                     <% if (project.status === 'running') { %>
                                         <form action="/projects/<%= project.name %>/stop" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Stoppen">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="<%= t('common:buttons.stop') %>">
                                                 <i class="bi bi-stop-fill"></i>
                                             </button>
                                         </form>
                                     <% } else { %>
                                         <form action="/projects/<%= project.name %>/start" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Starten">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="<%= t('common:buttons.start') %>">
                                                 <i class="bi bi-play-fill"></i>
                                             </button>
                                         </form>
                                     <% } %>
                                 <% } %>
-                                <a href="/logs/<%= project.name %>" class="btn btn-sm btn-outline-info" title="Logs">
+                                <a href="/logs/<%= project.name %>" class="btn btn-sm btn-outline-info" title="<%= t('common:buttons.logs') %>">
                                     <i class="bi bi-terminal"></i>
                                 </a>
                             </td>
@@ -244,19 +244,19 @@
 </div>
 <% } %>
 
-<!-- Datenbanken -->
+<!-- Databases -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-database"></i> Meine Datenbanken</h5>
-        <a href="/databases" class="btn btn-sm btn-outline-primary">Alle anzeigen</a>
+        <h5 class="mb-0"><i class="bi bi-database"></i> <%= t('databases:myDatabases') %></h5>
+        <a href="/databases" class="btn btn-sm btn-outline-primary"><%= t('common:buttons.showAll') %></a>
     </div>
     <div class="card-body">
         <% if (databases.length === 0) { %>
             <div class="text-center py-4 text-muted">
                 <i class="bi bi-database-x display-4"></i>
-                <p class="mt-2">Noch keine Datenbanken vorhanden</p>
+                <p class="mt-2"><%= t('databases:noDatabases') %></p>
                 <a href="/databases/create" class="btn btn-primary">
-                    <i class="bi bi-plus-lg"></i> Datenbank erstellen
+                    <i class="bi bi-plus-lg"></i> <%= t('databases:createFirst') %>
                 </a>
             </div>
         <% } else { %>
@@ -264,8 +264,8 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Datenbank</th>
-                            <th>Benutzer</th>
+                            <th><%= t('databases:info.database') %></th>
+                            <th><%= t('databases:info.user') %></th>
                         </tr>
                     </thead>
                     <tbody>

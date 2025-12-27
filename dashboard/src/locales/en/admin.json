@@ -1,0 +1,156 @@
+{
+  "title": "Admin Area",
+  "nav": {
+    "users": "Users",
+    "pending": "Pending",
+    "projects": "Projects",
+    "logs": "System Logs",
+    "deployments": "Deployments"
+  },
+
+  "index": {
+    "manage": "Manage",
+    "totalProjects": "Total Projects",
+    "usersDescription": "Create, edit and delete user accounts.",
+    "manageUsers": "Manage Users",
+    "projectsDescription": "View all projects from all users.",
+    "logsDescription": "View and filter application logs of the dashboard.",
+    "showLogs": "Show Logs",
+    "errorsOnly": "Errors Only",
+    "deploymentsDescription": "Monitor all deployments from all users."
+  },
+
+  "users": {
+    "title": "User Management",
+    "newUser": "New User",
+    "noUsers": "No users found.",
+    "columns": {
+      "username": "Username",
+      "systemUsername": "System Username",
+      "role": "Role",
+      "status": "Status",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "approved": "Approved",
+      "pending": "Pending"
+    }
+  },
+
+  "createUser": {
+    "title": "Create New User",
+    "usernameHelp": "Used as the system username for project folders",
+    "passwordHelp": "At least 6 characters",
+    "makeAdmin": "Make admin",
+    "submit": "Create User"
+  },
+
+  "editUser": {
+    "title": "Edit User",
+    "resetPassword": "Reset Password",
+    "newPassword": "New Password",
+    "newPasswordHint": "Leave blank to keep the current password",
+    "isAdmin": "Administrator",
+    "submit": "Save Changes",
+    "systemUsernameWarning": "Changes may make existing projects inaccessible!"
+  },
+
+  "pending": {
+    "title": "Pending Registrations",
+    "noPending": "No pending registrations.",
+    "pendingCount": "{{count}} new registration waiting for approval!",
+    "pendingCountPlural": "{{count}} new registrations waiting for approval!",
+    "pendingHint": "Please check pending user requests in the admin area.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "requestedAt": "Requested at"
+  },
+
+  "projects": {
+    "title": "Project Overview",
+    "allProjects": "All Projects",
+    "noProjects": "No projects available.",
+    "columns": {
+      "name": "Project Name",
+      "owner": "Owner",
+      "type": "Type",
+      "port": "Port",
+      "status": "Status"
+    }
+  },
+
+  "logs": {
+    "title": "System Logs",
+    "logFile": "Log File",
+    "logLevel": "Log Level",
+    "refresh": "Refresh",
+    "autoRefresh": "Auto Refresh",
+    "noLogs": "No log entries found",
+    "logEntries": "Log Entries",
+    "newestFirst": "Newest first",
+    "timestamp": "Timestamp",
+    "level": "Level",
+    "message": "Message",
+    "files": {
+      "combined": "All Logs (combined.log)",
+      "error": "Errors Only (error.log)"
+    },
+    "levels": {
+      "all": "All",
+      "error": "Error",
+      "warn": "Warning",
+      "info": "Info",
+      "debug": "Debug"
+    }
+  },
+
+  "deployments": {
+    "title": "Deployment History",
+    "noDeployments": "No deployments available.",
+    "columns": {
+      "project": "Project",
+      "user": "User",
+      "trigger": "Trigger",
+      "status": "Status",
+      "duration": "Duration",
+      "date": "Date"
+    },
+    "triggers": {
+      "auto": "Auto",
+      "manual": "Manual",
+      "clone": "Clone",
+      "pull": "Pull"
+    },
+    "stats": {
+      "title": "Deployments (24h)",
+      "total": "Total",
+      "success": "Successful",
+      "failed": "Failed",
+      "avgDuration": "Avg. Duration"
+    },
+    "commitBefore": "Previous Commit",
+    "commitAfter": "New Commit",
+    "errorMessage": "Error Message"
+  },
+
+  "delete": {
+    "confirmUser": "Delete user \"{{username}}\"? All projects and databases will also be deleted!",
+    "confirmReject": "Reject registration of \"{{username}}\"?"
+  },
+
+  "flash": {
+    "userCreated": "User \"{{username}}\" created",
+    "userUpdated": "User \"{{username}}\" updated",
+    "userDeleted": "User \"{{username}}\" deleted",
+    "userApproved": "User \"{{username}}\" approved",
+    "userRejected": "Registration of \"{{username}}\" rejected",
+    "passwordReset": "Password for \"{{username}}\" reset"
+  },
+
+  "errors": {
+    "userNotFound": "User not found",
+    "cannotDeleteSelf": "You cannot delete yourself",
+    "cannotDeleteLastAdmin": "The last administrator cannot be deleted"
+  }
+}
