@@ -1,0 +1,156 @@
+{
+  "title": "Admin-Bereich",
+  "nav": {
+    "users": "Benutzer",
+    "pending": "Ausstehend",
+    "projects": "Projekte",
+    "logs": "System-Logs",
+    "deployments": "Deployments"
+  },
+
+  "index": {
+    "manage": "Verwalten",
+    "totalProjects": "Projekte gesamt",
+    "usersDescription": "Erstellen, bearbeiten und löschen Sie Benutzerkonten.",
+    "manageUsers": "User verwalten",
+    "projectsDescription": "Sehen Sie alle Projekte aller Benutzer ein.",
+    "logsDescription": "Application-Logs des Dashboards einsehen und filtern.",
+    "showLogs": "Logs anzeigen",
+    "errorsOnly": "Nur Fehler",
+    "deploymentsDescription": "Alle Deployments aller Benutzer überwachen."
+  },
+
+  "users": {
+    "title": "Benutzerverwaltung",
+    "newUser": "Neuer Benutzer",
+    "noUsers": "Keine Benutzer gefunden.",
+    "columns": {
+      "username": "Benutzername",
+      "systemUsername": "System",
+      "role": "Rolle",
+      "status": "Status",
+      "created": "Erstellt",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "approved": "Genehmigt",
+      "pending": "Ausstehend"
+    }
+  },
+
+  "createUser": {
+    "title": "Neuen Benutzer erstellen",
+    "usernameHelp": "Wird als System-Benutzername für Projektordner verwendet",
+    "passwordHelp": "Mindestens 6 Zeichen",
+    "makeAdmin": "Als Admin anlegen",
+    "submit": "Benutzer erstellen"
+  },
+
+  "editUser": {
+    "title": "Benutzer bearbeiten",
+    "resetPassword": "Passwort zurücksetzen",
+    "newPassword": "Neues Passwort",
+    "newPasswordHint": "Leer lassen, um das Passwort nicht zu ändern",
+    "isAdmin": "Administrator",
+    "submit": "Änderungen speichern",
+    "systemUsernameWarning": "Änderungen können bestehende Projekte unzugänglich machen!"
+  },
+
+  "pending": {
+    "title": "Ausstehende Registrierungen",
+    "noPending": "Keine ausstehenden Registrierungen.",
+    "pendingCount": "{{count}} neue Registrierung wartet auf Freigabe!",
+    "pendingCountPlural": "{{count}} neue Registrierungen warten auf Freigabe!",
+    "pendingHint": "Bitte prüfe die ausstehenden Benutzeranfragen im Admin-Bereich.",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "requestedAt": "Angefragt am"
+  },
+
+  "projects": {
+    "title": "Projekt-Übersicht",
+    "allProjects": "Alle Projekte",
+    "noProjects": "Keine Projekte vorhanden.",
+    "columns": {
+      "name": "Projektname",
+      "owner": "Besitzer",
+      "type": "Typ",
+      "port": "Port",
+      "status": "Status"
+    }
+  },
+
+  "logs": {
+    "title": "System-Logs",
+    "logFile": "Log-Datei",
+    "logLevel": "Log-Level",
+    "refresh": "Aktualisieren",
+    "autoRefresh": "Auto-Refresh",
+    "noLogs": "Keine Log-Einträge gefunden",
+    "logEntries": "Log-Einträge",
+    "newestFirst": "Neueste zuerst",
+    "timestamp": "Zeitpunkt",
+    "level": "Level",
+    "message": "Nachricht",
+    "files": {
+      "combined": "Alle Logs (combined.log)",
+      "error": "Nur Fehler (error.log)"
+    },
+    "levels": {
+      "all": "Alle",
+      "error": "Error",
+      "warn": "Warning",
+      "info": "Info",
+      "debug": "Debug"
+    }
+  },
+
+  "deployments": {
+    "title": "Deployment-Historie",
+    "noDeployments": "Keine Deployments vorhanden.",
+    "columns": {
+      "project": "Projekt",
+      "user": "Benutzer",
+      "trigger": "Auslöser",
+      "status": "Status",
+      "duration": "Dauer",
+      "date": "Datum"
+    },
+    "triggers": {
+      "auto": "Auto",
+      "manual": "Manuell",
+      "clone": "Clone",
+      "pull": "Pull"
+    },
+    "stats": {
+      "title": "Deployments (24h)",
+      "total": "Gesamt",
+      "success": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "avgDuration": "Avg. Dauer"
+    },
+    "commitBefore": "Vorheriger Commit",
+    "commitAfter": "Neuer Commit",
+    "errorMessage": "Fehlermeldung"
+  },
+
+  "delete": {
+    "confirmUser": "Benutzer \"{{username}}\" wirklich löschen? Alle Projekte und Datenbanken werden ebenfalls gelöscht!",
+    "confirmReject": "Registrierung von \"{{username}}\" ablehnen?"
+  },
+
+  "flash": {
+    "userCreated": "Benutzer \"{{username}}\" wurde erstellt",
+    "userUpdated": "Benutzer \"{{username}}\" wurde aktualisiert",
+    "userDeleted": "Benutzer \"{{username}}\" wurde gelöscht",
+    "userApproved": "Benutzer \"{{username}}\" wurde freigeschaltet",
+    "userRejected": "Registrierung von \"{{username}}\" wurde abgelehnt",
+    "passwordReset": "Passwort für \"{{username}}\" wurde zurückgesetzt"
+  },
+
+  "errors": {
+    "userNotFound": "Benutzer nicht gefunden",
+    "cannotDeleteSelf": "Sie können sich nicht selbst löschen",
+    "cannotDeleteLastAdmin": "Der letzte Administrator kann nicht gelöscht werden"
+  }
+}

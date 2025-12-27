@@ -1,0 +1,62 @@
+{
+  "title": "Databases",
+  "myDatabases": "My Databases",
+  "newDatabase": "New Database",
+  "noDatabases": "No databases available yet",
+  "createFirst": "Create your first database",
+
+  "create": {
+    "title": "Create a new database",
+    "databaseName": "Database name",
+    "databaseNameHelp": "The database name will be prefixed with your system username (e.g. max_blog).",
+    "databaseNameHint": "Only lowercase letters, numbers and underscores allowed",
+    "databaseNamePlaceholder": "my_database",
+    "databaseType": "Database type",
+    "databaseTypeHelp": "MariaDB for PHP/WordPress projects, PostgreSQL for modern applications like Django or Rails.",
+    "autoUserNote": "A database user will be created automatically",
+    "submit": "Create database"
+  },
+
+  "types": {
+    "mariadb": "MariaDB (MySQL compatible)",
+    "postgresql": "PostgreSQL"
+  },
+
+  "info": {
+    "database": "Database",
+    "user": "User",
+    "password": "Password",
+    "host": "Host",
+    "port": "Port",
+    "type": "Type"
+  },
+
+  "credentials": {
+    "title": "Credentials",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+
+  "delete": {
+    "title": "Delete database",
+    "warning": "This will permanently delete the database, including all data!",
+    "confirmText": "Enter the database name to confirm",
+    "submit": "Permanently delete database"
+  },
+
+  "flash": {
+    "created": "Database \"{{name}}\" created successfully!",
+    "deleted": "Database \"{{name}}\" has been deleted"
+  },
+
+  "errors": {
+    "notFound": "Database not found",
+    "nameExists": "A database with this name already exists",
+    "invalidName": "The database name may only contain lowercase letters, numbers and underscores",
+    "invalidType": "Invalid database type",
+    "createFailed": "Could not create database: {{error}}",
+    "deleteFailed": "Could not delete database: {{error}}"
+  }
+}

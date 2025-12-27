@@ -1,12 +1,12 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item active">Admin</li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item active"><%= t('common:nav.admin') %></li>
     </ol>
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-shield-lock"></i> Admin-Bereich</h1>
+    <h1><i class="bi bi-shield-lock"></i> <%= t('admin:title') %></h1>
 </div>
 
 <div class="row g-4 mb-4">
@@ -15,7 +15,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Benutzer</h6>
+                        <h6 class="text-white-50"><%= t('admin:nav.users') %></h6>
                         <h2 class="mb-0"><%= stats.users %></h2>
                     </div>
                     <i class="bi bi-people fs-1 opacity-50"></i>
@@ -23,7 +23,7 @@
             </div>
             <div class="card-footer bg-transparent border-0">
                 <a href="/admin/users" class="text-white text-decoration-none">
-                    Verwalten <i class="bi bi-arrow-right"></i>
+                    <%= t('admin:index.manage') %> <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
         </div>
@@ -34,7 +34,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Admins</h6>
+                        <h6 class="text-white-50"><%= t('common:roles.admin') %>s</h6>
                         <h2 class="mb-0"><%= stats.admins %></h2>
                     </div>
                     <i class="bi bi-person-badge fs-1 opacity-50"></i>
@@ -48,7 +48,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Projekte gesamt</h6>
+                        <h6 class="text-white-50"><%= t('admin:index.totalProjects') %></h6>
                         <h2 class="mb-0"><%= stats.projects %></h2>
                     </div>
                     <i class="bi bi-folder fs-1 opacity-50"></i>
@@ -56,7 +56,7 @@
             </div>
             <div class="card-footer bg-transparent border-0">
                 <a href="/admin/projects" class="text-white text-decoration-none">
-                    Alle anzeigen <i class="bi bi-arrow-right"></i>
+                    <%= t('common:buttons.showAll') %> <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
         </div>
@@ -68,7 +68,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-dark opacity-75">Ausstehende Registrierungen</h6>
+                        <h6 class="text-dark opacity-75"><%= t('admin:pending.title') %></h6>
                         <h2 class="mb-0"><%= stats.pending %></h2>
                     </div>
                     <i class="bi bi-person-exclamation fs-1 opacity-50"></i>
@@ -76,7 +76,7 @@
             </div>
             <div class="card-footer bg-transparent border-0">
                 <a href="/admin/pending" class="text-dark text-decoration-none">
-                    Prüfen <i class="bi bi-arrow-right"></i>
+                    <%= t('common:buttons.checkNow') %> <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
         </div>
@@ -88,15 +88,15 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-people"></i> User-Verwaltung
+                <i class="bi bi-people"></i> <%= t('admin:users.title') %>
             </div>
             <div class="card-body">
-                <p class="text-muted">Erstellen, bearbeiten und löschen Sie Benutzerkonten.</p>
+                <p class="text-muted"><%= t('admin:index.usersDescription') %></p>
                 <a href="/admin/users" class="btn btn-primary">
-                    <i class="bi bi-people"></i> User verwalten
+                    <i class="bi bi-people"></i> <%= t('admin:index.manageUsers') %>
                 </a>
                 <a href="/admin/users/create" class="btn btn-outline-success">
-                    <i class="bi bi-person-plus"></i> Neuer User
+                    <i class="bi bi-person-plus"></i> <%= t('admin:users.newUser') %>
                 </a>
             </div>
         </div>
@@ -105,12 +105,12 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-folder"></i> Projekt-Übersicht
+                <i class="bi bi-folder"></i> <%= t('admin:projects.title') %>
             </div>
             <div class="card-body">
-                <p class="text-muted">Sehen Sie alle Projekte aller Benutzer ein.</p>
+                <p class="text-muted"><%= t('admin:index.projectsDescription') %></p>
                 <a href="/admin/projects" class="btn btn-primary">
-                    <i class="bi bi-folder"></i> Alle Projekte
+                    <i class="bi bi-folder"></i> <%= t('admin:projects.allProjects') %>
                 </a>
             </div>
         </div>
@@ -119,15 +119,15 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-file-text"></i> System-Logs
+                <i class="bi bi-file-text"></i> <%= t('admin:logs.title') %>
             </div>
             <div class="card-body">
-                <p class="text-muted">Application-Logs des Dashboards einsehen und filtern.</p>
+                <p class="text-muted"><%= t('admin:index.logsDescription') %></p>
                 <a href="/admin/logs" class="btn btn-primary">
-                    <i class="bi bi-file-text"></i> Logs anzeigen
+                    <i class="bi bi-file-text"></i> <%= t('admin:index.showLogs') %>
                 </a>
                 <a href="/admin/logs?type=error" class="btn btn-outline-danger">
-                    <i class="bi bi-exclamation-triangle"></i> Nur Fehler
+                    <i class="bi bi-exclamation-triangle"></i> <%= t('admin:index.errorsOnly') %>
                 </a>
             </div>
         </div>
@@ -136,15 +136,15 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-rocket-takeoff"></i> Deployment-Historie
+                <i class="bi bi-rocket-takeoff"></i> <%= t('admin:deployments.title') %>
             </div>
             <div class="card-body">
-                <p class="text-muted">Alle Deployments aller Benutzer überwachen.</p>
+                <p class="text-muted"><%= t('admin:index.deploymentsDescription') %></p>
                 <a href="/admin/deployments" class="btn btn-primary">
-                    <i class="bi bi-rocket-takeoff"></i> Deployments
+                    <i class="bi bi-rocket-takeoff"></i> <%= t('admin:nav.deployments') %>
                 </a>
                 <a href="/admin/deployments?status=failed" class="btn btn-outline-danger">
-                    <i class="bi bi-x-circle"></i> Fehlgeschlagene
+                    <i class="bi bi-x-circle"></i> <%= t('common:status.failed') %>
                 </a>
             </div>
         </div>

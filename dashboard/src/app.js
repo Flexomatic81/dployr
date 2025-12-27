@@ -11,6 +11,7 @@ const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { csrfSynchronisedProtection, csrfTokenMiddleware, csrfErrorHandler } = require('./middleware/csrf');
+const { i18next, i18nMiddleware } = require('./config/i18n');
 
 const { initDatabase, getPool } = require('./config/database');
 const { setUserLocals } = require('./middleware/auth');
@@ -149,6 +150,17 @@ app.use(session({
 
 // Flash Messages
 app.use(flash());
+
+// i18n Middleware
+app.use(i18nMiddleware.handle(i18next));
+
+// Make translation function available in views
+app.use((req, res, next) => {
+    res.locals.t = req.t;
+    res.locals.currentLanguage = req.language || 'de';
+    res.locals.languages = ['de', 'en'];
+    next();
+});
 
 // User locals for views
 app.use(setUserLocals);

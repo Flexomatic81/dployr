@@ -1,95 +1,95 @@
 <div class="row justify-content-center">
     <div class="col-md-10 col-lg-8">
-        <!-- Tabs für Erstellungsmethode -->
+        <!-- Tabs for creation method -->
         <ul class="nav nav-tabs mb-4" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="git-tab" data-bs-toggle="tab" data-bs-target="#git-content" type="button">
-                    <i class="bi bi-git"></i> Von Git-Repository
+                    <i class="bi bi-git"></i> <%= t('projects:create.fromGit') %>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="zip-tab" data-bs-toggle="tab" data-bs-target="#zip-content" type="button">
-                    <i class="bi bi-file-earmark-zip"></i> ZIP-Upload
+                    <i class="bi bi-file-earmark-zip"></i> <%= t('projects:create.fromZip') %>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="template-tab" data-bs-toggle="tab" data-bs-target="#template-content" type="button">
-                    <i class="bi bi-file-earmark-code"></i> Von Template
+                    <i class="bi bi-file-earmark-code"></i> <%= t('projects:create.fromTemplate') %>
                 </button>
             </li>
         </ul>
 
         <div class="tab-content">
-            <!-- Tab: Von Git -->
+            <!-- Tab: From Git -->
             <div class="tab-pane fade show active" id="git-content" role="tabpanel">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><i class="bi bi-git"></i> Neues Projekt von Git-Repository</h4>
+                        <h4 class="mb-0"><i class="bi bi-git"></i> <%= t('projects:create.gitTitle') %></h4>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="/projects/from-git">
                             <div class="mb-3">
                                 <label for="git_name" class="form-label">
-                                    Projektname
-                                    <%- include('../partials/help-icon', { text: 'Der Projektname wird als Ordnername und Container-Präfix verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt.' }) %>
+                                    <%= t('projects:create.projectName') %>
+                                    <%- include('../partials/help-icon', { text: t('projects:create.projectNameHelp') }) %>
                                 </label>
                                 <input type="text" class="form-control" id="git_name" name="name"
                                        pattern="[a-z0-9-]+" required
-                                       placeholder="mein-projekt">
-                                <div class="form-text">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
+                                       placeholder="<%= t('projects:create.projectNamePlaceholder') %>">
+                                <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="repo_url" class="form-label">
-                                    Repository URL
-                                    <%- include('../partials/help-icon', { text: 'Die HTTPS-URL des Git-Repositories. SSH-URLs werden nicht unterstützt.' }) %>
+                                    <%= t('projects:create.repoUrl') %>
+                                    <%- include('../partials/help-icon', { text: t('projects:create.repoUrlHelp') }) %>
                                 </label>
                                 <input type="url" class="form-control" id="repo_url" name="repo_url" required
                                        placeholder="https://github.com/username/repository">
-                                <div class="form-text">HTTPS-URL von GitHub, GitLab oder Bitbucket</div>
+                                <div class="form-text"><%= t('projects:create.repoUrlHint') %></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="access_token" class="form-label">
-                                    Access Token <span class="text-muted">(optional)</span>
-                                    <%- include('../partials/help-icon', { text: 'Personal Access Token für private Repositories. Bei GitHub unter Settings → Developer settings → Personal access tokens erstellen.' }) %>
+                                    <%= t('projects:create.accessToken') %> <span class="text-muted"><%= t('projects:create.accessTokenOptional') %></span>
+                                    <%- include('../partials/help-icon', { text: t('projects:create.accessTokenHelp') }) %>
                                 </label>
                                 <input type="password" class="form-control" id="access_token" name="access_token"
                                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
                                 <div class="form-text">
-                                    Erforderlich für private Repositories.
+                                    <%= t('projects:create.accessTokenHint') %>
                                     <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">
-                                        GitHub Token erstellen <i class="bi bi-box-arrow-up-right"></i>
+                                        <%= t('projects:create.createGitHubToken') %> <i class="bi bi-box-arrow-up-right"></i>
                                     </a>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="git_port" class="form-label">
-                                    Port
-                                    <%- include('../partials/help-icon', { text: 'Der HTTP-Port, unter dem das Projekt erreichbar sein wird. Jedes Projekt benötigt einen eindeutigen Port.' }) %>
+                                    <%= t('common:labels.port') %>
+                                    <%- include('../partials/help-icon', { text: t('projects:create.portHelp') }) %>
                                 </label>
                                 <input type="number" class="form-control" id="git_port" name="port"
                                        value="<%= nextPort %>" min="8001" max="9999" required>
-                                <div class="form-text">Nächster freier Port: <%= nextPort %></div>
+                                <div class="form-text"><%= t('projects:create.nextFreePort', { port: nextPort }) %></div>
                             </div>
 
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle"></i>
-                                <strong>Automatische Erkennung:</strong> Der Projekttyp wird automatisch erkannt:
+                                <strong><%= t('projects:create.autoDetection') %></strong> <%= t('projects:create.autoDetectionInfo') %>
                                 <ul class="mb-0 mt-2">
-                                    <li><code>package.json</code> vorhanden → Node.js App</li>
-                                    <li><code>index.php</code> oder <code>composer.json</code> → PHP Website</li>
-                                    <li><code>index.html</code> → Statische Website</li>
+                                    <li><%= t('projects:create.autoDetectNode') %></li>
+                                    <li><%= t('projects:create.autoDetectPhp') %></li>
+                                    <li><%= t('projects:create.autoDetectStatic') %></li>
                                 </ul>
                             </div>
 
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-git"></i> Projekt von Git erstellen
+                                    <i class="bi bi-git"></i> <%= t('projects:create.submitGit') %>
                                 </button>
                                 <a href="/projects" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-lg"></i> Abbrechen
+                                    <i class="bi bi-x-lg"></i> <%= t('common:buttons.cancel') %>
                                 </a>
                             </div>
                         </form>
@@ -97,61 +97,60 @@
                 </div>
             </div>
 
-            <!-- Tab: Von ZIP -->
+            <!-- Tab: From ZIP -->
             <div class="tab-pane fade" id="zip-content" role="tabpanel">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><i class="bi bi-file-earmark-zip"></i> Neues Projekt aus ZIP-Datei</h4>
+                        <h4 class="mb-0"><i class="bi bi-file-earmark-zip"></i> <%= t('projects:create.zipTitle') %></h4>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="/projects/from-zip" enctype="multipart/form-data">
                             <div class="mb-3">
-                                <label for="zip_name" class="form-label">Projektname</label>
+                                <label for="zip_name" class="form-label"><%= t('projects:create.projectName') %></label>
                                 <input type="text" class="form-control" id="zip_name" name="name"
                                        pattern="[a-z0-9-]+" required
-                                       placeholder="mein-projekt">
-                                <div class="form-text">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
+                                       placeholder="<%= t('projects:create.projectNamePlaceholder') %>">
+                                <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="zipfile" class="form-label">
-                                    ZIP-Datei
-                                    <%- include('../partials/help-icon', { text: 'ZIP-Datei mit den Projektdateien. Verschachtelte Ordner (z.B. projekt-main/) werden automatisch entpackt.' }) %>
+                                    <%= t('projects:create.zipFile') %>
+                                    <%- include('../partials/help-icon', { text: t('projects:create.zipFileHelp') }) %>
                                 </label>
                                 <input type="file" class="form-control" id="zipfile" name="zipfile"
                                        accept=".zip,application/zip" required>
-                                <div class="form-text">Maximale Dateigröße: 100 MB</div>
+                                <div class="form-text"><%= t('projects:create.zipFileHint') %></div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="zip_port" class="form-label">Port</label>
+                                <label for="zip_port" class="form-label"><%= t('common:labels.port') %></label>
                                 <input type="number" class="form-control" id="zip_port" name="port"
                                        value="<%= nextPort %>" min="8001" max="9999" required>
-                                <div class="form-text">Nächster freier Port: <%= nextPort %></div>
+                                <div class="form-text"><%= t('projects:create.nextFreePort', { port: nextPort }) %></div>
                             </div>
 
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle"></i>
-                                <strong>Automatische Erkennung:</strong> Der Projekttyp wird automatisch erkannt:
+                                <strong><%= t('projects:create.autoDetection') %></strong> <%= t('projects:create.autoDetectionInfo') %>
                                 <ul class="mb-0 mt-2">
-                                    <li><code>package.json</code> vorhanden → Node.js App</li>
-                                    <li><code>index.php</code> oder <code>composer.json</code> → PHP Website</li>
-                                    <li><code>index.html</code> → Statische Website</li>
+                                    <li><%= t('projects:create.autoDetectNode') %></li>
+                                    <li><%= t('projects:create.autoDetectPhp') %></li>
+                                    <li><%= t('projects:create.autoDetectStatic') %></li>
                                 </ul>
                             </div>
 
                             <div class="alert alert-secondary">
                                 <i class="bi bi-folder2-open"></i>
-                                <strong>ZIP-Struktur:</strong> Falls die ZIP einen einzelnen Ordner enthält (z.B. <code>projekt-main/</code>),
-                                wird der Inhalt automatisch korrekt extrahiert.
+                                <strong><%= t('projects:create.zipStructure') %></strong> <%= t('projects:create.zipStructureInfo') %>
                             </div>
 
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-upload"></i> Projekt hochladen
+                                    <i class="bi bi-upload"></i> <%= t('projects:create.submitZip') %>
                                 </button>
                                 <a href="/projects" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-lg"></i> Abbrechen
+                                    <i class="bi bi-x-lg"></i> <%= t('common:buttons.cancel') %>
                                 </a>
                             </div>
                         </form>
@@ -159,26 +158,26 @@
                 </div>
             </div>
 
-            <!-- Tab: Von Template -->
+            <!-- Tab: From Template -->
             <div class="tab-pane fade" id="template-content" role="tabpanel">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><i class="bi bi-folder-plus"></i> Neues Projekt von Template</h4>
+                        <h4 class="mb-0"><i class="bi bi-folder-plus"></i> <%= t('projects:create.templateTitle') %></h4>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="/projects">
                             <div class="mb-3">
-                                <label for="name" class="form-label">Projektname</label>
+                                <label for="name" class="form-label"><%= t('projects:create.projectName') %></label>
                                 <input type="text" class="form-control" id="name" name="name"
                                        pattern="[a-z0-9-]+" required
-                                       placeholder="mein-projekt">
-                                <div class="form-text">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
+                                       placeholder="<%= t('projects:create.projectNamePlaceholder') %>">
+                                <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="template" class="form-label">
-                                    Template
-                                    <%- include('../partials/help-icon', { text: 'Wähle eine Vorlage basierend auf der Technologie deines Projekts. Der Typ kann später geändert werden.' }) %>
+                                    <%= t('projects:create.template') %>
+                                    <%- include('../partials/help-icon', { text: t('projects:create.templateHelp') }) %>
                                 </label>
                                 <select class="form-select" id="template" name="template" required>
                                     <% templates.forEach(template => { %>
@@ -188,18 +187,18 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="port" class="form-label">Port</label>
+                                <label for="port" class="form-label"><%= t('common:labels.port') %></label>
                                 <input type="number" class="form-control" id="port" name="port"
                                        value="<%= nextPort %>" min="8001" max="9999" required>
-                                <div class="form-text">Nächster freier Port: <%= nextPort %></div>
+                                <div class="form-text"><%= t('projects:create.nextFreePort', { port: nextPort }) %></div>
                             </div>
 
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-plus-lg"></i> Projekt erstellen
+                                    <i class="bi bi-plus-lg"></i> <%= t('projects:create.submitTemplate') %>
                                 </button>
                                 <a href="/projects" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-lg"></i> Abbrechen
+                                    <i class="bi bi-x-lg"></i> <%= t('common:buttons.cancel') %>
                                 </a>
                             </div>
                         </form>
@@ -208,26 +207,25 @@
             </div>
         </div>
 
-        <!-- Template Info (nur bei Template-Tab sichtbar) -->
+        <!-- Template Info (only visible on Template tab) -->
         <div class="card mt-4" id="template-info-card" style="display: none;">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Template-Informationen</h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> <%= t('projects:templateInfo.title') %></h5>
             </div>
             <div class="card-body">
                 <div class="accordion" id="templateInfo">
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#staticInfo">
-                                <i class="bi bi-file-earmark-code"></i>&nbsp; Statische Website
+                                <i class="bi bi-file-earmark-code"></i>&nbsp; <%= t('projects:templateInfo.static.title') %>
                             </button>
                         </h2>
                         <div id="staticInfo" class="accordion-collapse collapse" data-bs-parent="#templateInfo">
                             <div class="accordion-body">
                                 <ul class="mb-0">
-                                    <li>Nginx Webserver</li>
-                                    <li>HTML, CSS, JavaScript</li>
-                                    <li>Ideal für einfache Websites</li>
-                                    <li>Keine Datenbank</li>
+                                    <% t('projects:templateInfo.static.features', { returnObjects: true }).forEach(feature => { %>
+                                        <li><%= feature %></li>
+                                    <% }) %>
                                 </ul>
                             </div>
                         </div>
@@ -235,16 +233,15 @@
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#phpInfo">
-                                <i class="bi bi-filetype-php"></i>&nbsp; PHP Website
+                                <i class="bi bi-filetype-php"></i>&nbsp; <%= t('projects:templateInfo.php.title') %>
                             </button>
                         </h2>
                         <div id="phpInfo" class="accordion-collapse collapse" data-bs-parent="#templateInfo">
                             <div class="accordion-body">
                                 <ul class="mb-0">
-                                    <li>Nginx + PHP 8.3 FPM</li>
-                                    <li>MariaDB Unterstützung</li>
-                                    <li>Ideal für WordPress, Laravel, etc.</li>
-                                    <li>Datenbank optional</li>
+                                    <% t('projects:templateInfo.php.features', { returnObjects: true }).forEach(feature => { %>
+                                        <li><%= feature %></li>
+                                    <% }) %>
                                 </ul>
                             </div>
                         </div>
@@ -252,16 +249,15 @@
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nodeInfo">
-                                <i class="bi bi-filetype-js"></i>&nbsp; Node.js App
+                                <i class="bi bi-filetype-js"></i>&nbsp; <%= t('projects:templateInfo.nodejs.title') %>
                             </button>
                         </h2>
                         <div id="nodeInfo" class="accordion-collapse collapse" data-bs-parent="#templateInfo">
                             <div class="accordion-body">
                                 <ul class="mb-0">
-                                    <li>Node.js 20</li>
-                                    <li>Express.js vorinstalliert</li>
-                                    <li>MariaDB Unterstützung</li>
-                                    <li>Ideal für APIs, Web-Apps</li>
+                                    <% t('projects:templateInfo.nodejs.features', { returnObjects: true }).forEach(feature => { %>
+                                        <li><%= feature %></li>
+                                    <% }) %>
                                 </ul>
                             </div>
                         </div>
@@ -273,7 +269,7 @@
 </div>
 
 <script>
-// Template-Info Card ein/ausblenden je nach aktivem Tab
+// Show/hide template info card based on active tab
 document.addEventListener('DOMContentLoaded', function() {
     const templateTab = document.getElementById('template-tab');
     const gitTab = document.getElementById('git-tab');

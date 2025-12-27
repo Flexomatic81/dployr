@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projekte",
+    "databases": "Datenbanken",
+    "admin": "Admin",
+    "help": "Hilfe",
+    "logout": "Logout"
+  },
+  "buttons": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "create": "Erstellen",
+    "start": "Starten",
+    "stop": "Stoppen",
+    "restart": "Neustarten",
+    "add": "Hinzufügen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "showAll": "Alle anzeigen",
+    "details": "Details",
+    "logs": "Logs",
+    "upload": "Hochladen",
+    "download": "Herunterladen",
+    "refresh": "Aktualisieren",
+    "checkNow": "Jetzt prüfen",
+    "filter": "Filtern",
+    "generate": "Generieren"
+  },
+  "status": {
+    "running": "Läuft",
+    "stopped": "Gestoppt",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "pending": "Ausstehend",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt",
+    "success": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "deploymentRunning": "Ein Deployment läuft bereits"
+  },
+  "labels": {
+    "name": "Name",
+    "type": "Typ",
+    "port": "Port",
+    "status": "Status",
+    "actions": "Aktionen",
+    "user": "Benutzer",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "passwordConfirm": "Passwort bestätigen",
+    "email": "E-Mail",
+    "date": "Datum",
+    "created": "Erstellt",
+    "updated": "Aktualisiert",
+    "owner": "Besitzer",
+    "permission": "Berechtigung",
+    "system": "System",
+    "count": "Anzahl",
+    "containers": "Container",
+    "detectedAs": "Erkannt als: {{type}}",
+    "change": "Ändern"
+  },
+  "roles": {
+    "admin": "Admin",
+    "user": "User"
+  },
+  "confirm": {
+    "delete": "Bist du sicher, dass du dies löschen möchtest?",
+    "deleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden!"
+  },
+  "messages": {
+    "noData": "Keine Daten vorhanden",
+    "loading": "Laden...",
+    "saving": "Speichern...",
+    "processing": "Verarbeitung..."
+  },
+  "theme": {
+    "toggle": "Theme wechseln"
+  },
+  "language": {
+    "switch": "Sprache wechseln",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich",
+    "minLength": "Mindestens {{min}} Zeichen",
+    "maxLength": "Maximal {{max}} Zeichen",
+    "invalidFormat": "Ungültiges Format",
+    "lowercaseOnly": "Nur Kleinbuchstaben, Zahlen, - und _"
+  },
+  "time": {
+    "minutes": "Minuten",
+    "hours": "Stunden",
+    "days": "Tage",
+    "ago": "vor"
+  },
+  "errors": {
+    "loadError": "Fehler beim Laden",
+    "createError": "Fehler beim Erstellen",
+    "selectFile": "Bitte wähle eine Datei aus",
+    "invalidGitUrl": "Ungültige Repository-URL. Unterstützt: GitHub, GitLab und Bitbucket HTTPS-URLs.",
+    "actionFailed": "{{action}} fehlgeschlagen: {{error}}",
+    "invalidInput": "Ungültige Eingabe",
+    "csrfInvalid": "Sicherheitstoken ungültig oder abgelaufen. Bitte versuche es erneut."
+  }
+}

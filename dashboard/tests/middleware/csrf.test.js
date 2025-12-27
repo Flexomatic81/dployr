@@ -25,7 +25,8 @@ describe('CSRF Middleware', () => {
             headers: {
                 accept: 'text/html'
             },
-            flash: jest.fn()
+            flash: jest.fn(),
+            t: jest.fn((key) => key) // Mock i18n translation function
         };
 
         mockRes = {
@@ -45,7 +46,7 @@ describe('CSRF Middleware', () => {
 
             csrfErrorHandler(err, mockReq, mockRes, mockNext);
 
-            expect(mockReq.flash).toHaveBeenCalledWith('error', expect.stringContaining('Sicherheitstoken'));
+            expect(mockReq.flash).toHaveBeenCalledWith('error', 'common:errors.csrfInvalid');
             expect(mockRes.redirect).toHaveBeenCalledWith('back');
             expect(mockNext).not.toHaveBeenCalled();
         });
@@ -55,7 +56,7 @@ describe('CSRF Middleware', () => {
 
             csrfErrorHandler(err, mockReq, mockRes, mockNext);
 
-            expect(mockReq.flash).toHaveBeenCalledWith('error', expect.stringContaining('Sicherheitstoken'));
+            expect(mockReq.flash).toHaveBeenCalledWith('error', 'common:errors.csrfInvalid');
             expect(mockRes.redirect).toHaveBeenCalledWith('back');
         });
 
@@ -68,7 +69,7 @@ describe('CSRF Middleware', () => {
             expect(mockRes.status).toHaveBeenCalledWith(403);
             expect(mockRes.json).toHaveBeenCalledWith({
                 success: false,
-                error: expect.stringContaining('Sicherheitstoken')
+                error: expect.stringContaining('security token')
             });
         });
 

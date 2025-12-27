@@ -250,7 +250,7 @@ describe('Git Service', () => {
             const result = await gitService.getGitStatus(projectPath);
 
             expect(result.connected).toBe(true);
-            expect(result.error).toContain('Fehler');
+            expect(result.error).toContain('Error');
 
             fs.rmSync(gitDir, { recursive: true });
         });

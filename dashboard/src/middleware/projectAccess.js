@@ -55,11 +55,11 @@ function getProjectAccess(paramName = 'name') {
             }
 
             // 3. No access
-            req.flash('error', 'Project not found');
+            req.flash('error', req.t('projects:errors.notFound'));
             return res.redirect('/projects');
         } catch (error) {
             logger.error('Error checking project access', { error: error.message });
-            req.flash('error', 'Error loading project');
+            req.flash('error', req.t('projects:errors.loadError'));
             return res.redirect('/projects');
         }
     };
@@ -73,7 +73,7 @@ function requirePermission(minLevel) {
     return (req, res, next) => {
         const access = req.projectAccess;
         if (!access) {
-            req.flash('error', 'No access');
+            req.flash('error', req.t('projects:errors.noAccess'));
             return res.redirect('/projects');
         }
 
@@ -89,7 +89,7 @@ function requirePermission(minLevel) {
             return next();
         }
 
-        req.flash('error', 'No permission for this action');
+        req.flash('error', req.t('projects:errors.noPermission'));
         const projectName = req.params.name || req.params.projectName;
         return res.redirect(`/projects/${projectName}`);
     };

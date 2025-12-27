@@ -1,0 +1,62 @@
+{
+  "title": "Datenbanken",
+  "myDatabases": "Meine Datenbanken",
+  "newDatabase": "Neue Datenbank",
+  "noDatabases": "Noch keine Datenbanken vorhanden",
+  "createFirst": "Datenbank erstellen",
+
+  "create": {
+    "title": "Neue Datenbank erstellen",
+    "databaseName": "Datenbankname",
+    "databaseNameHelp": "Der Datenbankname wird mit deinem System-Benutzernamen als Präfix versehen (z.B. max_blog).",
+    "databaseNameHint": "Nur Kleinbuchstaben, Zahlen und Unterstriche erlaubt",
+    "databaseNamePlaceholder": "meine_datenbank",
+    "databaseType": "Datenbanktyp",
+    "databaseTypeHelp": "MariaDB für PHP/WordPress-Projekte, PostgreSQL für moderne Anwendungen wie Django oder Rails.",
+    "autoUserNote": "Ein Datenbank-Benutzer wird automatisch erstellt",
+    "submit": "Datenbank erstellen"
+  },
+
+  "types": {
+    "mariadb": "MariaDB (MySQL-kompatibel)",
+    "postgresql": "PostgreSQL"
+  },
+
+  "info": {
+    "database": "Datenbank",
+    "user": "Benutzer",
+    "password": "Passwort",
+    "host": "Host",
+    "port": "Port",
+    "type": "Typ"
+  },
+
+  "credentials": {
+    "title": "Zugangsdaten",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verstecken"
+  },
+
+  "delete": {
+    "title": "Datenbank löschen",
+    "warning": "Damit wird die Datenbank unwiderruflich gelöscht, inklusive aller Daten!",
+    "confirmText": "Datenbankname zum Bestätigen eingeben",
+    "submit": "Datenbank endgültig löschen"
+  },
+
+  "flash": {
+    "created": "Datenbank \"{{name}}\" erfolgreich erstellt!",
+    "deleted": "Datenbank \"{{name}}\" wurde gelöscht"
+  },
+
+  "errors": {
+    "notFound": "Datenbank nicht gefunden",
+    "nameExists": "Eine Datenbank mit diesem Namen existiert bereits",
+    "invalidName": "Datenbankname darf nur Kleinbuchstaben, Zahlen und Unterstriche enthalten",
+    "invalidType": "Ungültiger Datenbanktyp",
+    "createFailed": "Datenbank konnte nicht erstellt werden: {{error}}",
+    "deleteFailed": "Datenbank konnte nicht gelöscht werden: {{error}}"
+  }
+}

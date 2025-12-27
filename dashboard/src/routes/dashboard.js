@@ -60,7 +60,7 @@ router.get('/', requireAuth, async (req, res) => {
         });
     } catch (error) {
         logger.error('Dashboard error', { error: error.message });
-        req.flash('error', 'Error loading dashboard');
+        req.flash('error', req.t('common:errors.loadError'));
         res.render('dashboard', {
             title: 'Dashboard',
             projects: [],

@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/projects">Projekte</a></li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/projects"><%= t('common:nav.projects') %></a></li>
         <li class="breadcrumb-item active"><%= project.name %></li>
     </ol>
 </nav>
@@ -11,13 +11,13 @@
         <i class="bi bi-folder-fill text-warning"></i>
         <%= project.name %>
         <% if (project.status === 'running') { %>
-            <span class="badge bg-success fs-6">Läuft</span>
+            <span class="badge bg-success fs-6"><%= t('common:status.running') %></span>
         <% } else { %>
-            <span class="badge bg-secondary fs-6">Gestoppt</span>
+            <span class="badge bg-secondary fs-6"><%= t('common:status.stopped') %></span>
         <% } %>
         <% if (!projectAccess.isOwner) { %>
-            <span class="badge bg-info fs-6" title="Geteilt von <%= projectAccess.ownerUsername %>">
-                <i class="bi bi-share"></i> Geteilt
+            <span class="badge bg-info fs-6" title="<%= t('projects:show.sharedProject') %> <%= t('projects:show.sharedFrom') %> <%= projectAccess.ownerUsername %>">
+                <i class="bi bi-share"></i> <%= t('projects:show.shared') %>
             </span>
         <% } %>
     </h1>
@@ -27,12 +27,12 @@
             <% if (canManage) { %>
             <form action="/projects/<%= project.name %>/stop" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-stop-fill"></i> Stoppen
+                    <i class="bi bi-stop-fill"></i> <%= t('common:buttons.stop') %>
                 </button>
             </form>
             <form action="/projects/<%= project.name %>/restart" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-warning">
-                    <i class="bi bi-arrow-clockwise"></i> Neustarten
+                    <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.restart') %>
                 </button>
             </form>
             <% } %>
@@ -40,24 +40,24 @@
             <% if (canManage) { %>
             <form action="/projects/<%= project.name %>/start" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-success">
-                    <i class="bi bi-play-fill"></i> Starten
+                    <i class="bi bi-play-fill"></i> <%= t('common:buttons.start') %>
                 </button>
             </form>
             <% } %>
         <% } %>
         <a href="/logs/<%= project.name %>" class="btn btn-info">
-            <i class="bi bi-terminal"></i> Logs
+            <i class="bi bi-terminal"></i> <%= t('common:buttons.logs') %>
         </a>
     </div>
 </div>
 
 <% if (!projectAccess.isOwner) { %>
-<!-- Geteiltes Projekt Info-Banner -->
+<!-- Shared project info banner -->
 <div class="alert alert-info mb-4">
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <i class="bi bi-share-fill"></i>
-            <strong>Geteiltes Projekt</strong> von <strong><%= projectAccess.ownerUsername %></strong>
+            <strong><%= t('projects:show.sharedProject') %></strong> <%= t('projects:show.sharedFrom') %> <strong><%= projectAccess.ownerUsername %></strong>
         </div>
         <div>
             <span class="badge <%= projectAccess.permission === 'full' ? 'bg-success' : projectAccess.permission === 'manage' ? 'bg-primary' : 'bg-secondary' %>">
@@ -70,38 +70,38 @@
 <% } %>
 
 <div class="row">
-    <!-- Projekt-Info -->
+    <!-- Project info -->
     <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Projekt-Details</h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> <%= t('projects:details') %></h5>
             </div>
             <div class="card-body">
                 <table class="table table-borderless">
                     <tr>
-                        <th width="35%">Name:</th>
+                        <th width="35%"><%= t('projects:info.name') %>:</th>
                         <td><%= project.name %></td>
                     </tr>
                     <tr>
-                        <th>Typ:</th>
+                        <th><%= t('projects:info.type') %>:</th>
                         <td>
                             <% if (project.templateType === 'php-website') { %>
-                                <span class="badge bg-purple">PHP Website</span>
+                                <span class="badge bg-purple"><%= t('projects:types.php') %></span>
                             <% } else if (project.templateType === 'nodejs-app') { %>
-                                <span class="badge bg-success">Node.js App</span>
+                                <span class="badge bg-success"><%= t('projects:types.nodejs') %></span>
                             <% } else if (project.templateType === 'laravel') { %>
-                                <span class="badge bg-danger">Laravel / Symfony</span>
+                                <span class="badge bg-danger"><%= t('projects:types.laravel') %></span>
                             <% } else if (project.templateType === 'nodejs-static') { %>
-                                <span class="badge bg-info">React / Vue (Build)</span>
+                                <span class="badge bg-info"><%= t('projects:types.nodejsStatic') %></span>
                             <% } else if (project.templateType === 'nextjs') { %>
-                                <span class="badge bg-dark">Next.js (SSR)</span>
+                                <span class="badge bg-dark"><%= t('projects:types.nextjs') %></span>
                             <% } else { %>
-                                <span class="badge bg-secondary">Statische Website</span>
+                                <span class="badge bg-secondary"><%= t('projects:types.static') %></span>
                             <% } %>
                         </td>
                     </tr>
                     <tr>
-                        <th>Port:</th>
+                        <th><%= t('projects:info.port') %>:</th>
                         <td>
                             <a href="http://<%= serverIp %>:<%= project.port %>" target="_blank">
                                 <%= project.port %> <i class="bi bi-box-arrow-up-right"></i>
@@ -109,16 +109,16 @@
                         </td>
                     </tr>
                     <tr>
-                        <th>Pfad:</th>
+                        <th><%= t('projects:info.path') %>:</th>
                         <td><code><%= project.path %></code></td>
                     </tr>
                     <tr>
-                        <th>Container-Name:</th>
+                        <th><%= t('projects:info.containerName') %>:</th>
                         <td><code><%= project.containerName %></code></td>
                     </tr>
                     <% if (project.hasDatabase) { %>
                         <tr>
-                            <th>Datenbank:</th>
+                            <th><%= t('projects:info.database') %>:</th>
                             <td><code><%= project.database %></code></td>
                         </tr>
                     <% } %>
@@ -127,21 +127,21 @@
         </div>
     </div>
 
-    <!-- Container-Status -->
+    <!-- Container status -->
     <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-box"></i> Container
-                    (<%= project.runningContainers %>/<%= project.totalContainers %> aktiv)
+                    <i class="bi bi-box"></i> <%= t('projects:info.containers') %>
+                    (<%= project.runningContainers %>/<%= project.totalContainers %> <%= t('common:status.active').toLowerCase() %>)
                 </h5>
             </div>
             <div class="card-body">
                 <% if (project.containers.length === 0) { %>
                     <div class="text-center text-muted py-3">
                         <i class="bi bi-box-seam display-4"></i>
-                        <p class="mt-2">Keine Container gefunden</p>
-                        <p class="small">Starte das Projekt um Container zu erstellen</p>
+                        <p class="mt-2"><%= t('projects:info.noContainers') %></p>
+                        <p class="small"><%= t('projects:info.noContainersHint') %></p>
                     </div>
                 <% } else { %>
                     <div class="list-group">
@@ -154,7 +154,7 @@
                                     <small class="text-muted"><%= container.Image %></small>
                                 </div>
                                 <% if (container.State === 'running') { %>
-                                    <span class="badge bg-success">Läuft</span>
+                                    <span class="badge bg-success"><%= t('common:status.running') %></span>
                                 <% } else { %>
                                     <span class="badge bg-secondary"><%= container.State %></span>
                                 <% } %>
@@ -168,14 +168,14 @@
 </div>
 
 <% if (gitStatus && gitStatus.connected) { %>
-<!-- GitHub - kombinierte Git Integration und Auto-Deploy -->
+<!-- GitHub - combined Git integration and Auto-Deploy -->
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">
-            <i class="bi bi-github"></i> GitHub
-            <span class="badge bg-success ms-2">Verbunden</span>
+            <i class="bi bi-github"></i> <%= t('projects:git.title') %>
+            <span class="badge bg-success ms-2"><%= t('projects:git.connected') %></span>
             <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
-                <span class="badge bg-info ms-1">Auto-Deploy</span>
+                <span class="badge bg-info ms-1"><%= t('projects:autoDeploy.title') %></span>
             <% } %>
         </h5>
     </div>
@@ -185,12 +185,12 @@
                 <i class="bi bi-exclamation-triangle"></i> <%= gitStatus.error %>
             </div>
         <% } else { %>
-            <!-- Repository-Info -->
+            <!-- Repository info -->
             <div class="row mb-3">
                 <div class="col-md-8">
                     <table class="table table-borderless table-sm mb-0">
                         <tr>
-                            <th width="20%">Repository:</th>
+                            <th width="20%"><%= t('projects:git.repository') %>:</th>
                             <td>
                                 <a href="<%= gitStatus.remoteUrl %>" target="_blank">
                                     <%= gitStatus.remoteUrl %> <i class="bi bi-box-arrow-up-right"></i>
@@ -198,17 +198,17 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>Branch:</th>
+                            <th><%= t('projects:git.branch') %>:</th>
                             <td><span class="badge bg-primary"><%= gitStatus.branch %></span></td>
                         </tr>
                         <tr>
-                            <th>Letzter Commit:</th>
+                            <th><%= t('projects:git.lastCommit') %>:</th>
                             <td><code><%= gitStatus.lastCommit %></code></td>
                         </tr>
                         <% if (gitStatus.hasLocalChanges) { %>
                             <tr>
-                                <th>Status:</th>
-                                <td><span class="badge bg-warning text-dark">Lokale Aenderungen vorhanden</span></td>
+                                <th><%= t('common:labels.status') %>:</th>
+                                <td><span class="badge bg-warning text-dark"><%= t('projects:info.localChanges') %></span></td>
                             </tr>
                         <% } %>
                     </table>
@@ -218,7 +218,7 @@
                         <% if (canManage) { %>
                         <form action="/projects/<%= project.name %>/git/pull" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="bi bi-cloud-download"></i> Pull
+                                <i class="bi bi-cloud-download"></i> <%= t('projects:git.pull') %>
                             </button>
                         </form>
                         <form action="/projects/<%= project.name %>/autodeploy/trigger" method="POST" class="d-inline">
@@ -228,7 +228,7 @@
                         </form>
                         <% } %>
                         <% if (projectAccess.isOwner) { %>
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#gitDisconnectModal" title="Git-Verbindung trennen">
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#gitDisconnectModal" title="<%= t('projects:show.gitDisconnectTitle') %>">
                             <i class="bi bi-x-circle"></i>
                         </button>
                         <% } %>
@@ -237,18 +237,18 @@
             </div>
         <% } %>
 
-        <!-- Auto-Deploy Sektion (nur für Besitzer die volle Kontrolle) -->
+        <!-- Auto-Deploy section (only for owner) -->
         <% if (projectAccess.isOwner) { %>
         <div class="border-top pt-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center">
-                    <strong><i class="bi bi-arrow-repeat"></i> Auto-Deploy</strong>
-                    <%- include('../partials/help-icon', { text: 'Aktiviere Auto-Deploy, um automatisch bei neuen Commits im Repository zu deployen. Der Server prüft regelmäßig auf Änderungen.' }) %>
+                    <strong><i class="bi bi-arrow-repeat"></i> <%= t('projects:autoDeploy.title') %></strong>
+                    <%- include('../partials/help-icon', { text: t('projects:show.autoDeployHelp') }) %>
                     <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
-                        <span class="badge bg-success ms-2">Aktiv</span>
+                        <span class="badge bg-success ms-2"><%= t('projects:show.autoDeployActive') %></span>
                         <form action="/projects/<%= project.name %>/autodeploy/interval" method="POST" class="d-inline ms-2">
                             <select name="interval" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="Wie oft der Server das Repository auf neue Commits prüft">
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('projects:show.intervalTooltip') %>">
                                 <% const currentInterval = autoDeployConfig.interval_minutes || 5; %>
                                 <option value="5" <%= currentInterval === 5 ? 'selected' : '' %>>5 Min</option>
                                 <option value="10" <%= currentInterval === 10 ? 'selected' : '' %>>10 Min</option>
@@ -258,20 +258,20 @@
                             </select>
                         </form>
                     <% } else { %>
-                        <span class="badge bg-secondary ms-2">Inaktiv</span>
+                        <span class="badge bg-secondary ms-2"><%= t('projects:show.autoDeployInactive') %></span>
                     <% } %>
                 </div>
                 <div>
                     <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
                         <form action="/projects/<%= project.name %>/autodeploy/disable" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-pause-circle"></i> Deaktivieren
+                                <i class="bi bi-pause-circle"></i> <%= t('projects:autoDeploy.disable') %>
                             </button>
                         </form>
                     <% } else { %>
                         <form action="/projects/<%= project.name %>/autodeploy/enable" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-success btn-sm">
-                                <i class="bi bi-play-circle"></i> Aktivieren
+                                <i class="bi bi-play-circle"></i> <%= t('projects:autoDeploy.enable') %>
                             </button>
                         </form>
                     <% } %>
@@ -281,34 +281,34 @@
             <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
                 <% if (autoDeployConfig.last_check) { %>
                     <p class="text-muted small mb-3">
-                        <i class="bi bi-clock"></i> Letzte Pruefung: <%= new Date(autoDeployConfig.last_check).toLocaleString('de-DE') %>
+                        <i class="bi bi-clock"></i> <%= t('projects:autoDeploy.lastCheck') %>: <%= new Date(autoDeployConfig.last_check).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %>
                     </p>
                 <% } %>
 
                 <% if (deploymentHistory && deploymentHistory.length > 0) { %>
-                    <h6 class="mb-2">Deployment-Historie</h6>
+                    <h6 class="mb-2"><%= t('projects:show.deployHistory') %></h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Zeitpunkt</th>
-                                    <th>Typ</th>
-                                    <th>Commit</th>
-                                    <th>Status</th>
-                                    <th>Dauer</th>
+                                    <th><%= t('admin:logs.timestamp') %></th>
+                                    <th><%= t('projects:show.deployType') %></th>
+                                    <th><%= t('projects:show.deployCommit') %></th>
+                                    <th><%= t('projects:show.deployStatus') %></th>
+                                    <th><%= t('projects:show.deployDuration') %></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <% deploymentHistory.forEach(log => { %>
                                     <tr>
                                         <td>
-                                            <small><%= new Date(log.created_at).toLocaleString('de-DE') %></small>
+                                            <small><%= new Date(log.created_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %></small>
                                         </td>
                                         <td>
                                             <% if (log.trigger_type === 'auto') { %>
-                                                <span class="badge bg-info">Auto</span>
+                                                <span class="badge bg-info"><%= t('projects:show.deployAuto') %></span>
                                             <% } else { %>
-                                                <span class="badge bg-secondary">Manuell</span>
+                                                <span class="badge bg-secondary"><%= t('projects:show.deployManual') %></span>
                                             <% } %>
                                         </td>
                                         <td>
@@ -321,7 +321,7 @@
                                             <% } else { %>
                                                 <span class="text-muted">-</span>
                                             <% } %>
-                                            <% if (log.commit_message && log.commit_message !== 'Keine Aenderungen') { %>
+                                            <% if (log.commit_message && log.commit_message !== t('projects:show.noChanges')) { %>
                                                 <br><small class="text-muted" title="<%= log.commit_message %>">
                                                     <%= log.commit_message.length > 40 ? log.commit_message.substring(0, 40) + '...' : log.commit_message %>
                                                 </small>
@@ -329,13 +329,13 @@
                                         </td>
                                         <td>
                                             <% if (log.status === 'success') { %>
-                                                <span class="badge bg-success">Erfolgreich</span>
+                                                <span class="badge bg-success"><%= t('common:status.success') %></span>
                                             <% } else if (log.status === 'failed') { %>
-                                                <span class="badge bg-danger" title="<%= log.error_message %>">Fehlgeschlagen</span>
+                                                <span class="badge bg-danger" title="<%= log.error_message %>"><%= t('common:status.failed') %></span>
                                             <% } else if (log.status === 'pulling') { %>
                                                 <span class="badge bg-info">Pulling...</span>
                                             <% } else if (log.status === 'restarting') { %>
-                                                <span class="badge bg-warning">Neustart...</span>
+                                                <span class="badge bg-warning"><%= t('common:buttons.restart') %>...</span>
                                             <% } else { %>
                                                 <span class="badge bg-secondary"><%= log.status %></span>
                                             <% } %>
@@ -354,142 +354,142 @@
                     </div>
                 <% } else { %>
                     <div class="text-muted text-center py-2">
-                        <i class="bi bi-clock-history"></i> Noch keine Deployments
+                        <i class="bi bi-clock-history"></i> <%= t('projects:show.noDeploymentsYet') %>
                     </div>
                 <% } %>
             <% } else { %>
                 <p class="text-muted small mb-0">
                     <i class="bi bi-info-circle"></i>
-                    Aktiviere Auto-Deploy um automatisch bei neuen Commits zu deployen.
+                    <%= t('projects:show.autoDeployInfo') %>
                 </p>
             <% } %>
         </div>
-        <% } %><!-- Ende projectAccess.isOwner für Auto-Deploy -->
+        <% } %><!-- End projectAccess.isOwner for Auto-Deploy -->
     </div>
 </div>
 <% } %>
 
 <% const canChangeType = projectAccess.isOwner || projectAccess.permission === 'full'; %>
-<!-- Projekttyp-Warnung bei Mismatch (nur für Besitzer/full) -->
+<!-- Project type warning on mismatch (only for owner/full) -->
 <% if (typeMismatch && canChangeType) { %>
 <div class="alert alert-warning mb-4" role="alert">
     <div class="d-flex align-items-center">
         <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
         <div class="flex-grow-1">
-            <strong>Projekttyp-Empfehlung:</strong> Basierend auf den Projektdateien wurde ein anderer Typ erkannt.
+            <strong><%= t('projects:show.typeRecommendation') %></strong> <%= t('projects:show.typeMismatchInfo') %>
             <br>
             <small>
-                Aktuell: <strong>
-                <% if (project.templateType === 'php-website') { %>PHP Website
-                <% } else if (project.templateType === 'nodejs-app') { %>Node.js App
-                <% } else if (project.templateType === 'laravel') { %>Laravel / Symfony
-                <% } else if (project.templateType === 'nodejs-static') { %>React / Vue (Build)
-                <% } else if (project.templateType === 'nextjs') { %>Next.js (SSR)
-                <% } else { %>Statische Website<% } %>
+                <%= t('projects:show.currentType') %>: <strong>
+                <% if (project.templateType === 'php-website') { %><%= t('projects:types.php') %>
+                <% } else if (project.templateType === 'nodejs-app') { %><%= t('projects:types.nodejs') %>
+                <% } else if (project.templateType === 'laravel') { %><%= t('projects:types.laravel') %>
+                <% } else if (project.templateType === 'nodejs-static') { %><%= t('projects:types.nodejsStatic') %>
+                <% } else if (project.templateType === 'nextjs') { %><%= t('projects:types.nextjs') %>
+                <% } else { %><%= t('projects:types.static') %><% } %>
                 </strong>
-                &rarr; Empfohlen: <strong>
-                <% if (detectedType === 'php') { %>PHP Website
-                <% } else if (detectedType === 'nodejs') { %>Node.js App
-                <% } else if (detectedType === 'laravel') { %>Laravel / Symfony
-                <% } else if (detectedType === 'nodejs-static') { %>React / Vue (Build)
-                <% } else if (detectedType === 'nextjs') { %>Next.js (SSR)
-                <% } else { %>Statische Website<% } %>
+                &rarr; <%= t('projects:show.recommendedType') %>: <strong>
+                <% if (detectedType === 'php') { %><%= t('projects:types.php') %>
+                <% } else if (detectedType === 'nodejs') { %><%= t('projects:types.nodejs') %>
+                <% } else if (detectedType === 'laravel') { %><%= t('projects:types.laravel') %>
+                <% } else if (detectedType === 'nodejs-static') { %><%= t('projects:types.nodejsStatic') %>
+                <% } else if (detectedType === 'nextjs') { %><%= t('projects:types.nextjs') %>
+                <% } else { %><%= t('projects:types.static') %><% } %>
                 </strong>
             </small>
         </div>
         <form action="/projects/<%= project.name %>/change-type" method="POST" class="ms-3">
             <input type="hidden" name="type" value="<%= detectedType %>">
             <button type="submit" class="btn btn-warning btn-sm">
-                <i class="bi bi-arrow-repeat"></i> Typ anpassen
+                <i class="bi bi-arrow-repeat"></i> <%= t('projects:show.adjustType') %>
             </button>
         </form>
     </div>
 </div>
 <% } %>
 
-<!-- Projekteinstellungen (nur für Besitzer/full) -->
+<!-- Project settings (only for owner/full) -->
 <% if (canChangeType) { %>
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-gear"></i> Projekteinstellungen</h5>
+        <h5 class="mb-0"><i class="bi bi-gear"></i> <%= t('projects:settings') %></h5>
     </div>
     <div class="card-body">
         <form action="/projects/<%= project.name %>/change-type" method="POST" class="row g-3 align-items-end">
             <div class="col-md-6">
                 <label for="projectType" class="form-label">
-                    Projekttyp
-                    <%- include('../partials/help-icon', { text: 'Der Projekttyp bestimmt die Docker-Konfiguration (Webserver, Runtime, etc.). Bei Änderung wird der Container neu erstellt.' }) %>
+                    <%= t('projects:show.projectType') %>
+                    <%- include('../partials/help-icon', { text: t('projects:show.projectTypeHelp') }) %>
                 </label>
                 <select name="type" id="projectType" class="form-select">
-                    <optgroup label="Einfache Projekte">
+                    <optgroup label="<%= t('projects:templateInfo.static.title') %>">
                         <option value="static" <%= project.templateType === 'static-website' ? 'selected' : '' %>>
-                            Statische Website (nginx)
+                            <%= t('projects:types.static') %> (nginx)
                         </option>
                         <option value="php" <%= project.templateType === 'php-website' ? 'selected' : '' %>>
-                            PHP Website (Apache + PHP)
+                            <%= t('projects:types.php') %> (Apache + PHP)
                         </option>
                         <option value="nodejs" <%= project.templateType === 'nodejs-app' ? 'selected' : '' %>>
-                            Node.js App (Express)
+                            <%= t('projects:types.nodejs') %> (Express)
                         </option>
                     </optgroup>
-                    <optgroup label="Framework-Projekte">
+                    <optgroup label="Framework">
                         <option value="laravel" <%= project.templateType === 'laravel' ? 'selected' : '' %>>
-                            Laravel / Symfony (Composer)
+                            <%= t('projects:types.laravel') %> (Composer)
                         </option>
                         <option value="nodejs-static" <%= project.templateType === 'nodejs-static' ? 'selected' : '' %>>
-                            React / Vue / Vite (Static Build)
+                            <%= t('projects:types.nodejsStatic') %>
                         </option>
                         <option value="nextjs" <%= project.templateType === 'nextjs' ? 'selected' : '' %>>
-                            Next.js (SSR)
+                            <%= t('projects:types.nextjs') %>
                         </option>
                     </optgroup>
                 </select>
             </div>
             <div class="col-md-6">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-arrow-repeat"></i> Typ ändern
+                    <i class="bi bi-arrow-repeat"></i> <%= t('projects:typeChange.changeType') %>
                 </button>
             </div>
             <div class="col-12">
                 <% if (!typeMismatch) { %>
                 <small class="text-success">
                     <i class="bi bi-check-circle"></i>
-                    Erkannter Projekttyp stimmt mit Konfiguration überein.
+                    <%= t('projects:show.typeMatchOk') %>
                 </small>
                 <% } else { %>
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i>
-                    Beim Ändern des Typs wird die docker-compose.yml neu generiert und der Container neu gestartet.
+                    <%= t('projects:show.typeChangeInfo') %>
                 </small>
                 <% } %>
             </div>
         </form>
     </div>
 </div>
-<% } %><!-- Ende canChangeType für Projekteinstellungen -->
+<% } %><!-- End canChangeType for project settings -->
 
-<!-- Umgebungsvariablen (nur für manage oder höher) -->
+<!-- Environment variables (only for manage or higher) -->
 <% if (canManage) { %>
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
-            <i class="bi bi-file-earmark-code"></i> Umgebungsvariablen (.env)
-            <%- include('../partials/help-icon', { text: 'Bearbeite die .env-Datei des Projekts. Änderungen werden erst nach einem Container-Neustart wirksam.' }) %>
+            <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.envTitle') %>
+            <%- include('../partials/help-icon', { text: t('projects:show.envHelp') }) %>
             <% if (userDatabases && userDatabases.length > 0) { %>
-            <small class="text-muted ms-2">& Datenbank-Verbindung</small>
+            <small class="text-muted ms-2">& <%= t('projects:show.dbConnection') %></small>
             <% } %>
         </h5>
         <% if (userDatabases && userDatabases.length > 0) { %>
         <div class="btn-group btn-group-sm">
             <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
                 data-bs-toggle-second="tooltip" data-bs-placement="top"
-                title="<%= envExample && envExample.exists ? 'Nutzt ' + envExample.filename + ' als Vorlage und ersetzt DB-Variablen' : 'Fügt DB-Credentials ein und ersetzt bekannte Variablen' %>">
-                <i class="bi bi-database-add"></i> DB einrichten
+                title="<%= envExample && envExample.exists ? t('projects:show.setupDbHelp', { filename: envExample.filename }) : t('projects:show.setupDbHelpNoExample') %>">
+                <i class="bi bi-database-add"></i> <%= t('projects:show.setupDb') %>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <% if (envExample && envExample.exists) { %>
                 <li class="dropdown-header">
-                    <i class="bi bi-file-earmark-code"></i> Nutzt <%= envExample.filename %> als Vorlage
+                    <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.usesTemplate', { filename: envExample.filename }) %>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <% } %>
@@ -512,16 +512,16 @@
         <% if (envExample && envExample.exists && !envContent.trim() && userDatabases && userDatabases.length > 0) { %>
         <div class="alert alert-info mb-3">
             <i class="bi bi-lightbulb"></i>
-            <strong>Tipp:</strong> Es wurde eine <code><%= envExample.filename %></code> gefunden.
-            Wähle oben eine Datenbank aus - die Vorlage wird automatisch verwendet und DB-Variablen werden ersetzt.
+            <strong><%= t('projects:env.exampleFound') %>:</strong> <%= t('projects:show.envTip', { filename: envExample.filename }) %>
+            <%= t('projects:show.envTipDb') %>
         </div>
         <% } else if (envExample && envExample.exists && !envContent.trim()) { %>
         <div class="alert alert-info mb-3">
             <i class="bi bi-lightbulb"></i>
-            <strong>Tipp:</strong> Es wurde eine <code><%= envExample.filename %></code> gefunden.
+            <strong><%= t('projects:env.exampleFound') %>:</strong> <%= t('projects:show.envTip', { filename: envExample.filename }) %>
             <form action="/projects/<%= project.name %>/env/copy-example" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-sm btn-outline-info ms-2">
-                    <i class="bi bi-file-earmark-arrow-down"></i> Als Vorlage verwenden
+                    <i class="bi bi-file-earmark-arrow-down"></i> <%= t('projects:show.useAsTemplate') %>
                 </button>
             </form>
         </div>
@@ -529,38 +529,38 @@
         <form action="/projects/<%= project.name %>/env" method="POST">
             <div class="mb-3">
                 <textarea name="envContent" class="form-control font-monospace" rows="10"
-                    placeholder="# Umgebungsvariablen im Format KEY=value&#10;DB_HOST=localhost&#10;API_KEY=geheim"><%= envContent %></textarea>
+                    placeholder="<%= t('projects:show.envPlaceholder') %>"><%= envContent %></textarea>
             </div>
             <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i>
-                    Nach dem Speichern muss der Container neu gestartet werden, damit die Änderungen wirksam werden.
+                    <%= t('projects:show.envRestartHint') %>
                 </small>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Speichern
+                    <i class="bi bi-save"></i> <%= t('common:buttons.save') %>
                 </button>
             </div>
         </form>
     </div>
 </div>
-<% } %><!-- Ende canManage für Umgebungsvariablen -->
+<% } %><!-- End canManage for environment variables -->
 
-<!-- Projekt teilen (nur für Besitzer) -->
+<!-- Share project (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-share"></i> Projekt teilen</h5>
+        <h5 class="mb-0"><i class="bi bi-share"></i> <%= t('projects:sharing.title') %></h5>
     </div>
     <div class="card-body">
         <% if (projectShares && projectShares.length > 0) { %>
-        <h6 class="mb-3">Geteilt mit:</h6>
+        <h6 class="mb-3"><%= t('projects:sharing.sharedWith') %>:</h6>
         <div class="table-responsive mb-3">
             <table class="table table-sm table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Benutzer</th>
-                        <th>Berechtigung</th>
-                        <th class="text-end">Aktion</th>
+                        <th><%= t('common:labels.user') %></th>
+                        <th><%= t('common:labels.permission') %></th>
+                        <th class="text-end"><%= t('common:labels.actions') %></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -574,15 +574,15 @@
                         <td>
                             <form action="/projects/<%= project.name %>/shares/<%= share.shared_with_id %>/update" method="POST" class="d-inline">
                                 <select name="permission" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                                    <option value="read" <%= share.permission === 'read' ? 'selected' : '' %>>Ansehen</option>
-                                    <option value="manage" <%= share.permission === 'manage' ? 'selected' : '' %>>Verwalten</option>
-                                    <option value="full" <%= share.permission === 'full' ? 'selected' : '' %>>Vollzugriff</option>
+                                    <option value="read" <%= share.permission === 'read' ? 'selected' : '' %>><%= t('projects:sharing.permissions.read') %></option>
+                                    <option value="manage" <%= share.permission === 'manage' ? 'selected' : '' %>><%= t('projects:sharing.permissions.manage') %></option>
+                                    <option value="full" <%= share.permission === 'full' ? 'selected' : '' %>><%= t('projects:sharing.permissions.full') %></option>
                                 </select>
                             </form>
                         </td>
                         <td class="text-end">
                             <form action="/projects/<%= project.name %>/shares/<%= share.shared_with_id %>/delete" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Freigabe für <%= share.username %> wirklich entfernen?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('<%= t('projects:sharing.removeConfirm', { username: share.username }) %>')">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </form>
@@ -595,18 +595,18 @@
         <% } else { %>
         <p class="text-muted mb-3">
             <i class="bi bi-info-circle"></i>
-            Dieses Projekt ist noch nicht mit anderen Benutzern geteilt.
+            <%= t('projects:show.sharedWithNone') %>
         </p>
         <% } %>
 
         <% if (availableUsers && availableUsers.length > 0) { %>
         <hr>
-        <h6 class="mb-3">Neuen Benutzer hinzufügen:</h6>
+        <h6 class="mb-3"><%= t('projects:show.addNewUser') %></h6>
         <form action="/projects/<%= project.name %>/shares" method="POST" class="row g-2 align-items-end">
             <div class="col-md-5">
-                <label for="shareUser" class="form-label">Benutzer</label>
+                <label for="shareUser" class="form-label"><%= t('common:labels.user') %></label>
                 <select name="userId" id="shareUser" class="form-select" required>
-                    <option value="">-- Benutzer wählen --</option>
+                    <option value=""><%= t('projects:show.selectUser') %></option>
                     <% availableUsers.forEach(user => { %>
                     <option value="<%= user.id %>"><%= user.username %> (<%= user.system_username %>)</option>
                     <% }) %>
@@ -614,121 +614,119 @@
             </div>
             <div class="col-md-4">
                 <label for="sharePermission" class="form-label">
-                    Berechtigung
-                    <%- include('../partials/help-icon', { text: 'Ansehen: Nur Status/Logs. Verwalten: + Start/Stop, Pull, .env. Vollzugriff: + Typ ändern.' }) %>
+                    <%= t('common:labels.permission') %>
+                    <%- include('../partials/help-icon', { text: t('projects:sharing.permissionHelp') }) %>
                 </label>
                 <select name="permission" id="sharePermission" class="form-select" required>
-                    <option value="read">Ansehen</option>
-                    <option value="manage" selected>Verwalten</option>
-                    <option value="full">Vollzugriff</option>
+                    <option value="read"><%= t('projects:sharing.permissions.read') %></option>
+                    <option value="manage" selected><%= t('projects:sharing.permissions.manage') %></option>
+                    <option value="full"><%= t('projects:sharing.permissions.full') %></option>
                 </select>
             </div>
             <div class="col-md-3">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-plus-lg"></i> Hinzufügen
+                    <i class="bi bi-plus-lg"></i> <%= t('common:buttons.add') %>
                 </button>
             </div>
         </form>
         <div class="mt-2">
             <small class="text-muted">
-                <strong>Ansehen:</strong> Status und Logs sehen |
-                <strong>Verwalten:</strong> + Start/Stop, Pull, .env |
-                <strong>Vollzugriff:</strong> + Typ ändern
+                <%= t('projects:show.permissionLabels') %>
             </small>
         </div>
         <% } else if (projectShares && projectShares.length === 0) { %>
         <p class="text-muted small mb-0">
             <i class="bi bi-info-circle"></i>
-            Keine weiteren Benutzer verfügbar zum Teilen.
+            <%= t('projects:show.noUsersToShare') %>
         </p>
         <% } %>
     </div>
 </div>
 <% } %>
 
-<!-- Gefahrenzone (nur für Besitzer) -->
+<!-- Danger zone (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="card border-danger">
     <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Gefahrenzone</h5>
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> <%= t('projects:dangerZone') %></h5>
     </div>
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h6 class="mb-1">Projekt löschen</h6>
-                <p class="text-muted mb-0 small">Das Projekt und alle Dateien werden unwiderruflich gelöscht.</p>
+                <h6 class="mb-1"><%= t('projects:show.deleteProject') %></h6>
+                <p class="text-muted mb-0 small"><%= t('projects:show.deleteProjectDesc') %></p>
             </div>
             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                <i class="bi bi-trash"></i> Löschen
+                <i class="bi bi-trash"></i> <%= t('common:buttons.delete') %>
             </button>
         </div>
     </div>
 </div>
-<% } %><!-- Ende projectAccess.isOwner für Gefahrenzone -->
+<% } %><!-- End projectAccess.isOwner for danger zone -->
 
-<!-- Delete Modal (nur für Besitzer) -->
+<!-- Delete Modal (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">
-                    <i class="bi bi-exclamation-triangle"></i> Projekt löschen
+                    <i class="bi bi-exclamation-triangle"></i> <%= t('projects:show.deleteConfirmTitle') %>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Bist du sicher, dass du das Projekt <strong>"<%= project.name %>"</strong> löschen möchtest?</p>
+                <p><%- t('projects:show.deleteConfirmText', { name: project.name }) %></p>
                 <div class="alert alert-danger">
                     <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Achtung:</strong> Diese Aktion kann nicht rückgängig gemacht werden!
+                    <strong><%= t('common:confirm.deleteWarning') %></strong>
                 </div>
                 <ul>
-                    <li>Alle Container werden gestoppt und entfernt</li>
-                    <li>Alle Projekt-Dateien werden gelöscht</li>
-                    <li>Die Datenbank wird <strong>nicht</strong> automatisch gelöscht</li>
+                    <li><%= t('projects:show.deleteConfirmList1') %></li>
+                    <li><%= t('projects:show.deleteConfirmList2') %></li>
+                    <li><strong><%= t('projects:show.deleteConfirmList3') %></strong></li>
                 </ul>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common:buttons.cancel') %></button>
                 <form action="/projects/<%= project.name %>?_method=DELETE" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash"></i> Ja, löschen
+                        <i class="bi bi-trash"></i> <%= t('projects:show.confirmDelete') %>
                     </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-<% } %><!-- Ende projectAccess.isOwner für Delete Modal -->
+<% } %><!-- End projectAccess.isOwner for Delete Modal -->
 
-<!-- Git Disconnect Modal (nur für Besitzer) -->
+<!-- Git Disconnect Modal (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="modal fade" id="gitDisconnectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title">
-                    <i class="bi bi-x-circle"></i> Git-Verbindung trennen
+                    <i class="bi bi-x-circle"></i> <%= t('projects:show.gitDisconnectTitle') %>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Möchtest du die Git-Verbindung wirklich trennen?</p>
+                <p><%= t('projects:show.gitDisconnectConfirm') %></p>
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Hinweis:</strong> Die Projekt-Dateien bleiben erhalten, aber Git-Informationen und gespeicherte Zugangsdaten werden gelöscht.
+                    <strong><%= t('common:confirm.deleteWarning').replace('!', ':') %></strong> <%= t('projects:show.gitDisconnectNote') %>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common:buttons.cancel') %></button>
                 <form action="/projects/<%= project.name %>/git/disconnect" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-x-circle"></i> Trennen
+                        <i class="bi bi-x-circle"></i> <%= t('projects:show.disconnect') %>
                     </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-<% } %><!-- Ende projectAccess.isOwner für Git Disconnect Modal -->
+<% } %><!-- End projectAccess.isOwner for Git Disconnect Modal -->

@@ -194,6 +194,31 @@ async function rejectUser(id) {
     await pool.query('DELETE FROM dashboard_users WHERE id = ?', [id]);
 }
 
+/**
+ * Update user language preference
+ */
+async function updateUserLanguage(id, language) {
+    const supportedLanguages = ['de', 'en'];
+    if (!supportedLanguages.includes(language)) {
+        throw new Error('Unsupported language');
+    }
+    await pool.query(
+        'UPDATE dashboard_users SET language = ? WHERE id = ?',
+        [language, id]
+    );
+}
+
+/**
+ * Get user language preference
+ */
+async function getUserLanguage(id) {
+    const [result] = await pool.query(
+        'SELECT language FROM dashboard_users WHERE id = ?',
+        [id]
+    );
+    return result[0]?.language || 'de';
+}
+
 module.exports = {
     getAllUsers,
     getPendingUsers,
@@ -210,5 +235,7 @@ module.exports = {
     getUserCount,
     isLastAdmin,
     approveUser,
-    rejectUser
+    rejectUser,
+    updateUserLanguage,
+    getUserLanguage
 };

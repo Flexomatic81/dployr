@@ -18,20 +18,20 @@ router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
         const user = await userService.getUserByUsername(username);
 
         if (!user) {
-            req.flash('error', 'Invalid username or password');
+            req.flash('error', req.t('auth:errors.invalidCredentials'));
             return res.redirect('/login');
         }
 
         const validPassword = await userService.verifyPassword(user, password);
 
         if (!validPassword) {
-            req.flash('error', 'Invalid username or password');
+            req.flash('error', req.t('auth:errors.invalidCredentials'));
             return res.redirect('/login');
         }
 
         // Check if user is approved
         if (!user.approved) {
-            req.flash('warning', 'Your account has not been approved yet. Please wait for confirmation from an administrator.');
+            req.flash('warning', req.t('auth:errors.notApproved'));
             return res.redirect('/login');
         }
 
@@ -43,11 +43,16 @@ router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
             is_admin: user.is_admin
         };
 
-        req.flash('success', `Welcome back, ${user.username}!`);
+        // Load user's language preference
+        const userLanguage = await userService.getUserLanguage(user.id);
+        req.session.language = userLanguage;
+        req.i18n.changeLanguage(userLanguage);
+
+        req.flash('success', req.t('auth:flash.welcomeBack', { username: user.username }));
         res.redirect('/dashboard');
     } catch (error) {
         logger.error('Login error', { error: error.message });
-        req.flash('error', 'An error occurred');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/login');
     }
 });
@@ -66,18 +71,18 @@ router.post('/register', redirectIfAuth, validate('register'), async (req, res) 
     try {
         // Check if username already exists
         if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
-            req.flash('error', 'Username already taken');
+            req.flash('error', req.t('auth:errors.usernameExists'));
             return res.redirect('/register');
         }
 
         // Create user (not yet approved)
         await userService.createUser(username, password, system_username, false);
 
-        req.flash('info', 'Registration received! An administrator must approve your account first.');
+        req.flash('info', req.t('auth:flash.registrationPending'));
         res.redirect('/login');
     } catch (error) {
         logger.error('Registration error', { error: error.message });
-        req.flash('error', 'An error occurred');
+        req.flash('error', req.t('common:errors.loadError'));
         res.redirect('/register');
     }
 });
@@ -100,6 +105,37 @@ router.get('/logout', requireAuth, (req, res) => {
         }
         res.redirect('/login');
     });
+});
+
+// Change language
+router.post('/language', async (req, res) => {
+    const { language } = req.body;
+    const supportedLanguages = ['de', 'en'];
+
+    if (!supportedLanguages.includes(language)) {
+        return res.status(400).json({ error: 'Unsupported language' });
+    }
+
+    try {
+        // Update session
+        req.session.language = language;
+
+        // Update i18next language
+        req.i18n.changeLanguage(language);
+
+        // Save to database if user is logged in
+        if (req.session.user) {
+            await userService.updateUserLanguage(req.session.user.id, language);
+        }
+
+        // Redirect back or to referrer
+        const referer = req.get('Referer') || '/';
+        res.redirect(referer);
+    } catch (error) {
+        logger.error('Language change error', { error: error.message });
+        const referer = req.get('Referer') || '/';
+        res.redirect(referer);
+    }
 });
 
 module.exports = router;

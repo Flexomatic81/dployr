@@ -163,6 +163,16 @@ async function initDatabase() {
             )
         `);
 
+        // Migration: Add language column for i18n
+        try {
+            await connection.execute(`
+                ALTER TABLE dashboard_users ADD COLUMN language VARCHAR(5) DEFAULT 'de'
+            `);
+            logger.info('Migration: Added language column for i18n');
+        } catch (e) {
+            // Column already exists - ignore
+        }
+
         connection.release();
         logger.info('Database schema initialized');
     } catch (error) {

@@ -15,7 +15,8 @@ describe('Auth Middleware', () => {
     beforeEach(() => {
         mockReq = {
             session: {},
-            flash: jest.fn()
+            flash: jest.fn(),
+            t: jest.fn((key) => key) // Mock i18n translation function
         };
         mockRes = {
             redirect: jest.fn(),

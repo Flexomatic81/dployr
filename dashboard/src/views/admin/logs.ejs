@@ -1,15 +1,15 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-        <li class="breadcrumb-item active">System-Logs</li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item active"><%= t('admin:logs.title') %></li>
     </ol>
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-file-text"></i> System-Logs</h1>
+    <h1><i class="bi bi-file-text"></i> <%= t('admin:logs.title') %></h1>
     <button type="button" class="btn btn-outline-primary" id="refreshLogs">
-        <i class="bi bi-arrow-clockwise"></i> Aktualisieren
+        <i class="bi bi-arrow-clockwise"></i> <%= t('admin:logs.refresh') %>
     </button>
 </div>
 
@@ -18,24 +18,24 @@
     <div class="card-body">
         <form method="GET" action="/admin/logs" class="row g-3 align-items-end">
             <div class="col-md-3">
-                <label for="type" class="form-label">Log-Datei</label>
+                <label for="type" class="form-label"><%= t('admin:logs.logFile') %></label>
                 <select name="type" id="type" class="form-select">
-                    <option value="combined" <%= filters.type === 'combined' ? 'selected' : '' %>>Alle Logs (combined.log)</option>
-                    <option value="error" <%= filters.type === 'error' ? 'selected' : '' %>>Nur Fehler (error.log)</option>
+                    <option value="combined" <%= filters.type === 'combined' ? 'selected' : '' %>><%= t('admin:logs.files.combined') %></option>
+                    <option value="error" <%= filters.type === 'error' ? 'selected' : '' %>><%= t('admin:logs.files.error') %></option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="level" class="form-label">Log-Level</label>
+                <label for="level" class="form-label"><%= t('admin:logs.logLevel') %></label>
                 <select name="level" id="level" class="form-select">
-                    <option value="all" <%= filters.level === 'all' ? 'selected' : '' %>>Alle</option>
-                    <option value="error" <%= filters.level === 'error' ? 'selected' : '' %>>Error</option>
-                    <option value="warn" <%= filters.level === 'warn' ? 'selected' : '' %>>Warn</option>
-                    <option value="info" <%= filters.level === 'info' ? 'selected' : '' %>>Info</option>
-                    <option value="debug" <%= filters.level === 'debug' ? 'selected' : '' %>>Debug</option>
+                    <option value="all" <%= filters.level === 'all' ? 'selected' : '' %>><%= t('admin:logs.levels.all') %></option>
+                    <option value="error" <%= filters.level === 'error' ? 'selected' : '' %>><%= t('admin:logs.levels.error') %></option>
+                    <option value="warn" <%= filters.level === 'warn' ? 'selected' : '' %>><%= t('admin:logs.levels.warn') %></option>
+                    <option value="info" <%= filters.level === 'info' ? 'selected' : '' %>><%= t('admin:logs.levels.info') %></option>
+                    <option value="debug" <%= filters.level === 'debug' ? 'selected' : '' %>><%= t('admin:logs.levels.debug') %></option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="limit" class="form-label">Anzahl</label>
+                <label for="limit" class="form-label"><%= t('common:labels.count') %></label>
                 <select name="limit" id="limit" class="form-select">
                     <option value="50" <%= filters.limit === 50 ? 'selected' : '' %>>50</option>
                     <option value="100" <%= filters.limit === 100 ? 'selected' : '' %>>100</option>
@@ -46,7 +46,7 @@
             </div>
             <div class="col-md-3">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-funnel"></i> Filtern
+                    <i class="bi bi-funnel"></i> <%= t('common:buttons.filter') %>
                 </button>
             </div>
         </form>
@@ -59,26 +59,26 @@
 </div>
 <% } %>
 
-<!-- Log-Einträge -->
+<!-- Log entries -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-list-ul"></i> Log-Einträge (<%= logs.length %>)</span>
-        <small class="text-muted">Neueste zuerst</small>
+        <span><i class="bi bi-list-ul"></i> <%= t('admin:logs.logEntries') %> (<%= logs.length %>)</span>
+        <small class="text-muted"><%= t('admin:logs.newestFirst') %></small>
     </div>
     <div class="card-body p-0">
         <% if (logs.length === 0) { %>
         <div class="text-center text-muted py-5">
             <i class="bi bi-inbox fs-1"></i>
-            <p class="mt-2">Keine Log-Einträge gefunden</p>
+            <p class="mt-2"><%= t('admin:logs.noLogs') %></p>
         </div>
         <% } else { %>
         <div class="table-responsive">
             <table class="table table-sm table-hover mb-0" id="logsTable">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 160px;">Zeitpunkt</th>
-                        <th style="width: 80px;">Level</th>
-                        <th>Nachricht</th>
+                        <th style="width: 160px;"><%= t('admin:logs.timestamp') %></th>
+                        <th style="width: 80px;"><%= t('admin:logs.level') %></th>
+                        <th><%= t('admin:logs.message') %></th>
                         <th style="width: 50px;"></th>
                     </tr>
                 </thead>
@@ -129,7 +129,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle Meta-Daten
+    // Toggle meta data
     document.querySelectorAll('.toggle-meta').forEach(btn => {
         btn.addEventListener('click', function() {
             const index = this.dataset.index;
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Refresh-Button
+    // Refresh button
     document.getElementById('refreshLogs').addEventListener('click', function() {
         location.reload();
     });

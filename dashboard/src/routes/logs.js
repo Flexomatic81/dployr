@@ -31,7 +31,7 @@ router.get('/:projectName', requireAuth, getProjectAccess('projectName'), async 
         });
     } catch (error) {
         logger.error('Error loading logs', { error: error.message });
-        req.flash('error', 'Error loading logs');
+        req.flash('error', req.t('common:errors.loadError'));
         return res.redirect('/projects');
     }
 });

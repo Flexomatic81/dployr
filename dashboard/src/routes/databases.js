@@ -26,7 +26,7 @@ router.get('/', requireAuth, async (req, res) => {
         });
     } catch (error) {
         logger.error('Error loading databases', { error: error.message });
-        req.flash('error', 'Error loading databases');
+        req.flash('error', req.t('common:errors.loadError'));
         return res.redirect('/dashboard');
     }
 });
@@ -48,12 +48,11 @@ router.post('/', requireAuth, async (req, res) => {
 
         const dbInfo = await databaseService.createDatabase(systemUsername, name, type || 'mariadb');
 
-        const typeName = type === 'postgresql' ? 'PostgreSQL' : 'MariaDB';
-        req.flash('success', `${typeName} database "${dbInfo.database}" created successfully!`);
+        req.flash('success', req.t('databases:flash.created', { name: dbInfo.database }));
         return res.redirect('/databases');
     } catch (error) {
         logger.error('Error creating database', { error: error.message });
-        req.flash('error', error.message || 'Error creating database');
+        req.flash('error', error.message || req.t('common:errors.createError'));
         return res.redirect('/databases/create');
     }
 });
@@ -64,11 +63,11 @@ router.delete('/:name', requireAuth, async (req, res) => {
         const systemUsername = req.session.user.system_username;
 
         await databaseService.deleteDatabase(systemUsername, req.params.name);
-        req.flash('success', `Database "${req.params.name}" deleted`);
+        req.flash('success', req.t('databases:flash.deleted', { name: req.params.name }));
         return res.redirect('/databases');
     } catch (error) {
         logger.error('Error deleting database', { error: error.message });
-        req.flash('error', 'Error deleting: ' + error.message);
+        req.flash('error', req.t('common:errors.actionFailed', { action: req.t('common:buttons.delete'), error: error.message }));
         return res.redirect('/databases');
     }
 });

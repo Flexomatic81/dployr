@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" data-bs-theme="light">
+<html lang="<%= currentLanguage %>" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,35 +30,60 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="/dashboard">
-                            <i class="bi bi-speedometer2"></i> Dashboard
+                            <i class="bi bi-speedometer2"></i> <%= t('common:nav.dashboard') %>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/projects">
-                            <i class="bi bi-folder"></i> Projekte
+                            <i class="bi bi-folder"></i> <%= t('common:nav.projects') %>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/databases">
-                            <i class="bi bi-database"></i> Datenbanken
+                            <i class="bi bi-database"></i> <%= t('common:nav.databases') %>
                         </a>
                     </li>
                     <% if (user && user.is_admin) { %>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin">
-                            <i class="bi bi-shield-lock"></i> Admin
+                            <i class="bi bi-shield-lock"></i> <%= t('common:nav.admin') %>
                         </a>
                     </li>
                     <% } %>
                     <li class="nav-item">
                         <a class="nav-link" href="/help">
-                            <i class="bi bi-question-circle"></i> Hilfe
+                            <i class="bi bi-question-circle"></i> <%= t('common:nav.help') %>
                         </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" title="<%= t('common:language.switch') %>">
+                            <i class="bi bi-globe2"></i> <%= currentLanguage.toUpperCase() %>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form action="/language" method="POST">
+                                    <%- csrfInput %>
+                                    <input type="hidden" name="language" value="de">
+                                    <button type="submit" class="dropdown-item <%= currentLanguage === 'de' ? 'active' : '' %>">
+                                        🇩🇪 Deutsch
+                                    </button>
+                                </form>
+                            </li>
+                            <li>
+                                <form action="/language" method="POST">
+                                    <%- csrfInput %>
+                                    <input type="hidden" name="language" value="en">
+                                    <button type="submit" class="dropdown-item <%= currentLanguage === 'en' ? 'active' : '' %>">
+                                        🇬🇧 English
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
-                        <button class="theme-toggle" id="themeToggle" title="Theme wechseln">
+                        <button class="theme-toggle" id="themeToggle" title="<%= t('common:theme.toggle') %>">
                             <i class="bi bi-sun-fill" id="themeIcon"></i>
                         </button>
                     </li>
@@ -80,7 +105,7 @@
                                 <form action="/logout" method="POST" class="d-inline">
                                     <%- csrfInput %>
                                     <button type="submit" class="dropdown-item">
-                                        <i class="bi bi-box-arrow-right"></i> Logout
+                                        <i class="bi bi-box-arrow-right"></i> <%= t('common:nav.logout') %>
                                     </button>
                                 </form>
                             </li>
@@ -93,9 +118,34 @@
     <% } %>
 
     <% if (!isAuthenticated) { %>
-    <!-- Theme Toggle für nicht eingeloggte User -->
-    <div class="position-fixed top-0 end-0 m-3" style="z-index: 1050;">
-        <button class="btn btn-outline-secondary" id="themeToggle" title="Theme wechseln">
+    <!-- Theme & Language Toggle for non-authenticated users -->
+    <div class="position-fixed top-0 end-0 m-3 d-flex gap-2" style="z-index: 1050;">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="<%= t('common:language.switch') %>">
+                <i class="bi bi-globe2"></i> <%= currentLanguage.toUpperCase() %>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <form action="/language" method="POST">
+                        <%- csrfInput %>
+                        <input type="hidden" name="language" value="de">
+                        <button type="submit" class="dropdown-item <%= currentLanguage === 'de' ? 'active' : '' %>">
+                            🇩🇪 Deutsch
+                        </button>
+                    </form>
+                </li>
+                <li>
+                    <form action="/language" method="POST">
+                        <%- csrfInput %>
+                        <input type="hidden" name="language" value="en">
+                        <button type="submit" class="dropdown-item <%= currentLanguage === 'en' ? 'active' : '' %>">
+                            🇬🇧 English
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+        <button class="btn btn-outline-secondary" id="themeToggle" title="<%= t('common:theme.toggle') %>">
             <i class="bi bi-sun-fill" id="themeIcon"></i>
         </button>
     </div>

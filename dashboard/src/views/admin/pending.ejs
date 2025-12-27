@@ -1,13 +1,13 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-        <li class="breadcrumb-item active">Ausstehende Registrierungen</li>
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item active"><%= t('admin:pending.title') %></li>
     </ol>
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-person-exclamation"></i> Ausstehende Registrierungen</h1>
+    <h1><i class="bi bi-person-exclamation"></i> <%= t('admin:pending.title') %></h1>
 </div>
 
 <div class="card">
@@ -15,24 +15,24 @@
         <% if (pendingUsers.length === 0) { %>
             <div class="text-center py-5">
                 <i class="bi bi-check-circle display-1 text-success"></i>
-                <p class="mt-3 text-muted">Keine ausstehenden Registrierungen vorhanden.</p>
+                <p class="mt-3 text-muted"><%= t('admin:pending.noPending') %></p>
                 <a href="/admin" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-left"></i> Zurück zum Admin-Bereich
+                    <i class="bi bi-arrow-left"></i> <%= t('common:buttons.back') %>
                 </a>
             </div>
         <% } else { %>
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i>
-                <strong><%= pendingUsers.length %></strong> Registrierung(en) warten auf Freischaltung.
+                <strong><%= pendingUsers.length %></strong> <%= pendingUsers.length === 1 ? t('admin:pending.pendingCount', { count: pendingUsers.length }) : t('admin:pending.pendingCountPlural', { count: pendingUsers.length }) %>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Benutzername</th>
-                            <th>System-Username</th>
-                            <th>Registriert am</th>
-                            <th>Aktionen</th>
+                            <th><%= t('admin:users.columns.username') %></th>
+                            <th><%= t('admin:users.columns.systemUsername') %></th>
+                            <th><%= t('admin:pending.requestedAt') %></th>
+                            <th><%= t('admin:users.columns.actions') %></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,18 +43,18 @@
                                     <strong><%= u.username %></strong>
                                 </td>
                                 <td><code><%= u.system_username %></code></td>
-                                <td><%= new Date(u.created_at).toLocaleString('de-DE') %></td>
+                                <td><%= new Date(u.created_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <form action="/admin/users/<%= u.id %>/approve" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-success" title="Freischalten">
-                                                <i class="bi bi-check-lg"></i> Freischalten
+                                            <button type="submit" class="btn btn-success" title="<%= t('admin:pending.approve') %>">
+                                                <i class="bi bi-check-lg"></i> <%= t('admin:pending.approve') %>
                                             </button>
                                         </form>
                                         <form action="/admin/users/<%= u.id %>/reject" method="POST" class="d-inline"
-                                              onsubmit="return confirm('Registrierung von &quot;<%= u.username %>&quot; wirklich ablehnen? Der Account wird gelöscht.')">
-                                            <button type="submit" class="btn btn-danger" title="Ablehnen">
-                                                <i class="bi bi-x-lg"></i> Ablehnen
+                                              onsubmit="return confirm('<%= t('admin:delete.confirmReject', { username: u.username }) %>')">
+                                            <button type="submit" class="btn btn-danger" title="<%= t('admin:pending.reject') %>">
+                                                <i class="bi bi-x-lg"></i> <%= t('admin:pending.reject') %>
                                             </button>
                                         </form>
                                     </div>
