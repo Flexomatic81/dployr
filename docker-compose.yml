@@ -1,14 +1,14 @@
-# Dployr - Komplette Infrastruktur
-# Startet alle Services mit: docker compose up -d
+# Dployr - Complete Infrastructure
+# Start all services with: docker compose up -d
 
 services:
-  # MariaDB Datenbank
+  # MariaDB Database
   mariadb:
     image: mariadb:11
     container_name: dployr-mariadb
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD muss gesetzt sein}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     volumes:
@@ -25,7 +25,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # phpMyAdmin für Datenbank-Verwaltung
+  # phpMyAdmin for database management
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: dployr-phpmyadmin
@@ -42,13 +42,13 @@ services:
       mariadb:
         condition: service_healthy
 
-  # PostgreSQL Datenbank
+  # PostgreSQL Database
   postgresql:
     image: postgres:16-alpine
     container_name: dployr-postgresql
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:?POSTGRES_ROOT_PASSWORD muss gesetzt sein}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:?POSTGRES_ROOT_PASSWORD must be set}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
       - postgresql_data:/var/lib/postgresql/data
@@ -62,14 +62,14 @@ services:
       timeout: 5s
       retries: 5
 
-  # pgAdmin für PostgreSQL-Verwaltung
+  # pgAdmin for PostgreSQL management
   pgadmin:
     image: dpage/pgadmin4:8
     container_name: dployr-pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@local.dev}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD muss gesetzt sein}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD must be set}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     volumes:
@@ -94,12 +94,12 @@ services:
     ports:
       - "${DASHBOARD_PORT:-3000}:3000"
     volumes:
-      # Docker Socket für Container-Management
+      # Docker socket for container management
       - /var/run/docker.sock:/var/run/docker.sock
-      # User-Projekte (beide Pfade für Kompatibilität mit Docker-Socket)
+      # User projects (both paths for Docker socket compatibility)
       - ./users:/app/users
       - ${HOST_USERS_PATH:-/opt/dployr/users}:${HOST_USERS_PATH:-/opt/dployr/users}
-      # Scripts und Templates
+      # Scripts and templates
       - ./scripts:/app/scripts:ro
       - ./templates:/app/templates:ro
       - ./infrastructure:/app/infrastructure
@@ -110,7 +110,7 @@ services:
       - DB_DATABASE=${DB_DATABASE:-dashboard}
       - DB_USERNAME=${DB_USERNAME:-dashboard_user}
       - DB_PASSWORD=${DB_PASSWORD:-}
-      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET muss gesetzt sein}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - POSTGRES_ROOT_PASSWORD=${POSTGRES_ROOT_PASSWORD}
       - SERVER_IP=${SERVER_IP:-localhost}

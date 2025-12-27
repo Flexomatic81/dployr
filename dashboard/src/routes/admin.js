@@ -343,7 +343,7 @@ router.get('/logs', async (req, res) => {
         let error = null;
 
         try {
-            const lines = await readLastLines(logPath, limit * 2); // Mehr lesen für Filter
+            const lines = await readLastLines(logPath, limit * 2); // Read more lines for filtering
             logs = lines
                 .map(parseLogLine)
                 .filter(log => {
