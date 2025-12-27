@@ -2,49 +2,38 @@
 
 **Docker-based multi-user hosting platform for web projects.**
 
-Dployr enables multiple users to run isolated web projects on a shared Linux server. With web dashboard, automatic database creation, and GitHub integration.
+Deploy and manage isolated web projects on a shared Linux server through an intuitive web dashboard. Supports automatic project type detection, Git integration, and database provisioning.
 
 <p align="center">
   <img src="docs/images/dashboard.png" alt="Dployr Dashboard" width="800">
 </p>
 
-## Requirements
-
-| Component | Minimum Version | Note |
-|-----------|-----------------|------|
-| **Linux** | Any distribution | Debian, Ubuntu, CentOS, Fedora, Arch, etc. |
-| **Docker** | 20.10+ | `curl -fsSL https://get.docker.com \| sh` |
-| **Docker Compose** | v2.0+ | As plugin: `docker compose` |
-| **Git** | 2.0+ | Optional, for GitHub integration |
-
 ## Features
 
-- 🚀 **Interactive Project Setup** - No parameters needed, everything is prompted
-- 🖥️ **Web Dashboard** - Browser-based management interface
-- 🌙 **Dark/Light Theme** - Switchable with preference storage
-- 🗄️ **Automatic Database Creation** - Optional during project setup
-- 🔐 **Secure Credentials** - Automatically generated and stored in .env
-- 📦 **GitHub Integration** - Clone repository directly during setup
-- 📁 **ZIP Upload** - Upload projects via ZIP file (up to 100 MB)
-- 🎯 **Auto Port Detection** - Automatically finds free ports
-- 🔍 **Automatic Project Type Detection** - Detects Static/PHP/Node.js/Laravel/Next.js automatically
-- 📝 **Environment Variables Editor** - Edit .env in browser with DB credential injection
-- 🐳 **Docker-based Isolation** - Each project runs isolated
-- 🗃️ **MariaDB + PostgreSQL** - Both databases available with phpMyAdmin & pgAdmin
-- 📋 **Ready Templates** - Static, PHP, Node.js ready to use
-- 👥 **Multi-User with Admin Approval** - New users must be approved by admin
-- 🔄 **Changeable Project Type** - Switch later with recommendation warning
-- ⚡ **Auto-Deploy** - Automatic updates on Git commits (configurable interval: 5-60 min)
+- **Web Dashboard** - Browser-based project management
+- **Multiple Deployment Methods** - Git repository, ZIP upload, or empty template
+- **Auto-Deploy** - Automatic updates on Git commits (configurable interval)
+- **Project Type Detection** - Automatically detects Static, PHP, Node.js, Laravel, Next.js
+- **Database Support** - MariaDB and PostgreSQL with phpMyAdmin & pgAdmin
+- **Multi-User** - User registration with admin approval workflow
+- **Project Sharing** - Share projects with other users (read/manage/full access)
+- **Environment Editor** - Edit .env files directly in the browser
+- **Dark/Light Theme** - Switchable with preference storage
+
+## Requirements
+
+| Component | Minimum Version |
+|-----------|-----------------|
+| **Linux** | Any distribution |
+| **Docker** | 20.10+ |
+| **Docker Compose** | v2.0+ |
+| **Git** | 2.0+ (optional) |
 
 ## Quick Start
 
-### Option A: Docker Compose (Recommended)
-
-One command - everything runs:
-
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-username/dployr.git /opt/dployr
+git clone https://github.com/Flexomatic81/dployr.git /opt/dployr
 cd /opt/dployr
 
 # 2. Create configuration
@@ -58,332 +47,189 @@ docker compose up -d
 # http://<SERVER_IP>:3000/setup
 ```
 
-**What gets started:**
-- MariaDB (Port 3306)
-- PostgreSQL (Port 5432)
-- phpMyAdmin (Port 8080)
-- pgAdmin (Port 5050)
-- Web Dashboard (Port 3000)
-
-After the setup wizard you can start right away!
-
-## Directory Structure
-
-```
-dployr/
-├── docker-compose.yml         # ⭐ Main file - starts everything
-├── .env                       # Configuration (from .env.example)
-├── .env.example               # Template for configuration
-│
-├── infrastructure/            # MariaDB/phpMyAdmin config
-│   └── mariadb/              # DB configuration
-│
-├── users/                     # User projects
-│   └── <username>/
-│       ├── .db-credentials           # Auto-generated DB credentials
-│       └── <projectname>/
-│           ├── docker-compose.yml
-│           ├── .env                  # Project config + DB credentials
-│           ├── html/                 # Website files (Git repo)
-│           └── nginx/               # Nginx config
-│
-├── templates/                 # Project templates
-│   ├── static-website/       # HTML/CSS/JS
-│   ├── php-website/          # PHP + Nginx
-│   └── nodejs-app/           # Node.js Express
-│
-├── scripts/                   # Management scripts
-│   ├── create-project.sh     # Create new project (interactive!)
-│   ├── create-database.sh    # Create database manually
-│   ├── delete-project.sh     # Delete project
-│   ├── delete-user.sh        # Delete user with all projects
-│   └── list-projects.sh      # List all projects
-│
-├── dashboard/                # Web Dashboard (Node.js)
-│   ├── Dockerfile
-│   └── src/                  # Dashboard source code
-│
-└── README.md                # This file
-```
-
-## Important Commands
-
-### Project Management
-
-```bash
-# Create new project (INTERACTIVE - recommended!)
-./scripts/create-project.sh
-
-# Old method (still works):
-./scripts/create-project.sh <username> <projectname> <template>
-
-# Available templates: static-website, php-website, nodejs-app
-
-# Create database manually (only if needed)
-./scripts/create-database.sh <username> <db-name>
-
-# List all projects
-./scripts/list-projects.sh
-```
-
-### Delete Project
-
-```bash
-# With script (recommended - also asks about database deletion)
-./scripts/delete-project.sh <username> <projectname>
-
-# Manually
-cd /opt/dployr/users/<USER>/PROJECTNAME
-docker compose down
-cd ..
-rm -rf PROJECTNAME
-```
-
-### Delete User
-
-```bash
-# Deletes all projects, containers, and databases of the user
-./scripts/delete-user.sh <username>
-```
-
-### Web Dashboard
-
-The dashboard is available at `http://<SERVER_IP>:3000` and offers:
-- **Create projects** (three methods):
-  - From Git repository (GitHub, GitLab, Bitbucket)
-  - Via ZIP upload (up to 100 MB, automatic extraction)
-  - From template (Static, PHP, Node.js)
-- **Automatic project type detection**: Static, PHP, Node.js, Laravel, Next.js
-- **Project type recommendation**: Warning on type mismatch with one-click correction
-- **Environment variables editor**: Edit .env directly in browser
-  - Automatically detect and copy `.env.example`
-  - Insert database credentials with one click
-- Start, stop, restart, delete containers
-- View container status and logs
-- Git pull for connected repositories
-- Manage databases (MariaDB & PostgreSQL)
-- Multi-user login with admin approval
-- Dark/Light theme toggle
-- Admin panel for user management
-
-### Infrastructure
-
-```bash
-# Start
-docker compose up -d
-
-# Stop
-docker compose down
-
-# Status
-docker ps --filter network=dployr-network
-```
-
-### Single Project
-
-```bash
-cd users/username/projectname
-
-# Start
-docker compose up -d
-
-# Logs
-docker compose logs -f
-
-# Stop
-docker compose down
-
-# Get Git updates (if GitHub project)
-cd html
-git pull
-```
+The setup wizard guides you through creating the first admin user.
 
 ## Services
 
-Available after start:
+After startup, the following services are available:
 
-| Service | External Access | Docker Network |
-|---------|-----------------|----------------|
-| **MariaDB** | `<SERVER_IP>:3306` | `dployr-mariadb:3306` |
-| **PostgreSQL** | `<SERVER_IP>:5432` | `dployr-postgresql:5432` |
-| **phpMyAdmin** | `http://<SERVER_IP>:8080` | - |
-| **pgAdmin** | `http://<SERVER_IP>:5050` | - |
-| **Dashboard** | `http://<SERVER_IP>:3000` | - |
+| Service | Port | Purpose |
+|---------|------|---------|
+| **Dashboard** | 3000 | Web interface |
+| **MariaDB** | 3306 | MySQL-compatible database |
+| **PostgreSQL** | 5432 | Advanced database |
+| **phpMyAdmin** | 8080 | MariaDB management |
+| **pgAdmin** | 5050 | PostgreSQL management |
 
-### Database Selection
+## Using the Dashboard
 
-When creating a new database in the dashboard, you can choose between **MariaDB** and **PostgreSQL**:
+### Creating Projects
 
-- **MariaDB**: MySQL-compatible, ideal for WordPress, Laravel, PHP projects
-- **PostgreSQL**: Advanced features, ideal for complex applications, Django, Rails
+The dashboard offers three ways to create a project:
 
-Connection details are automatically generated and stored in `.db-credentials`.
+**Git Repository** (recommended for version control)
+- Enter repository URL (HTTPS)
+- For private repos: Add a personal access token
+- Project type is automatically detected
+- Use "Pull" button or Auto-Deploy for updates
 
-## VS Code Remote SSH
+**ZIP Upload** (quick deployment)
+- Upload a ZIP file (max 100 MB)
+- Automatic extraction and type detection
+- Nested folders are automatically flattened
 
-The best method to work on the server:
+**Empty Template**
+- Choose a project type (Static, PHP, Node.js)
+- Start with a blank project structure
+
+### Managing Projects
+
+From the project detail page you can:
+- **Start/Stop/Restart** containers
+- **View logs** in real-time
+- **Pull** latest changes from Git
+- **Edit .env** environment variables
+- **Configure database** credentials with one click
+- **Share** with other users
+
+### Databases
+
+1. Go to **Databases** → **New Database**
+2. Choose type: MariaDB or PostgreSQL
+3. Enter a name
+4. Credentials are automatically generated
+
+To connect a database to a project:
+1. Open the project detail page
+2. Scroll to "Environment Variables"
+3. Click **Configure DB** and select your database
+4. Credentials are intelligently merged into .env
+5. Restart the container
+
+### Auto-Deploy
+
+For Git projects, enable automatic deployment:
+
+1. Open project detail page
+2. Find "Git Connection" section
+3. Click **Enable Auto-Deploy**
+4. Choose interval (5, 10, 15, 30, or 60 minutes)
+
+Dployr will poll for new commits and automatically pull + restart.
+
+### Project Sharing
+
+Share projects with other users:
+
+| Permission | Can do |
+|------------|--------|
+| **Read** | View status, logs, project info |
+| **Manage** | + Start/Stop, Pull, Deploy, Edit .env |
+| **Full** | + Change project type |
+
+Only the owner can delete, disconnect Git, configure Auto-Deploy, or manage shares.
+
+## Configuration
+
+### Environment Variables (.env)
 
 ```bash
-# 1. Install Remote - SSH extension
-# 2. Ctrl+Shift+P → Remote-SSH: Connect to Host
-# 3. <USER>@<SERVER_IP>
-# 4. Open Folder → /opt/dployr/users/<USER>/PROJECTNAME/html
-# 5. Edit files → Save = LIVE!
+# Required
+MYSQL_ROOT_PASSWORD=SecurePassword123!
+POSTGRES_ROOT_PASSWORD=SecurePassword123!
+PGADMIN_PASSWORD=SecurePassword123!
+SESSION_SECRET=  # Generate with: openssl rand -base64 32
+
+# Optional (defaults shown)
+DASHBOARD_PORT=3000
+PHPMYADMIN_PORT=8080
+PGADMIN_PORT=5050
+PGADMIN_EMAIL=admin@local.dev
+SERVER_IP=  # Auto-detected if empty
 ```
 
-## Workflow: Deploy Project
+### Custom Installation Path
 
-```
-1. Develop locally in VS Code
-   ↓
-2. Choose deployment method:
+If not using `/opt/dployr`, set the host path in `.env`:
 
-   OPTION A (Git Repository - Recommended for versioning):
-   → git push to GitHub/GitLab
-   → Open Dashboard → New Project → Tab "From Git Repository"
-   → Enter repository URL (+ token for private repos)
-   → Project type is automatically detected
-   → Project is live!
-
-   OPTION B (ZIP Upload - Quick & easy):
-   → Pack project as ZIP
-   → Dashboard → New Project → Tab "ZIP Upload"
-   → Upload ZIP (max. 100 MB)
-   → Project type is automatically detected
-   → Project is live!
-
-   OPTION C (Template - Empty project):
-   → Dashboard → New Project → Tab "From Template"
-   → Select type (Static/PHP/Node.js)
-   → Edit files via VS Code Remote SSH
-
-   OPTION D (Update existing Git project):
-   Dashboard → Open project → "Pull" button
-   OR: ssh <USER>@<SERVER_IP>
-   cd /opt/dployr/users/<USER>/PROJECT/html
-   git pull
-
-   OPTION E (Auto-Deploy - Automatic):
-   → Enable once on the project detail page
-   → Choose interval (5, 10, 15, 30, or 60 minutes)
-   → Every git push automatically deploys!
-   ↓
-3. Done! Website is updated
+```bash
+HOST_USERS_PATH=/path/to/your/dployr/users
 ```
 
-## Automatic Features
+## Project Type Detection
 
-### Port Management
-- Script automatically finds next free port
-- No more manual counting!
+Projects are automatically detected based on files:
 
-### Database Credentials
-- Automatically generated and secure
-- Stored in `.env` and `.db-credentials`
-- Ready to use in PHP/Node.js
-
-### Permissions
-- Automatically set correctly (755/644)
-- No more 403 Forbidden!
-
-### Project Type Detection
-During creation (Git/ZIP) and on the project page, the type is automatically detected:
-
-| Detected File | Project Type |
-|---------------|--------------|
-| `next.config.js` / `next.config.mjs` | Next.js (SSR) |
+| File | Detected Type |
+|------|---------------|
+| `next.config.js` / `next.config.mjs` | Next.js |
 | `package.json` with build script | React/Vue (Static Build) |
-| `package.json` | Node.js App |
+| `package.json` | Node.js |
 | `artisan` / `symfony.lock` | Laravel/Symfony |
-| `composer.json` / `*.php` | PHP Website |
-| `index.html` | Static Website |
+| `composer.json` / `*.php` | PHP |
+| `index.html` | Static |
 
-On type mismatch, the project page shows a warning with one-click correction.
+If detection is wrong, you can change the type in project settings.
 
-### Git & ZIP Integration
-- **Git**: Create projects directly from GitHub/GitLab/Bitbucket
-  - Clones into `html/` subdirectory for consistent structure
-  - Supports private repos with Personal Access Token
-  - Git pull directly in dashboard
-- **ZIP Upload**: Upload projects via ZIP file
-  - Max. 100 MB file size
-  - Automatic extraction into `html/` directory
-  - Automatic flattening (also nested folders)
-- Project type is automatically detected (from `html/` folder)
-- Matching Docker configuration is generated
+## CLI Scripts (Advanced)
 
-## Quick Reference
+For automation or direct server access:
 
 ```bash
-# New project
+# Create project interactively
 ./scripts/create-project.sh
 
 # Delete project
 ./scripts/delete-project.sh <username> <projectname>
 
-# Delete user (incl. all projects & databases)
+# Delete user with all projects
 ./scripts/delete-user.sh <username>
 
-# Git update
-cd users/<USER>/PROJECT/html && git pull
+# List all projects
+./scripts/list-projects.sh
+```
 
-# Restart container
-cd users/<USER>/PROJECT && docker compose restart
+### Docker Commands
 
-# View logs
-cd users/<USER>/PROJECT && docker compose logs -f
+```bash
+# Start/Stop infrastructure
+docker compose up -d
+docker compose down
 
-# All running projects
-docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+# View dashboard logs
+docker compose logs -f dashboard
 
-# Deploy update (git pull + rebuild + restart)
-# Can be run from anywhere - auto-navigates to project root
-./scripts/deploy.sh
+# Restart dashboard
+docker compose restart dashboard
+```
+
+## Directory Structure
+
+```
+dployr/
+├── docker-compose.yml      # Main infrastructure
+├── .env                    # Configuration
+├── dashboard/              # Web dashboard (Node.js)
+├── users/                  # User projects
+│   └── <username>/
+│       ├── .db-credentials
+│       └── <project>/
+│           ├── docker-compose.yml
+│           ├── .env
+│           └── html/       # Project files
+├── templates/              # Project templates
+├── scripts/                # CLI management scripts
+└── infrastructure/         # Database configuration
 ```
 
 ## Security
 
-- Set MySQL root password in `.env` (`MYSQL_ROOT_PASSWORD`)
-- Set PostgreSQL root password in `.env` (`POSTGRES_ROOT_PASSWORD`)
-- Set pgAdmin password in `.env` (`PGADMIN_PASSWORD`)
-- Each DB user only has access to their own databases
-- Database names are prefixed with username (e.g., `<username>_myproject`)
+- Each user only has access to their own databases
+- Database names are prefixed with username
 - Containers are network-isolated
-- Use SSL/TLS via Nginx Proxy Manager
-- Automatically generated secure passwords for DB users
-- New users must be approved by admin
-- Server IP is configured in setup wizard and stored securely
-
-## Configuration (.env)
-
-```bash
-# Required
-MYSQL_ROOT_PASSWORD=YourSecurePassword123!
-POSTGRES_ROOT_PASSWORD=YourSecurePostgresPassword123!
-PGADMIN_PASSWORD=YourPgAdminPassword123!
-SESSION_SECRET=  # openssl rand -base64 32
-
-# Optional (default values)
-DASHBOARD_PORT=3000
-PHPMYADMIN_PORT=8080
-PGADMIN_PORT=5050
-PGADMIN_EMAIL=admin@local.dev
-SERVER_IP=  # Automatically detected
-
-# Custom installation path (if not using /opt/dployr)
-HOST_USERS_PATH=/path/to/your/dployr/users
-```
-
-### Custom Installation Path
-
-By default, Dployr expects to be installed in `/opt/dployr`. If you install it elsewhere, set `HOST_USERS_PATH` in your `.env`:
-
-```bash
-# Example: Installed in /home/user/dployr
-HOST_USERS_PATH=/home/user/dployr/users
-```
-
-This path is used by the dashboard to execute docker-compose commands on the host system.
+- New users require admin approval
+- Secure password generation for DB credentials
+- Session-based authentication with MySQL store
 
 ## License
 
