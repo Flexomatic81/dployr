@@ -5,7 +5,7 @@
 Deploy and manage isolated web projects on a shared Linux server through an intuitive web dashboard. Supports automatic project type detection, Git integration, and database provisioning.
 
 <p align="center">
-  <img src="docs/images/dashboard.png" alt="Dployr Dashboard" width="800">
+  <img src="docs/images/banner.png" alt="Dployr Banner" width="800">
 </p>
 
 ## Features
