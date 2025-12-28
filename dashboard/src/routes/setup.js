@@ -85,13 +85,13 @@ router.post('/run', async (req, res) => {
         await createDashboardDatabase(mysql_root_password);
         steps[2].status = 'done';
 
-        // Step 4: Create admin user
+        // Step 4: Create admin user with selected language
+        const selectedLanguage = language || req.session.language || 'de';
         steps.push({ step: 'admin', status: 'running', message: 'Creating admin user...' });
-        await createAdminUser(admin_username, admin_password, system_username);
+        await createAdminUser(admin_username, admin_password, system_username, selectedLanguage);
         steps[3].status = 'done';
 
         // Step 5: Mark setup as complete (include selected language)
-        const selectedLanguage = language || req.session.language || 'de';
         await markSetupComplete(server_ip, system_username, selectedLanguage);
 
         res.json({ success: true, steps });
@@ -211,7 +211,7 @@ async function createDashboardDatabase(mysqlRootPassword) {
     }
 }
 
-async function createAdminUser(username, password, systemUsername) {
+async function createAdminUser(username, password, systemUsername, language = 'de') {
     const { pool, initDatabase } = require('../config/database');
 
     // Create tables if they don't exist
@@ -220,12 +220,12 @@ async function createAdminUser(username, password, systemUsername) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create admin user (is_admin and approved set to TRUE)
+    // Create admin user (is_admin and approved set to TRUE, with selected language)
     await pool.execute(
-        `INSERT INTO dashboard_users (username, password_hash, system_username, is_admin, approved)
-         VALUES (?, ?, ?, TRUE, TRUE)
-         ON DUPLICATE KEY UPDATE password_hash = ?, is_admin = TRUE, approved = TRUE`,
-        [username, passwordHash, systemUsername, passwordHash]
+        `INSERT INTO dashboard_users (username, password_hash, system_username, is_admin, approved, language)
+         VALUES (?, ?, ?, TRUE, TRUE, ?)
+         ON DUPLICATE KEY UPDATE password_hash = ?, is_admin = TRUE, approved = TRUE, language = ?`,
+        [username, passwordHash, systemUsername, language, passwordHash, language]
     );
 }
 
