@@ -72,10 +72,12 @@ dashboard/src/
 ├── config/
 │   ├── database.js     # MySQL connection pool
 │   ├── logger.js       # Winston logger configuration
+│   ├── i18n.js         # i18next configuration (DE/EN)
 │   └── constants.js    # Shared constants (permissions, intervals, DB aliases)
 ├── middleware/
 │   ├── auth.js         # Authentication middleware (requireAuth, requireAdmin)
 │   ├── projectAccess.js # Project access control (getProjectAccess, requirePermission)
+│   ├── csrf.js         # CSRF protection (csrf-sync)
 │   ├── validation.js   # Input validation with Joi
 │   └── upload.js       # Multer config for ZIP uploads
 ├── routes/             # Express route handlers
@@ -179,13 +181,18 @@ This is handled in `docker.js` when executing docker-compose commands.
 
 ## Template Types
 
-Templates in `/templates/` define project scaffolding:
+### Physical Templates (in `/templates/`)
 - **static-website**: Nginx serving HTML/CSS/JS
-- **php-website**: PHP-FPM + Nginx with PDO extensions
-- **nodejs-app**: Node.js with npm start
-- **laravel**: PHP with Composer, Apache, Laravel-optimized config
-- **nodejs-static**: Node.js build step + Nginx for static output (React, Vue, Vite)
-- **nextjs**: Next.js with SSR support
+- **php-website**: PHP 8.2 with Apache, PDO extensions
+- **nodejs-app**: Node.js 20 with npm start
+- **python-flask**: Python 3.12 with Gunicorn (Flask, FastAPI)
+- **python-django**: Python 3.12 with Gunicorn, auto-migrations
+
+### Dynamically Generated Templates (from Git/ZIP detection)
+- **laravel**: Laravel/Symfony with Composer (detected by `artisan` or `symfony.lock`)
+- **nodejs-static**: React/Vue/Svelte/Astro build to static (detected by framework in package.json)
+- **nextjs**: Next.js with SSR (detected by `next` in package.json)
+- **nuxtjs**: Nuxt.js with SSR (detected by `nuxt` in package.json)
 
 Template type is auto-detected from docker-compose.yml content in existing projects.
 
@@ -206,7 +213,7 @@ The dashboard implements multiple security layers:
 - **Rate Limiting**: Auth routes limited to 10 requests/15min, general API 100 requests/min
 - **Input Validation**: Joi schemas for login, register, project creation
 - **MySQL Session Store**: Persistent sessions (survives restarts)
-- **CSRF Protection**: Via session-based forms
+- **CSRF Protection**: Via session-based forms (skipped for `/setup/*` routes during initial setup)
 - **Blocked Docker Files**: Custom Dockerfiles/docker-compose.yml are automatically removed
 
 ### Blocked Project Files
