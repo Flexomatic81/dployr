@@ -207,7 +207,8 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
         adjustDockerCompose(projectPath);
 
         // Remove blocked Docker files from user repository (security)
-        const removedFiles = removeBlockedFiles(projectPath, path.join(projectPath, 'html'));
+        // Only from html/ - projectPath contains our system-generated docker-compose.yml
+        const removedFiles = removeBlockedFiles(path.join(projectPath, 'html'));
         if (removedFiles.length > 0) {
             logger.info('Removed blocked files after clone', { files: removedFiles });
         }
@@ -813,7 +814,8 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
         }
 
         // Remove blocked Docker files from user repository (security)
-        const removedFiles = removeBlockedFiles(projectPath, htmlPath);
+        // Only from htmlPath - projectPath contains our system-generated docker-compose.yml
+        const removedFiles = removeBlockedFiles(htmlPath);
         if (removedFiles.length > 0) {
             logger.info('Removed blocked files after Git clone', { files: removedFiles });
         }

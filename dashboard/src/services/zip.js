@@ -107,10 +107,14 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
         }
 
         // Remove blocked Docker files from user upload (security)
+        // Only check html/ subfolder if it exists - projectPath contains our system-generated docker-compose.yml
+        // Note: ZIP extracts to projectPath, so user's docker-compose.yml is overwritten by ours above
         const htmlPath = path.join(projectPath, 'html');
-        const removedFiles = removeBlockedFiles(projectPath, htmlPath);
-        if (removedFiles.length > 0) {
-            logger.info('Removed blocked files after ZIP extraction', { files: removedFiles });
+        if (fs.existsSync(htmlPath)) {
+            const removedFiles = removeBlockedFiles(htmlPath);
+            if (removedFiles.length > 0) {
+                logger.info('Removed blocked files after ZIP extraction', { files: removedFiles });
+            }
         }
 
         // Delete ZIP file
