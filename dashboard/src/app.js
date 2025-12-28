@@ -169,19 +169,28 @@ app.use(setUserLocals);
 app.use(csrfTokenMiddleware);
 app.use(csrfSynchronisedProtection);
 
-// Load server IP from setup marker (cached)
-let cachedServerIp = null;
-async function getServerIp() {
-    if (cachedServerIp) return cachedServerIp;
+// Load setup data from marker file (cached)
+let cachedSetupData = null;
+async function getSetupData() {
+    if (cachedSetupData) return cachedSetupData;
     try {
         const fs = require('fs').promises;
-        const setupData = await fs.readFile('/app/infrastructure/.setup-complete', 'utf8');
-        const data = JSON.parse(setupData);
-        cachedServerIp = data.serverIp || process.env.SERVER_IP || 'localhost';
+        const setupContent = await fs.readFile('/app/infrastructure/.setup-complete', 'utf8');
+        cachedSetupData = JSON.parse(setupContent);
     } catch {
-        cachedServerIp = process.env.SERVER_IP || 'localhost';
+        cachedSetupData = {};
     }
-    return cachedServerIp;
+    return cachedSetupData;
+}
+
+async function getServerIp() {
+    const data = await getSetupData();
+    return data.serverIp || process.env.SERVER_IP || 'localhost';
+}
+
+async function getDefaultLanguage() {
+    const data = await getSetupData();
+    return data.defaultLanguage || 'de';
 }
 
 // Load version information (from version.json, created during Docker build)

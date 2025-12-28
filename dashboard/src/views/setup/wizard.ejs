@@ -1,8 +1,8 @@
 <div class="setup-card">
     <div class="setup-header text-center">
         <img src="/images/icon.png" alt="Dployr" class="setup-logo mb-2 rounded-3">
-        <h1 class="mt-2 mb-0">Dployr Setup</h1>
-        <p class="mb-0 opacity-75">Multi-User Hosting-Plattform</p>
+        <h1 class="mt-2 mb-0"><%= t('setup:title') %></h1>
+        <p class="mb-0 opacity-75"><%= t('setup:subtitle') %></p>
     </div>
 
     <div class="card-body p-4">
@@ -11,76 +11,105 @@
             <div class="step active" data-step="1">1</div>
             <div class="step" data-step="2">2</div>
             <div class="step" data-step="3">3</div>
+            <div class="step" data-step="4">4</div>
         </div>
 
-        <!-- Step 1: Server Configuration -->
+        <!-- Step 1: Language Selection -->
         <div class="setup-step" id="step1">
-            <h4 class="mb-4"><i class="bi bi-gear"></i> Server-Konfiguration</h4>
+            <h4 class="mb-4"><i class="bi bi-globe"></i> <%= t('setup:languageSelect.title') %></h4>
+            <p class="text-muted mb-4"><%= t('setup:languageSelect.description') %></p>
+
+            <div class="row g-3 justify-content-center mb-4">
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-primary btn-lg language-btn <%= currentLanguage === 'de' ? 'active' : '' %>" data-lang="de">
+                        <span class="fs-2 me-2">🇩🇪</span> Deutsch
+                    </button>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-primary btn-lg language-btn <%= currentLanguage === 'en' ? 'active' : '' %>" data-lang="en">
+                        <span class="fs-2 me-2">🇬🇧</span> English
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-primary" id="langNextBtn">
+                    <%= t('setup:buttons.next') %> <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Server Configuration -->
+        <div class="setup-step d-none" id="step2">
+            <h4 class="mb-4"><i class="bi bi-gear"></i> <span class="step-title"><%= t('setup:config.title') %></span></h4>
 
             <form id="configForm">
                 <div class="mb-3">
                     <label for="server_ip" class="form-label">
-                        Server IP-Adresse
-                        <%- include('../partials/help-icon', { text: 'Die IP-Adresse oder der Hostname, unter dem der Server von anderen Geräten erreichbar ist.' }) %>
+                        <span class="label-text"><%= t('setup:config.serverIp.label') %></span>
+                        <%- include('../partials/help-icon', { text: t('setup:config.serverIp.help') }) %>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-hdd-network"></i></span>
                         <input type="text" class="form-control" id="server_ip" name="server_ip"
                                value="<%= serverIp %>" required
                                pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$|^[a-zA-Z0-9.-]+$"
-                               placeholder="192.168.1.100">
+                               placeholder="<%= t('setup:config.serverIp.placeholder') %>">
                     </div>
-                    <div class="form-text">IP-Adresse oder Hostname des Servers</div>
+                    <div class="form-text server-ip-desc"><%= t('setup:config.serverIp.description') %></div>
                 </div>
 
                 <div class="mb-3">
                     <label for="mysql_root_password" class="form-label">
-                        MySQL Root Passwort
-                        <%- include('../partials/help-icon', { text: 'Das Master-Passwort für die MariaDB-Datenbank. Wird für administrative Aufgaben benötigt.' }) %>
+                        <span class="label-text"><%= t('setup:config.mysqlPassword.label') %></span>
+                        <%- include('../partials/help-icon', { text: t('setup:config.mysqlPassword.help') }) %>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-key"></i></span>
                         <input type="password" class="form-control" id="mysql_root_password" name="mysql_root_password"
-                               required minlength="8" placeholder="Sicheres Passwort">
+                               required minlength="8" placeholder="<%= t('setup:config.mysqlPassword.placeholder') %>">
                         <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('mysql_root_password')">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
-                    <div class="form-text">Mindestens 8 Zeichen</div>
+                    <div class="form-text mysql-desc"><%= t('setup:config.mysqlPassword.description') %></div>
                 </div>
 
-                <div class="d-flex justify-content-end">
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" onclick="goToStep(1)">
+                        <i class="bi bi-arrow-left"></i> <span class="back-btn-text"><%= t('setup:buttons.back') %></span>
+                    </button>
                     <button type="submit" class="btn btn-primary">
-                        Weiter <i class="bi bi-arrow-right"></i>
+                        <span class="next-btn-text"><%= t('setup:buttons.next') %></span> <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
             </form>
         </div>
 
-        <!-- Step 2: Admin Account -->
-        <div class="setup-step d-none" id="step2">
-            <h4 class="mb-4"><i class="bi bi-person-badge"></i> Admin-Konto erstellen</h4>
+        <!-- Step 3: Admin Account -->
+        <div class="setup-step d-none" id="step3">
+            <h4 class="mb-4"><i class="bi bi-person-badge"></i> <span class="admin-title"><%= t('setup:admin.title') %></span></h4>
 
             <form id="adminForm">
                 <div class="mb-3">
                     <label for="admin_username" class="form-label">
-                        Admin Benutzername
-                        <%- include('../partials/help-icon', { text: 'Der Benutzername für den ersten Admin-Account. Wird auch als System-Benutzername für Projektordner verwendet.' }) %>
+                        <span class="admin-username-label"><%= t('setup:admin.username.label') %></span>
+                        <%- include('../partials/help-icon', { text: t('setup:admin.username.help') }) %>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
                         <input type="text" class="form-control" id="admin_username" name="admin_username"
-                               required pattern="[a-z0-9_-]+" placeholder="admin">
+                               required pattern="[a-z0-9_-]+" placeholder="<%= t('setup:admin.username.placeholder') %>">
                     </div>
-                    <div class="form-text">Login-Name für das Dashboard</div>
+                    <div class="form-text admin-username-desc"><%= t('setup:admin.username.description') %></div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="admin_password" class="form-label">Admin Passwort</label>
+                    <label for="admin_password" class="form-label admin-password-label"><%= t('setup:admin.password.label') %></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control" id="admin_password" name="admin_password"
-                               required minlength="6" placeholder="Passwort">
+                               required minlength="6" placeholder="<%= t('setup:admin.password.placeholder') %>">
                         <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('admin_password')">
                             <i class="bi bi-eye"></i>
                         </button>
@@ -88,55 +117,55 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="admin_password_confirm" class="form-label">Passwort bestätigen</label>
+                    <label for="admin_password_confirm" class="form-label admin-password-confirm-label"><%= t('setup:admin.passwordConfirm.label') %></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
                         <input type="password" class="form-control" id="admin_password_confirm"
-                               required minlength="6" placeholder="Passwort wiederholen">
+                               required minlength="6" placeholder="<%= t('setup:admin.passwordConfirm.placeholder') %>">
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" onclick="goToStep(1)">
-                        <i class="bi bi-arrow-left"></i> Zurück
+                    <button type="button" class="btn btn-outline-secondary" onclick="goToStep(2)">
+                        <i class="bi bi-arrow-left"></i> <span class="back-btn-text"><%= t('setup:buttons.back') %></span>
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        Installation starten <i class="bi bi-play-fill"></i>
+                        <span class="start-install-text"><%= t('setup:buttons.startInstall') %></span> <i class="bi bi-play-fill"></i>
                     </button>
                 </div>
             </form>
         </div>
 
-        <!-- Step 3: Installation Progress -->
-        <div class="setup-step d-none" id="step3">
-            <h4 class="mb-4"><i class="bi bi-download"></i> Installation</h4>
+        <!-- Step 4: Installation Progress -->
+        <div class="setup-step d-none" id="step4">
+            <h4 class="mb-4"><i class="bi bi-download"></i> <span class="install-title"><%= t('setup:install.title') %></span></h4>
 
             <div id="progressSteps">
                 <div class="progress-step pending" data-step="network">
                     <i class="bi bi-circle me-2"></i>
-                    <span>Docker-Netzwerk prüfen</span>
+                    <span class="step-network"><%= t('setup:install.steps.network') %></span>
                 </div>
                 <div class="progress-step pending" data-step="wait_db">
                     <i class="bi bi-circle me-2"></i>
-                    <span>Auf Datenbank warten</span>
+                    <span class="step-wait-db"><%= t('setup:install.steps.waitDb') %></span>
                 </div>
                 <div class="progress-step pending" data-step="dashboard_db">
                     <i class="bi bi-circle me-2"></i>
-                    <span>Dashboard-Datenbank erstellen</span>
+                    <span class="step-dashboard-db"><%= t('setup:install.steps.dashboardDb') %></span>
                 </div>
                 <div class="progress-step pending" data-step="admin">
                     <i class="bi bi-circle me-2"></i>
-                    <span>Admin-Benutzer erstellen</span>
+                    <span class="step-admin"><%= t('setup:install.steps.admin') %></span>
                 </div>
             </div>
 
             <div id="setupResult" class="d-none mt-4">
                 <div class="alert alert-success" id="successAlert">
-                    <h5><i class="bi bi-check-circle"></i> Installation erfolgreich!</h5>
-                    <p class="mb-0">Die Webserver-Infrastruktur wurde eingerichtet.</p>
+                    <h5><i class="bi bi-check-circle"></i> <span class="success-title"><%= t('setup:install.success.title') %></span></h5>
+                    <p class="mb-0 success-message"><%= t('setup:install.success.message') %></p>
                 </div>
                 <div class="alert alert-danger d-none" id="errorAlert">
-                    <h5><i class="bi bi-exclamation-triangle"></i> Fehler bei der Installation</h5>
+                    <h5><i class="bi bi-exclamation-triangle"></i> <span class="error-title"><%= t('setup:install.error.title') %></span></h5>
                     <p class="mb-0" id="errorMessage"></p>
                 </div>
             </div>
@@ -144,14 +173,14 @@
             <div id="completedActions" class="d-none mt-4">
                 <div class="card bg-light">
                     <div class="card-body">
-                        <h6>Installierte Services:</h6>
+                        <h6 class="services-title"><%= t('setup:install.services.title') %></h6>
                         <ul class="mb-3">
-                            <li>MariaDB auf Port 3306</li>
-                            <li>phpMyAdmin auf Port 8080</li>
-                            <li>Dashboard auf Port 3000</li>
+                            <li><%= t('setup:install.services.mariadb') %></li>
+                            <li><%= t('setup:install.services.phpmyadmin') %></li>
+                            <li><%= t('setup:install.services.dashboard') %></li>
                         </ul>
                         <a href="/login" class="btn btn-success btn-lg w-100">
-                            <i class="bi bi-box-arrow-in-right"></i> Zum Dashboard
+                            <i class="bi bi-box-arrow-in-right"></i> <span class="go-to-dashboard"><%= t('setup:install.goToDashboard') %></span>
                         </a>
                     </div>
                 </div>
@@ -161,7 +190,19 @@
 </div>
 
 <script>
-    let setupData = {};
+    let setupData = {
+        language: '<%= currentLanguage %>'
+    };
+
+    // Translations for dynamic updates
+    const translations = {
+        de: {
+            passwordMismatch: 'Passwörter stimmen nicht überein!'
+        },
+        en: {
+            passwordMismatch: 'Passwords do not match!'
+        }
+    };
 
     function togglePassword(id) {
         const input = document.getElementById(id);
@@ -169,13 +210,13 @@
     }
 
     function goToStep(step) {
-        // Alle Steps ausblenden
+        // Hide all steps
         document.querySelectorAll('.setup-step').forEach(el => el.classList.add('d-none'));
 
-        // Gewünschten Step einblenden
+        // Show target step
         document.getElementById('step' + step).classList.remove('d-none');
 
-        // Step Indicator aktualisieren
+        // Update step indicator
         document.querySelectorAll('.step').forEach(el => {
             const s = parseInt(el.dataset.step);
             el.classList.remove('active', 'done');
@@ -184,15 +225,42 @@
         });
     }
 
-    // Step 1: Config Form
+    // Language selection
+    document.querySelectorAll('.language-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const lang = this.dataset.lang;
+            setupData.language = lang;
+
+            // Update UI
+            document.querySelectorAll('.language-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            // Save language to session and reload page
+            await fetch('/setup/language', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: lang })
+            });
+
+            // Reload page to apply translations
+            window.location.reload();
+        });
+    });
+
+    // Language next button
+    document.getElementById('langNextBtn').addEventListener('click', function() {
+        goToStep(2);
+    });
+
+    // Step 2: Config Form
     document.getElementById('configForm').addEventListener('submit', function(e) {
         e.preventDefault();
         setupData.server_ip = document.getElementById('server_ip').value;
         setupData.mysql_root_password = document.getElementById('mysql_root_password').value;
-        goToStep(2);
+        goToStep(3);
     });
 
-    // Step 2: Admin Form
+    // Step 3: Admin Form
     document.getElementById('adminForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -200,7 +268,7 @@
         const confirm = document.getElementById('admin_password_confirm').value;
 
         if (password !== confirm) {
-            alert('Passwörter stimmen nicht überein!');
+            alert(translations[setupData.language].passwordMismatch);
             return;
         }
 
@@ -208,26 +276,26 @@
         setupData.admin_password = password;
         setupData.system_username = setupData.admin_username;
 
-        goToStep(3);
+        goToStep(4);
         runSetup();
     });
 
     async function runSetup() {
         const steps = ['network', 'wait_db', 'dashboard_db', 'admin'];
 
-        // Alle Steps auf "pending" setzen
+        // Set all steps to pending
         steps.forEach(step => {
             updateStepStatus(step, 'pending');
         });
 
         try {
-            // Schrittweise animieren
+            // Animate steps progressively
             for (let i = 0; i < steps.length; i++) {
                 updateStepStatus(steps[i], 'running');
                 await new Promise(r => setTimeout(r, 500));
             }
 
-            // Echten API-Call machen
+            // Make actual API call
             const response = await fetch('/setup/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -237,7 +305,7 @@
             const result = await response.json();
 
             if (result.success) {
-                // Alle Steps als erledigt markieren
+                // Mark all steps as done
                 steps.forEach(step => updateStepStatus(step, 'done'));
 
                 document.getElementById('setupResult').classList.remove('d-none');

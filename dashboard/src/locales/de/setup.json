@@ -1,0 +1,75 @@
+{
+  "title": "Dployr Setup",
+  "subtitle": "Multi-User Hosting-Plattform",
+  "languageSelect": {
+    "title": "Sprache wählen",
+    "description": "Diese Sprache wird als Standard für das Dashboard verwendet."
+  },
+  "steps": {
+    "language": "Sprache",
+    "config": "Konfiguration",
+    "admin": "Admin-Konto",
+    "install": "Installation"
+  },
+  "config": {
+    "title": "Server-Konfiguration",
+    "serverIp": {
+      "label": "Server IP-Adresse",
+      "help": "Die IP-Adresse oder der Hostname, unter dem der Server von anderen Geräten erreichbar ist.",
+      "placeholder": "192.168.1.100",
+      "description": "IP-Adresse oder Hostname des Servers"
+    },
+    "mysqlPassword": {
+      "label": "MySQL Root Passwort",
+      "help": "Das Master-Passwort für die MariaDB-Datenbank. Wird für administrative Aufgaben benötigt.",
+      "placeholder": "Sicheres Passwort",
+      "description": "Mindestens 8 Zeichen"
+    }
+  },
+  "admin": {
+    "title": "Admin-Konto erstellen",
+    "username": {
+      "label": "Admin Benutzername",
+      "help": "Der Benutzername für den ersten Admin-Account. Wird auch als System-Benutzername für Projektordner verwendet.",
+      "placeholder": "admin",
+      "description": "Login-Name für das Dashboard"
+    },
+    "password": {
+      "label": "Admin Passwort",
+      "placeholder": "Passwort"
+    },
+    "passwordConfirm": {
+      "label": "Passwort bestätigen",
+      "placeholder": "Passwort wiederholen"
+    },
+    "passwordMismatch": "Passwörter stimmen nicht überein!"
+  },
+  "install": {
+    "title": "Installation",
+    "steps": {
+      "network": "Docker-Netzwerk prüfen",
+      "waitDb": "Auf Datenbank warten",
+      "dashboardDb": "Dashboard-Datenbank erstellen",
+      "admin": "Admin-Benutzer erstellen"
+    },
+    "success": {
+      "title": "Installation erfolgreich!",
+      "message": "Die Webserver-Infrastruktur wurde eingerichtet."
+    },
+    "error": {
+      "title": "Fehler bei der Installation"
+    },
+    "services": {
+      "title": "Installierte Services:",
+      "mariadb": "MariaDB auf Port 3306",
+      "phpmyadmin": "phpMyAdmin auf Port 8080",
+      "dashboard": "Dashboard auf Port 3000"
+    },
+    "goToDashboard": "Zum Dashboard"
+  },
+  "buttons": {
+    "next": "Weiter",
+    "back": "Zurück",
+    "startInstall": "Installation starten"
+  }
+}

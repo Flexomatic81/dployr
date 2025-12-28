@@ -209,6 +209,20 @@ async function updateUserLanguage(id, language) {
 }
 
 /**
+ * Get default language from setup marker
+ */
+async function getDefaultLanguage() {
+    try {
+        const fs = require('fs').promises;
+        const setupContent = await fs.readFile('/app/infrastructure/.setup-complete', 'utf8');
+        const setupData = JSON.parse(setupContent);
+        return setupData.defaultLanguage || 'de';
+    } catch {
+        return 'de';
+    }
+}
+
+/**
  * Get user language preference
  */
 async function getUserLanguage(id) {
@@ -216,7 +230,11 @@ async function getUserLanguage(id) {
         'SELECT language FROM dashboard_users WHERE id = ?',
         [id]
     );
-    return result[0]?.language || 'de';
+    // Return user's language if set, otherwise use default from setup
+    if (result[0]?.language) {
+        return result[0].language;
+    }
+    return await getDefaultLanguage();
 }
 
 module.exports = {

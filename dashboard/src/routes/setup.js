@@ -30,6 +30,16 @@ router.get('/status', async (req, res) => {
     });
 });
 
+// Set language for setup (before selecting language in wizard)
+router.post('/language', (req, res) => {
+    const { language } = req.body;
+    if (['de', 'en'].includes(language)) {
+        req.session.language = language;
+        req.i18n.changeLanguage(language);
+    }
+    res.json({ success: true, language: req.session.language || 'de' });
+});
+
 // Setup wizard page
 router.get('/', async (req, res) => {
     const complete = await isSetupComplete();
@@ -41,17 +51,21 @@ router.get('/', async (req, res) => {
     // Determine current server IP
     const serverIp = req.hostname || 'localhost';
 
+    // Get current language from session or default to 'de'
+    const currentLanguage = req.session.language || req.language || 'de';
+
     res.render('setup/wizard', {
-        title: 'Setup-Wizard',
+        title: req.t('setup:title'),
         layout: 'setup-layout',
         serverIp,
-        step: 1
+        step: 1,
+        currentLanguage
     });
 });
 
 // Execute setup
 router.post('/run', async (req, res) => {
-    const { server_ip, admin_username, admin_password, system_username, mysql_root_password } = req.body;
+    const { server_ip, admin_username, admin_password, system_username, mysql_root_password, language } = req.body;
 
     try {
         const steps = [];
@@ -76,8 +90,9 @@ router.post('/run', async (req, res) => {
         await createAdminUser(admin_username, admin_password, system_username);
         steps[3].status = 'done';
 
-        // Step 5: Mark setup as complete
-        await markSetupComplete(server_ip, system_username);
+        // Step 5: Mark setup as complete (include selected language)
+        const selectedLanguage = language || req.session.language || 'de';
+        await markSetupComplete(server_ip, system_username, selectedLanguage);
 
         res.json({ success: true, steps });
     } catch (error) {
@@ -106,12 +121,13 @@ async function isInfrastructureRunning() {
     }
 }
 
-async function markSetupComplete(serverIp, defaultUser) {
-    // Create setup marker with metadata
+async function markSetupComplete(serverIp, defaultUser, language = 'de') {
+    // Create setup marker with metadata including default language
     const markerContent = JSON.stringify({
         completedAt: new Date().toISOString(),
         serverIp,
-        defaultUser
+        defaultUser,
+        defaultLanguage: language
     }, null, 2);
     await fs.writeFile(SETUP_MARKER_PATH, markerContent);
 }

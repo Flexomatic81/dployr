@@ -1,0 +1,75 @@
+{
+  "title": "Dployr Setup",
+  "subtitle": "Multi-User Hosting Platform",
+  "languageSelect": {
+    "title": "Select Language",
+    "description": "This language will be used as default for the dashboard."
+  },
+  "steps": {
+    "language": "Language",
+    "config": "Configuration",
+    "admin": "Admin Account",
+    "install": "Installation"
+  },
+  "config": {
+    "title": "Server Configuration",
+    "serverIp": {
+      "label": "Server IP Address",
+      "help": "The IP address or hostname where the server is accessible from other devices.",
+      "placeholder": "192.168.1.100",
+      "description": "IP address or hostname of the server"
+    },
+    "mysqlPassword": {
+      "label": "MySQL Root Password",
+      "help": "The master password for the MariaDB database. Required for administrative tasks.",
+      "placeholder": "Secure password",
+      "description": "At least 8 characters"
+    }
+  },
+  "admin": {
+    "title": "Create Admin Account",
+    "username": {
+      "label": "Admin Username",
+      "help": "The username for the first admin account. Also used as system username for project folders.",
+      "placeholder": "admin",
+      "description": "Login name for the dashboard"
+    },
+    "password": {
+      "label": "Admin Password",
+      "placeholder": "Password"
+    },
+    "passwordConfirm": {
+      "label": "Confirm Password",
+      "placeholder": "Repeat password"
+    },
+    "passwordMismatch": "Passwords do not match!"
+  },
+  "install": {
+    "title": "Installation",
+    "steps": {
+      "network": "Check Docker network",
+      "waitDb": "Wait for database",
+      "dashboardDb": "Create dashboard database",
+      "admin": "Create admin user"
+    },
+    "success": {
+      "title": "Installation successful!",
+      "message": "The web server infrastructure has been set up."
+    },
+    "error": {
+      "title": "Installation error"
+    },
+    "services": {
+      "title": "Installed services:",
+      "mariadb": "MariaDB on port 3306",
+      "phpmyadmin": "phpMyAdmin on port 8080",
+      "dashboard": "Dashboard on port 3000"
+    },
+    "goToDashboard": "Go to Dashboard"
+  },
+  "buttons": {
+    "next": "Next",
+    "back": "Back",
+    "startInstall": "Start Installation"
+  }
+}
