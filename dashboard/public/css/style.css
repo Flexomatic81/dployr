@@ -251,12 +251,7 @@ input[type="password"].form-control-sm {
     transition: transform 0.3s ease;
 }
 
-.card-header[aria-expanded="true"] .collapse-icon,
-.card-header:not(.collapsed) .collapse-icon {
-    transform: rotate(180deg);
-}
-
-/* Fix for Bootstrap collapse - rotate when open */
+/* Rotate chevron when expanded - Bootstrap adds/removes 'collapsed' class */
 [data-bs-toggle="collapse"]:not(.collapsed) .collapse-icon {
     transform: rotate(180deg);
 }

@@ -170,7 +170,7 @@
 <% if (gitStatus && gitStatus.connected) { %>
 <!-- GitHub - combined Git integration and Auto-Deploy -->
 <div class="card mb-4">
-    <div class="card-header" role="button" data-bs-toggle="collapse" data-bs-target="#collapseGithub" aria-expanded="false" aria-controls="collapseGithub">
+    <div class="card-header collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#collapseGithub" aria-expanded="false" aria-controls="collapseGithub">
         <h5 class="mb-0 d-flex justify-content-between align-items-center">
             <span>
                 <i class="bi bi-github"></i> <%= t('projects:git.title') %>
@@ -415,7 +415,7 @@
 <!-- Project settings (only for owner/full) -->
 <% if (canChangeType) { %>
 <div class="card mb-4">
-    <div class="card-header" role="button" data-bs-toggle="collapse" data-bs-target="#collapseSettings" aria-expanded="false" aria-controls="collapseSettings">
+    <div class="card-header collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#collapseSettings" aria-expanded="false" aria-controls="collapseSettings">
         <h5 class="mb-0 d-flex justify-content-between align-items-center">
             <span><i class="bi bi-gear"></i> <%= t('projects:settings') %></span>
             <i class="bi bi-chevron-down collapse-icon"></i>
@@ -481,47 +481,46 @@
 <!-- Environment variables (only for manage or higher) -->
 <% if (canManage) { %>
 <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEnv" aria-expanded="false" aria-controls="collapseEnv">
-            <span class="d-flex justify-content-between align-items-center">
-                <span>
-                    <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.envTitle') %>
-                    <%- include('../partials/help-icon', { text: t('projects:show.envHelp') }) %>
-                    <% if (userDatabases && userDatabases.length > 0) { %>
-                    <small class="text-muted ms-2">& <%= t('projects:show.dbConnection') %></small>
-                    <% } %>
-                </span>
-                <i class="bi bi-chevron-down collapse-icon me-2"></i>
-            </span>
-        </h5>
-        <% if (userDatabases && userDatabases.length > 0) { %>
-        <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
-                data-bs-toggle-second="tooltip" data-bs-placement="top"
-                title="<%= envExample && envExample.exists ? t('projects:show.setupDbHelp', { filename: envExample.filename }) : t('projects:show.setupDbHelpNoExample') %>">
-                <i class="bi bi-database-add"></i> <%= t('projects:show.setupDb') %>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <% if (envExample && envExample.exists) { %>
-                <li class="dropdown-header">
-                    <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.usesTemplate', { filename: envExample.filename }) %>
-                </li>
-                <li><hr class="dropdown-divider"></li>
+    <div class="card-header collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEnv" aria-expanded="false" aria-controls="collapseEnv">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.envTitle') %>
+                <%- include('../partials/help-icon', { text: t('projects:show.envHelp') }) %>
+                <% if (userDatabases && userDatabases.length > 0) { %>
+                <small class="text-muted ms-2">& <%= t('projects:show.dbConnection') %></small>
                 <% } %>
-                <% userDatabases.forEach(db => { %>
-                <li>
-                    <form action="/projects/<%= project.name %>/env/add-db" method="POST">
-                        <input type="hidden" name="database" value="<%= db.database %>">
-                        <button type="submit" class="dropdown-item">
-                            <i class="bi bi-database<%= db.type === 'postgresql' ? '-fill text-primary' : ' text-warning' %>"></i>
-                            <%= db.name %> <small class="text-muted">(<%= db.type %>)</small>
-                        </button>
-                    </form>
-                </li>
-                <% }) %>
-            </ul>
+            </h5>
+            <div class="d-flex align-items-center">
+                <% if (userDatabases && userDatabases.length > 0) { %>
+                <div class="btn-group btn-group-sm me-2" onclick="event.stopPropagation();">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                        title="<%= envExample && envExample.exists ? t('projects:show.setupDbHelp', { filename: envExample.filename }) : t('projects:show.setupDbHelpNoExample') %>">
+                        <i class="bi bi-database-add"></i> <%= t('projects:show.setupDb') %>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <% if (envExample && envExample.exists) { %>
+                        <li class="dropdown-header">
+                            <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.usesTemplate', { filename: envExample.filename }) %>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <% } %>
+                        <% userDatabases.forEach(db => { %>
+                        <li>
+                            <form action="/projects/<%= project.name %>/env/add-db" method="POST">
+                                <input type="hidden" name="database" value="<%= db.database %>">
+                                <button type="submit" class="dropdown-item">
+                                    <i class="bi bi-database<%= db.type === 'postgresql' ? '-fill text-primary' : ' text-warning' %>"></i>
+                                    <%= db.name %> <small class="text-muted">(<%= db.type %>)</small>
+                                </button>
+                            </form>
+                        </li>
+                        <% }) %>
+                    </ul>
+                </div>
+                <% } %>
+                <i class="bi bi-chevron-down collapse-icon"></i>
+            </div>
         </div>
-        <% } %>
     </div>
     <div class="collapse" id="collapseEnv">
     <div class="card-body">
@@ -565,7 +564,7 @@
 <!-- Share project (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="card mb-4">
-    <div class="card-header" role="button" data-bs-toggle="collapse" data-bs-target="#collapseShare" aria-expanded="false" aria-controls="collapseShare">
+    <div class="card-header collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#collapseShare" aria-expanded="false" aria-controls="collapseShare">
         <h5 class="mb-0 d-flex justify-content-between align-items-center">
             <span><i class="bi bi-share"></i> <%= t('projects:sharing.title') %></span>
             <i class="bi bi-chevron-down collapse-icon"></i>
