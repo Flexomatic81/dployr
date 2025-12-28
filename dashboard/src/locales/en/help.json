@@ -69,28 +69,43 @@
       },
       "php": {
         "name": "PHP",
-        "desc": "PHP applications with PHP‑FPM and Nginx",
+        "desc": "PHP 8.2 with Apache, PDO, GD, mbstring, intl",
         "detect": "*.php or composer.json"
       },
       "nodejs": {
         "name": "Node.js",
-        "desc": "Node.js apps with npm start",
+        "desc": "Node.js 20 apps with npm start",
         "detect": "package.json"
       },
       "laravel": {
         "name": "Laravel/Symfony",
-        "desc": "PHP frameworks with Artisan/Console",
+        "desc": "PHP frameworks with Composer and Artisan",
         "detect": "artisan or symfony.lock"
       },
       "nodejsStatic": {
-        "name": "React/Vue (Static)",
-        "desc": "Frontend apps that are built into static files",
-        "detect": "package.json with build script + dist/"
+        "name": "React/Vue/Svelte/Astro",
+        "desc": "Frontend apps built into static files",
+        "detect": "react, vue, svelte, astro in package.json"
       },
       "nextjs": {
         "name": "Next.js",
-        "desc": "Next.js applications",
-        "detect": "next.config.js or next.config.mjs"
+        "desc": "Next.js with Server-Side Rendering",
+        "detect": "next in package.json"
+      },
+      "nuxtjs": {
+        "name": "Nuxt.js",
+        "desc": "Nuxt.js with Server-Side Rendering",
+        "detect": "nuxt in package.json"
+      },
+      "pythonFlask": {
+        "name": "Python Flask/FastAPI",
+        "desc": "Python 3.12 with Gunicorn WSGI server",
+        "detect": "requirements.txt with flask or fastapi"
+      },
+      "pythonDjango": {
+        "name": "Python Django",
+        "desc": "Django with automatic migrations",
+        "detect": "requirements.txt with django"
       }
     },
     "typeDetectionNote": "Type detection: If the wrong type was detected, you can change it in the project settings."

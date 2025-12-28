@@ -7,23 +7,14 @@ services:
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ./app:/app
-      - /app/node_modules  # Verhindert, dass lokale node_modules überschrieben werden
+      - ./html:/app
     networks:
       - dployr-network
     ports:
-      - "${EXPOSED_PORT:-8003}:${APP_PORT:-3000}"
+      - "${EXPOSED_PORT:-8003}:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=${APP_PORT:-3000}
       - TZ=Europe/Berlin
-      # Datenbank (MariaDB oder PostgreSQL)
-      - DB_TYPE=${DB_TYPE:-mariadb}
-      - DB_HOST=${DB_HOST:-dployr-mariadb}
-      - DB_PORT=${DB_PORT:-3306}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - NODE_ENV=production
     command: sh -c "npm install && npm start"
 
 networks:

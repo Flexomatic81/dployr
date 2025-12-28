@@ -384,6 +384,7 @@ function detectProjectType(projectPath) {
     if (fs.existsSync(htmlPath)) {
         const htmlHasFiles = fs.existsSync(path.join(htmlPath, 'package.json')) ||
                             fs.existsSync(path.join(htmlPath, 'composer.json')) ||
+                            fs.existsSync(path.join(htmlPath, 'requirements.txt')) ||
                             fs.existsSync(path.join(htmlPath, 'index.html')) ||
                             fs.existsSync(path.join(htmlPath, 'index.php'));
         if (htmlHasFiles) {
@@ -395,6 +396,8 @@ function detectProjectType(projectPath) {
     const hasIndexPhp = fs.existsSync(path.join(scanPath, 'index.php'));
     const hasPackageJson = fs.existsSync(path.join(scanPath, 'package.json'));
     const hasComposerJson = fs.existsSync(path.join(scanPath, 'composer.json'));
+    const hasRequirementsTxt = fs.existsSync(path.join(scanPath, 'requirements.txt'));
+    const hasPyprojectToml = fs.existsSync(path.join(scanPath, 'pyproject.toml'));
 
     // Analyze Node.js projects more precisely
     if (hasPackageJson) {
@@ -406,14 +409,49 @@ function detectProjectType(projectPath) {
             if (deps['next']) {
                 return 'nextjs';
             }
-            // Detect React/Vue/Vite build projects
-            if (deps['react'] || deps['vue'] || deps['vite'] || deps['@vitejs/plugin-react'] || deps['@vitejs/plugin-vue']) {
+            // Detect Nuxt.js
+            if (deps['nuxt'] || deps['nuxt3']) {
+                return 'nuxtjs';
+            }
+            // Detect React/Vue/Svelte/Astro/Vite build projects
+            if (deps['react'] || deps['vue'] || deps['svelte'] || deps['astro'] ||
+                deps['vite'] || deps['@vitejs/plugin-react'] || deps['@vitejs/plugin-vue'] ||
+                deps['@sveltejs/kit']) {
                 return 'nodejs-static';
             }
         } catch (e) {
             // Parsing error - Fallback to nodejs
         }
         return 'nodejs';
+    }
+
+    // Detect Python projects
+    if (hasRequirementsTxt || hasPyprojectToml) {
+        try {
+            // Check for Django or Flask in requirements.txt
+            if (hasRequirementsTxt) {
+                const requirements = fs.readFileSync(path.join(scanPath, 'requirements.txt'), 'utf8').toLowerCase();
+                if (requirements.includes('django')) {
+                    return 'python-django';
+                }
+                if (requirements.includes('flask') || requirements.includes('fastapi')) {
+                    return 'python-flask';
+                }
+            }
+            // Check pyproject.toml for dependencies
+            if (hasPyprojectToml) {
+                const pyproject = fs.readFileSync(path.join(scanPath, 'pyproject.toml'), 'utf8').toLowerCase();
+                if (pyproject.includes('django')) {
+                    return 'python-django';
+                }
+                if (pyproject.includes('flask') || pyproject.includes('fastapi')) {
+                    return 'python-flask';
+                }
+            }
+        } catch (e) {
+            // Parsing error - Fallback to python-flask
+        }
+        return 'python-flask';
     }
 
     // Analyze PHP projects more precisely
@@ -471,6 +509,7 @@ networks:
   dployr-network:
     external: true`,
 
+        // PHP with common extensions (gd, mbstring, intl for CMS/WordPress)
         php: `version: '3.8'
 
 services:
@@ -479,7 +518,9 @@ services:
       context: ./html
       dockerfile_inline: |
         FROM php:8.2-apache
-        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql
+        RUN apt-get update && apt-get install -y libpng-dev libonig-dev libicu-dev libpq-dev libzip-dev
+        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql gd mbstring intl zip opcache
+        RUN a2enmod rewrite
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     volumes:
@@ -527,8 +568,8 @@ services:
       context: ./html
       dockerfile_inline: |
         FROM php:8.2-apache
-        RUN apt-get update && apt-get install -y git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libpq-dev
-        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip gd xml
+        RUN apt-get update && apt-get install -y git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libpq-dev libicu-dev
+        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip gd xml intl opcache bcmath
         RUN a2enmod rewrite
         COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
         ENV APACHE_DOCUMENT_ROOT /var/www/html/public
@@ -546,13 +587,13 @@ services:
     environment:
       - TZ=Europe/Berlin
       - APP_ENV=production
-    command: sh -c "composer install --no-dev --optimize-autoloader && apache2-foreground"
+    command: sh -c "composer install --no-dev --optimize-autoloader && php artisan migrate --force 2>/dev/null || true && apache2-foreground"
 
 networks:
   dployr-network:
     external: true`,
 
-        // React/Vue/Vite - Build to static files
+        // React/Vue/Svelte/Astro/Vite - Build to static files
         'nodejs-static': `version: '3.8'
 
 services:
@@ -568,8 +609,11 @@ services:
         RUN npm run build
 
         FROM nginx:alpine
-        COPY --from=builder /app/dist /usr/share/nginx/html
+        # Support multiple output folders: dist (Vite), build (CRA), out (Next export), .output/public (Nuxt generate)
+        COPY --from=builder /app/dist /usr/share/nginx/html 2>/dev/null || true
         COPY --from=builder /app/build /usr/share/nginx/html 2>/dev/null || true
+        COPY --from=builder /app/out /usr/share/nginx/html 2>/dev/null || true
+        COPY --from=builder /app/.output/public /usr/share/nginx/html 2>/dev/null || true
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     networks:
@@ -608,12 +652,99 @@ services:
     environment:
       - TZ=Europe/Berlin
       - NODE_ENV=production
-      - DB_TYPE=\${DB_TYPE:-mariadb}
-      - DB_HOST=\${DB_HOST:-dployr-mariadb}
-      - DB_PORT=\${DB_PORT:-3306}
-      - DB_DATABASE=\${DB_DATABASE}
-      - DB_USERNAME=\${DB_USERNAME}
-      - DB_PASSWORD=\${DB_PASSWORD}
+
+networks:
+  dployr-network:
+    external: true`,
+
+        // Nuxt.js SSR
+        nuxtjs: `version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./html
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm install
+        COPY . .
+        RUN npm run build
+        EXPOSE 3000
+        CMD ["node", ".output/server/index.mjs"]
+    container_name: \${PROJECT_NAME:-${projectName}}
+    restart: unless-stopped
+    networks:
+      - dployr-network
+    ports:
+      - "\${EXPOSED_PORT:-${port}}:3000"
+    environment:
+      - TZ=Europe/Berlin
+      - NODE_ENV=production
+
+networks:
+  dployr-network:
+    external: true`,
+
+        // Python Flask/FastAPI with Gunicorn
+        'python-flask': `version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./html
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+        COPY requirements.txt ./
+        RUN pip install --no-cache-dir -r requirements.txt gunicorn
+        COPY . .
+        EXPOSE 8000
+        CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
+    container_name: \${PROJECT_NAME:-${projectName}}
+    restart: unless-stopped
+    networks:
+      - dployr-network
+    ports:
+      - "\${EXPOSED_PORT:-${port}}:8000"
+    environment:
+      - TZ=Europe/Berlin
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+
+networks:
+  dployr-network:
+    external: true`,
+
+        // Python Django with Gunicorn
+        'python-django': `version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./html
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+        COPY requirements.txt ./
+        RUN pip install --no-cache-dir -r requirements.txt gunicorn
+        COPY . .
+        RUN python manage.py collectstatic --noinput 2>/dev/null || true
+        EXPOSE 8000
+        CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 config.wsgi:application"]
+    container_name: \${PROJECT_NAME:-${projectName}}
+    restart: unless-stopped
+    networks:
+      - dployr-network
+    ports:
+      - "\${EXPOSED_PORT:-${port}}:8000"
+    environment:
+      - TZ=Europe/Berlin
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - PYTHONUNBUFFERED=1
 
 networks:
   dployr-network:

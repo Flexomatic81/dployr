@@ -19,7 +19,10 @@ const PROJECT_TYPES = [
     'nodejs',
     'laravel',
     'nodejs-static',
-    'nextjs'
+    'nextjs',
+    'nuxtjs',
+    'python-flask',
+    'python-django'
 ];
 
 // Blocked files that should be removed from user uploads (security)

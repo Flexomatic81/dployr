@@ -1,40 +1,24 @@
 version: '3.8'
 
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: ${PROJECT_NAME:-php-web}-nginx
+  web:
+    build:
+      context: ./html
+      dockerfile_inline: |
+        FROM php:8.2-apache
+        RUN apt-get update && apt-get install -y libpng-dev libonig-dev libicu-dev libpq-dev libzip-dev
+        RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql gd mbstring intl zip opcache
+        RUN a2enmod rewrite
+    container_name: ${PROJECT_NAME:-php-web}
     restart: unless-stopped
     volumes:
-      - ./html:/var/www/html:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./html:/var/www/html
     networks:
       - dployr-network
     ports:
       - "${EXPOSED_PORT:-8002}:80"
-    depends_on:
-      - php
     environment:
       - TZ=Europe/Berlin
-
-  php:
-    image: php:8.3-fpm-alpine
-    container_name: ${PROJECT_NAME:-php-web}-php
-    restart: unless-stopped
-    volumes:
-      - ./html:/var/www/html
-      - ./php/custom.ini:/usr/local/etc/php/conf.d/custom.ini:ro
-    networks:
-      - dployr-network
-    environment:
-      - TZ=Europe/Berlin
-      # Datenbank (MariaDB oder PostgreSQL)
-      - DB_TYPE=${DB_TYPE:-mariadb}
-      - DB_HOST=${DB_HOST:-dployr-mariadb}
-      - DB_PORT=${DB_PORT:-3306}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
 
 networks:
   dployr-network:

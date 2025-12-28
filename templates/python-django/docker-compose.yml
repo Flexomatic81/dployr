@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./html
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+        COPY requirements.txt ./
+        RUN pip install --no-cache-dir -r requirements.txt gunicorn
+        COPY . .
+        RUN python manage.py collectstatic --noinput 2>/dev/null || true
+        EXPOSE 8000
+        CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 config.wsgi:application"]
+    container_name: ${PROJECT_NAME:-python-django}
+    restart: unless-stopped
+    networks:
+      - dployr-network
+    ports:
+      - "${EXPOSED_PORT:-8005}:8000"
+    environment:
+      - TZ=Europe/Berlin
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - PYTHONUNBUFFERED=1
+
+networks:
+  dployr-network:
+    external: true
