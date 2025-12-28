@@ -170,15 +170,19 @@
 <% if (gitStatus && gitStatus.connected) { %>
 <!-- GitHub - combined Git integration and Auto-Deploy -->
 <div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-github"></i> <%= t('projects:git.title') %>
-            <span class="badge bg-success ms-2"><%= t('projects:git.connected') %></span>
-            <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
-                <span class="badge bg-info ms-1"><%= t('projects:autoDeploy.title') %></span>
-            <% } %>
+    <div class="card-header" role="button" data-bs-toggle="collapse" data-bs-target="#collapseGithub" aria-expanded="false" aria-controls="collapseGithub">
+        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-github"></i> <%= t('projects:git.title') %>
+                <span class="badge bg-success ms-2"><%= t('projects:git.connected') %></span>
+                <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
+                    <span class="badge bg-info ms-1"><%= t('projects:autoDeploy.title') %></span>
+                <% } %>
+            </span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
         </h5>
     </div>
+    <div class="collapse" id="collapseGithub">
     <div class="card-body">
         <% if (gitStatus.error) { %>
             <div class="alert alert-warning">
@@ -366,6 +370,7 @@
         </div>
         <% } %><!-- End projectAccess.isOwner for Auto-Deploy -->
     </div>
+    </div><!-- End collapse -->
 </div>
 <% } %>
 
@@ -410,9 +415,13 @@
 <!-- Project settings (only for owner/full) -->
 <% if (canChangeType) { %>
 <div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-gear"></i> <%= t('projects:settings') %></h5>
+    <div class="card-header" role="button" data-bs-toggle="collapse" data-bs-target="#collapseSettings" aria-expanded="false" aria-controls="collapseSettings">
+        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-gear"></i> <%= t('projects:settings') %></span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </h5>
     </div>
+    <div class="collapse" id="collapseSettings">
     <div class="card-body">
         <form action="/projects/<%= project.name %>/change-type" method="POST" class="row g-3 align-items-end">
             <div class="col-md-6">
@@ -465,6 +474,7 @@
             </div>
         </form>
     </div>
+    </div><!-- End collapse -->
 </div>
 <% } %><!-- End canChangeType for project settings -->
 
@@ -472,12 +482,17 @@
 <% if (canManage) { %>
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-            <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.envTitle') %>
-            <%- include('../partials/help-icon', { text: t('projects:show.envHelp') }) %>
-            <% if (userDatabases && userDatabases.length > 0) { %>
-            <small class="text-muted ms-2">& <%= t('projects:show.dbConnection') %></small>
-            <% } %>
+        <h5 class="mb-0 flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#collapseEnv" aria-expanded="false" aria-controls="collapseEnv">
+            <span class="d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-file-earmark-code"></i> <%= t('projects:show.envTitle') %>
+                    <%- include('../partials/help-icon', { text: t('projects:show.envHelp') }) %>
+                    <% if (userDatabases && userDatabases.length > 0) { %>
+                    <small class="text-muted ms-2">& <%= t('projects:show.dbConnection') %></small>
+                    <% } %>
+                </span>
+                <i class="bi bi-chevron-down collapse-icon me-2"></i>
+            </span>
         </h5>
         <% if (userDatabases && userDatabases.length > 0) { %>
         <div class="btn-group btn-group-sm">
@@ -508,6 +523,7 @@
         </div>
         <% } %>
     </div>
+    <div class="collapse" id="collapseEnv">
     <div class="card-body">
         <% if (envExample && envExample.exists && !envContent.trim() && userDatabases && userDatabases.length > 0) { %>
         <div class="alert alert-info mb-3">
@@ -542,15 +558,20 @@
             </div>
         </form>
     </div>
+    </div><!-- End collapse -->
 </div>
 <% } %><!-- End canManage for environment variables -->
 
 <!-- Share project (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-share"></i> <%= t('projects:sharing.title') %></h5>
+    <div class="card-header" role="button" data-bs-toggle="collapse" data-bs-target="#collapseShare" aria-expanded="false" aria-controls="collapseShare">
+        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-share"></i> <%= t('projects:sharing.title') %></span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </h5>
     </div>
+    <div class="collapse" id="collapseShare">
     <div class="card-body">
         <% if (projectShares && projectShares.length > 0) { %>
         <h6 class="mb-3"><%= t('projects:sharing.sharedWith') %>:</h6>
@@ -641,6 +662,7 @@
         </p>
         <% } %>
     </div>
+    </div><!-- End collapse -->
 </div>
 <% } %>
 

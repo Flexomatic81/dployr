@@ -146,6 +146,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Popovers (for longer help texts)
     const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
     popoverTriggerList.forEach(el => new bootstrap.Popover(el));
+
+    // Collapsible card headers - update aria-expanded on toggle
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(toggle => {
+        const targetId = toggle.getAttribute('data-bs-target');
+        const target = document.querySelector(targetId);
+        if (target) {
+            target.addEventListener('show.bs.collapse', () => {
+                toggle.setAttribute('aria-expanded', 'true');
+            });
+            target.addEventListener('hide.bs.collapse', () => {
+                toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
+    });
 });
 
 // Utility functions

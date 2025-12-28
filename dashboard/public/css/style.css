@@ -236,3 +236,27 @@ input[type="password"].form-control-sm {
 [data-bs-theme="dark"] .logo-light {
     display: none;
 }
+
+/* Collapsible Cards */
+.card-header[role="button"] {
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-header[role="button"]:hover {
+    background-color: var(--card-header-border);
+}
+
+.collapse-icon {
+    transition: transform 0.3s ease;
+}
+
+.card-header[aria-expanded="true"] .collapse-icon,
+.card-header:not(.collapsed) .collapse-icon {
+    transform: rotate(180deg);
+}
+
+/* Fix for Bootstrap collapse - rotate when open */
+[data-bs-toggle="collapse"]:not(.collapsed) .collapse-icon {
+    transform: rotate(180deg);
+}
