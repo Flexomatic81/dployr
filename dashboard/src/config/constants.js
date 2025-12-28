@@ -22,6 +22,18 @@ const PROJECT_TYPES = [
     'nextjs'
 ];
 
+// Blocked files that should be removed from user uploads (security)
+// These files could be used to override Docker configuration or execute malicious code
+const BLOCKED_PROJECT_FILES = [
+    'Dockerfile',
+    'dockerfile',
+    'docker-compose.yml',
+    'docker-compose.yaml',
+    'compose.yml',
+    'compose.yaml',
+    '.dockerignore'
+];
+
 // Known aliases for database environment variables
 // Enables intelligent replacement of DB credentials in .env files
 const DB_VARIABLE_ALIASES = {
@@ -36,5 +48,6 @@ module.exports = {
     PERMISSION_LEVELS,
     VALID_INTERVALS,
     PROJECT_TYPES,
+    BLOCKED_PROJECT_FILES,
     DB_VARIABLE_ALIASES
 };

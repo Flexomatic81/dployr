@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { logger } = require('../config/logger');
+const { BLOCKED_PROJECT_FILES } = require('../config/constants');
 
 // Create upload directory if not exists
 const uploadDir = process.env.UPLOAD_TEMP_PATH || '/tmp/dployr-uploads';
@@ -74,6 +75,14 @@ function validateZipContents(filePath) {
                 logger.warn('Potentially dangerous file in ZIP', {
                     file: entryName,
                     extension: ext
+                });
+            }
+
+            // Check for blocked Docker files (warn, will be removed after extraction)
+            const fileName = path.basename(entryName);
+            if (BLOCKED_PROJECT_FILES.includes(fileName)) {
+                logger.warn('Blocked Docker file found in ZIP (will be removed)', {
+                    file: entryName
                 });
             }
 

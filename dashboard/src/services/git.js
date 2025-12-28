@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const simpleGit = require('simple-git');
 const { generateNginxConfig } = require('./utils/nginx');
+const { removeBlockedFiles } = require('./utils/security');
 const { logger } = require('../config/logger');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
@@ -204,6 +205,12 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
 
         // Adjust Docker-Compose if needed
         adjustDockerCompose(projectPath);
+
+        // Remove blocked Docker files from user repository (security)
+        const removedFiles = removeBlockedFiles(projectPath, path.join(projectPath, 'html'));
+        if (removedFiles.length > 0) {
+            logger.info('Removed blocked files after clone', { files: removedFiles });
+        }
 
         return {
             success: true,
@@ -672,6 +679,12 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
             // Git config with simple-git
             const htmlGit = simpleGit(htmlPath);
             await htmlGit.addConfig('credential.helper', 'store --file=.git-credentials');
+        }
+
+        // Remove blocked Docker files from user repository (security)
+        const removedFiles = removeBlockedFiles(projectPath, htmlPath);
+        if (removedFiles.length > 0) {
+            logger.info('Removed blocked files after Git clone', { files: removedFiles });
         }
 
         return {

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const gitService = require('./git');
 const { generateNginxConfig } = require('./utils/nginx');
+const { removeBlockedFiles } = require('./utils/security');
 const { logger } = require('../config/logger');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
@@ -103,6 +104,13 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
                 path.join(nginxDir, 'default.conf'),
                 generateNginxConfig()
             );
+        }
+
+        // Remove blocked Docker files from user upload (security)
+        const htmlPath = path.join(projectPath, 'html');
+        const removedFiles = removeBlockedFiles(projectPath, htmlPath);
+        if (removedFiles.length > 0) {
+            logger.info('Removed blocked files after ZIP extraction', { files: removedFiles });
         }
 
         // Delete ZIP file
