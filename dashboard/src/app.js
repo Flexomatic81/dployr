@@ -166,8 +166,19 @@ app.use((req, res, next) => {
 app.use(setUserLocals);
 
 // CSRF Protection (after session, before routes)
-app.use(csrfTokenMiddleware);
-app.use(csrfSynchronisedProtection);
+// Skip CSRF for setup routes - during setup, session store is MemoryStore which doesn't persist reliably
+app.use((req, res, next) => {
+    if (req.path.startsWith('/setup')) {
+        return next();
+    }
+    csrfTokenMiddleware(req, res, next);
+});
+app.use((req, res, next) => {
+    if (req.path.startsWith('/setup')) {
+        return next();
+    }
+    csrfSynchronisedProtection(req, res, next);
+});
 
 // Load setup data from marker file (cached)
 let cachedSetupData = null;

@@ -194,9 +194,6 @@
         language: '<%= currentLanguage %>'
     };
 
-    // Get CSRF token for API requests
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-
     // Translations for dynamic updates
     const translations = {
         de: {
@@ -242,8 +239,7 @@
             await fetch('/setup/language', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-csrf-token': csrfToken
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ language: lang })
             });
@@ -305,8 +301,7 @@
             const response = await fetch('/setup/run', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-csrf-token': csrfToken
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(setupData)
             });
