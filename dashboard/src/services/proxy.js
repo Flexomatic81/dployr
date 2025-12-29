@@ -260,8 +260,21 @@ async function testConnection() {
 }
 
 /**
+ * Check if NPM needs initial setup (no admin user created yet)
+ * @returns {Promise<{needsSetup: boolean, error?: string}>}
+ */
+async function checkSetupStatus() {
+    try {
+        const response = await axios.get(`${NPM_API_URL}/`, { timeout: 5000 });
+        return { needsSetup: response.data.setup === false };
+    } catch (error) {
+        return { needsSetup: false, error: error.message };
+    }
+}
+
+/**
  * Initialize NPM with configured credentials
- * This should be called after NPM first starts to change the default admin credentials.
+ * Handles both fresh NPM instances (setup:false) and legacy instances with default credentials.
  *
  * @param {string} email - The new admin email
  * @param {string} password - The new admin password
@@ -287,7 +300,44 @@ async function initializeCredentials(email, password) {
         // Continue - credentials might not be set yet
     }
 
-    // Try to login with default credentials
+    // Check if NPM needs initial setup (newer versions >= 2.9.0)
+    const setupStatus = await checkSetupStatus();
+    if (setupStatus.needsSetup) {
+        logger.info('NPM needs initial setup, creating admin user');
+        try {
+            // Create initial admin user via setup endpoint
+            const response = await axios.post(`${NPM_API_URL}/users`, {
+                name: 'Administrator',
+                nickname: 'Admin',
+                email: email,
+                roles: ['admin'],
+                is_disabled: false,
+                secret: password
+            }, { timeout: 10000 });
+
+            if (response.data && response.data.id) {
+                logger.info('NPM admin user created successfully', { email, userId: response.data.id });
+
+                // Clear cached token
+                cachedToken = null;
+                tokenExpiry = null;
+
+                return { success: true };
+            }
+        } catch (error) {
+            logger.error('Failed to create NPM admin user', {
+                error: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+            return {
+                success: false,
+                error: error.response?.data?.message || error.message
+            };
+        }
+    }
+
+    // Try to login with default credentials (legacy NPM versions)
     let defaultToken;
     try {
         const response = await axios.post(`${NPM_API_URL}/tokens`, {
