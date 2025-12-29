@@ -457,6 +457,9 @@ NPM_ADMIN_PORT=81          # NPM admin panel port (default: 81)
 - `POST /admin/settings/npm/initialize` - Initialize credentials
 - `POST /admin/settings/npm/recreate` - Remove container and volumes for fresh start
 - `GET /admin/settings/npm/logs` - Container logs API
+- `GET /admin/settings/npm/operation-logs` - Domain/SSL operation logs from dashboard
+- `POST /admin/settings/npm/dashboard-domain` - Configure dashboard domain
+- `DELETE /admin/settings/npm/dashboard-domain` - Remove dashboard domain
 
 **User Routes (Domain Management):**
 - `GET /proxy/status` - Check if NPM is enabled and connected
@@ -483,6 +486,14 @@ NPM_ADMIN_PORT=81          # NPM admin panel port (default: 81)
 **Service:** `proxy.js` - NPM API client, container control, domain mappings
 
 **Database Table:** `project_domains` - Domain-to-project mappings with SSL status
+
+**Dashboard Domain Feature:**
+Admins can configure a custom domain for the dashboard itself (e.g., `app.dployr.de`):
+- Configured in Admin → NPM Settings → Dashboard Domain
+- Creates NPM proxy host routing domain to dashboard container (port 3000)
+- Optional SSL certificate via Let's Encrypt
+- Port 3000 remains available as fallback
+- Stored in `.env` as `NPM_DASHBOARD_DOMAIN`
 
 ## Key Services
 
