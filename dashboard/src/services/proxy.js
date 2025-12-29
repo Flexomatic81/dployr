@@ -189,13 +189,10 @@ async function requestCertificate(domain, email) {
 
     const client = await getApiClient();
 
+    // NPM v2+ API format for Let's Encrypt certificates
     const payload = {
         domain_names: [domain],
-        provider: 'letsencrypt',
-        meta: {
-            letsencrypt_email: email || process.env.NPM_API_EMAIL,
-            letsencrypt_agree: true
-        }
+        provider: 'letsencrypt'
     };
 
     try {
