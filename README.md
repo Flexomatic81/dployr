@@ -18,6 +18,7 @@ Deploy and manage isolated web projects on a shared Linux server through an intu
 - **Multi-User** - User registration with admin approval workflow
 - **Project Sharing** - Share projects with other users (read/manage/full access)
 - **Environment Editor** - Edit .env files directly in the browser
+- **Custom Domains & SSL** - Connect domains with free Let's Encrypt certificates (optional)
 - **Dark/Light Theme** - Switchable with preference storage
 
 ## Requirements
@@ -60,6 +61,7 @@ After startup, the following services are available:
 | **PostgreSQL** | 5432 | Advanced database |
 | **phpMyAdmin** | 8080 | MariaDB management |
 | **pgAdmin** | 5050 | PostgreSQL management |
+| **NPM** | 80, 443, 81 | Domain proxy & SSL (optional) |
 
 ## Using the Dashboard
 
@@ -129,6 +131,23 @@ Share projects with other users:
 
 Only the owner can delete, disconnect Git, configure Auto-Deploy, or manage shares.
 
+### Domains & SSL
+
+Connect custom domains to your projects (requires admin to enable NPM):
+
+1. Open project detail page
+2. Scroll to **Domains & SSL** section
+3. Enter your domain (e.g., `app.example.com`)
+4. Optionally enable **Request SSL certificate**
+5. Click **Add**
+
+**Prerequisites:**
+- Domain DNS must point to server IP (A record)
+- Project container must be running
+- You must be owner or have "Full Access" permission
+
+SSL certificates are automatically issued via Let's Encrypt and renewed before expiration.
+
 ## Configuration
 
 ### Environment Variables (.env)
@@ -146,6 +165,14 @@ PHPMYADMIN_PORT=8080
 PGADMIN_PORT=5050
 PGADMIN_EMAIL=admin@local.dev
 SERVER_IP=  # Auto-detected if empty
+
+# NPM (Nginx Proxy Manager) - optional
+NPM_ENABLED=false
+NPM_API_EMAIL=admin@example.com
+NPM_API_PASSWORD=changeme123
+NPM_HTTP_PORT=80
+NPM_HTTPS_PORT=443
+NPM_ADMIN_PORT=81
 ```
 
 ### Custom Installation Path
