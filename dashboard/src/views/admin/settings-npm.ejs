@@ -194,16 +194,15 @@
 
 <!-- Operation Logs (Domain/SSL operations from dashboard) -->
 <div class="card mt-4" id="operationLogsCard">
-    <div class="card-header d-flex justify-content-between align-items-center"
-         style="cursor: pointer;"
-         data-bs-toggle="collapse"
-         data-bs-target="#operationLogsBody"
-         aria-expanded="true">
-        <span>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="collapse-toggle" style="cursor: pointer; flex-grow: 1;"
+              data-bs-toggle="collapse"
+              data-bs-target="#operationLogsBody"
+              aria-expanded="true">
             <i class="bi bi-journal-text"></i> <%= t('admin:npm.operationLogs') %>
             <i class="bi bi-chevron-down ms-2 collapse-chevron"></i>
         </span>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshOperationLogsBtn" <%= !npm.enabled ? 'disabled' : '' %> onclick="event.stopPropagation();">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshOperationLogsBtn" <%= !npm.enabled ? 'disabled' : '' %>>
             <i class="bi bi-arrow-clockwise"></i> <%= t('admin:npm.refreshLogs') %>
         </button>
     </div>
@@ -217,16 +216,15 @@
 
 <!-- Container Logs -->
 <div class="card mt-4" id="logsCard">
-    <div class="card-header d-flex justify-content-between align-items-center"
-         style="cursor: pointer;"
-         data-bs-toggle="collapse"
-         data-bs-target="#containerLogsBody"
-         aria-expanded="false">
-        <span>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="collapse-toggle" style="cursor: pointer; flex-grow: 1;"
+              data-bs-toggle="collapse"
+              data-bs-target="#containerLogsBody"
+              aria-expanded="false">
             <i class="bi bi-terminal"></i> <%= t('admin:npm.containerLogs') %>
             <i class="bi bi-chevron-down ms-2 collapse-chevron"></i>
         </span>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshLogsBtn" <%= !npm.enabled ? 'disabled' : '' %> onclick="event.stopPropagation();">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshLogsBtn" <%= !npm.enabled ? 'disabled' : '' %>>
             <i class="bi bi-arrow-clockwise"></i> <%= t('admin:npm.refreshLogs') %>
         </button>
     </div>
