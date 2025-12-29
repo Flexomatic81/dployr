@@ -667,6 +667,25 @@ router.post('/settings/npm/restart', async (req, res) => {
     }
 });
 
+// Recreate NPM container (delete data and restart fresh)
+router.post('/settings/npm/recreate', async (req, res) => {
+    try {
+        const result = await proxyService.recreateContainer();
+        if (result.success) {
+            logger.info('NPM container recreated by admin', { userId: req.session.user.id });
+            res.json({
+                success: true,
+                needsManualStart: result.needsManualStart,
+                message: req.t('admin:npm.recreateSuccess')
+            });
+        } else {
+            res.json({ success: false, error: result.error });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // Initialize NPM credentials (change default credentials to configured ones)
 router.post('/settings/npm/initialize', async (req, res) => {
     try {

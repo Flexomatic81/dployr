@@ -209,6 +209,11 @@
     "alreadyInitialized": "NPM ist bereits mit Ihren Zugangsdaten konfiguriert.",
     "credentialsRequired": "E-Mail und Passwort müssen konfiguriert sein.",
     "apiNotReady": "NPM API ist nicht erreichbar. Bitte warten Sie, bis der Container vollständig gestartet ist.",
-    "initializing": "Initialisiere..."
+    "initializing": "Initialisiere...",
+    "recreate": "Neu erstellen",
+    "recreateHelp": "Löscht alle NPM-Daten und erstellt den Container neu mit den konfigurierten Zugangsdaten.",
+    "recreateConfirm": "Achtung: Dies löscht alle NPM-Konfigurationen (Proxy Hosts, SSL-Zertifikate). Fortfahren?",
+    "recreateSuccess": "NPM-Container wurde entfernt. Führen Sie 'docker compose up -d npm' auf dem Server aus.",
+    "recreating": "Erstelle neu..."
   }
 }

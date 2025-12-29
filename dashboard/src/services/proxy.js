@@ -302,45 +302,19 @@ async function initializeCredentials(email, password) {
 
     // Check if NPM needs initial setup (newer versions >= 2.9.0)
     // NPM uses INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD env vars on first start
-    // If setup is still false, we need to restart the container to apply env vars
     const setupStatus = await checkSetupStatus();
     if (setupStatus.needsSetup) {
-        logger.info('NPM needs initial setup, restarting container to apply env vars');
-        try {
-            // Restart container - NPM will read INITIAL_ADMIN_* env vars on startup
-            const container = docker.getContainer(NPM_CONTAINER_NAME);
-            await container.restart();
-
-            // Wait for API to come back up
-            await new Promise(r => setTimeout(r, 10000));
-
-            // Verify credentials work now
-            const verifyResponse = await axios.post(`${NPM_API_URL}/tokens`, {
-                identity: email,
-                secret: password
-            }, { timeout: 10000 });
-
-            if (verifyResponse.data.token) {
-                logger.info('NPM initialized with configured credentials after restart', { email });
-                cachedToken = null;
-                tokenExpiry = null;
-                return { success: true };
-            }
-
-            return { success: false, error: 'Failed to verify credentials after restart' };
-        } catch (error) {
-            logger.error('Failed to initialize NPM', {
-                error: error.message,
-                status: error.response?.status
-            });
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+        logger.info('NPM needs initial setup - container needs to be recreated with env vars');
+        // NPM hasn't been set up yet. The INITIAL_ADMIN_* env vars are only read on first database creation.
+        // We need to delete the NPM data and restart the container.
+        return {
+            success: false,
+            needsRecreate: true,
+            error: 'NPM needs fresh start. Please use "Recreate" button to apply credentials.'
+        };
     }
 
-    // Try to login with default credentials (legacy NPM versions)
+    // Try to login with default credentials (legacy NPM versions with changeme password)
     let defaultToken;
     try {
         const response = await axios.post(`${NPM_API_URL}/tokens`, {
@@ -349,15 +323,17 @@ async function initializeCredentials(email, password) {
         }, { timeout: 10000 });
 
         defaultToken = response.data.token;
+        logger.info('Logged in with default NPM credentials, will update to configured ones');
     } catch (error) {
-        logger.error('Failed to login with default NPM credentials', { error: error.message });
+        // Default credentials don't work - NPM is already initialized with different credentials
+        logger.error('Cannot initialize NPM', { error: error.message });
         return {
             success: false,
-            error: 'Cannot login with default credentials. NPM may already be initialized with different credentials.'
+            error: 'NPM is already initialized with different credentials. Use "Recreate" to reset.'
         };
     }
 
-    // Get the default user ID (should be 1)
+    // Update default user to configured credentials
     try {
         const client = axios.create({
             baseURL: NPM_API_URL,
@@ -408,6 +384,67 @@ async function initializeCredentials(email, password) {
             success: false,
             error: error.response?.data?.message || error.message
         };
+    }
+}
+
+/**
+ * Recreate NPM container with fresh database
+ * This deletes the NPM data volume and restarts the container,
+ * allowing INITIAL_ADMIN_* env vars to take effect.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+async function recreateContainer() {
+    try {
+        const container = docker.getContainer(NPM_CONTAINER_NAME);
+
+        // Stop container if running
+        try {
+            await container.stop();
+            logger.info('NPM container stopped for recreation');
+        } catch (err) {
+            // Ignore if already stopped
+        }
+
+        // Remove container
+        try {
+            await container.remove();
+            logger.info('NPM container removed');
+        } catch (err) {
+            logger.error('Failed to remove NPM container', { error: err.message });
+        }
+
+        // Remove data volumes
+        try {
+            const dataVolume = docker.getVolume('dployr-npm-data');
+            await dataVolume.remove();
+            logger.info('NPM data volume removed');
+        } catch (err) {
+            // Volume might not exist
+            logger.debug('Could not remove npm-data volume', { error: err.message });
+        }
+
+        try {
+            const certVolume = docker.getVolume('dployr-npm-letsencrypt');
+            await certVolume.remove();
+            logger.info('NPM letsencrypt volume removed');
+        } catch (err) {
+            // Volume might not exist
+            logger.debug('Could not remove npm-letsencrypt volume', { error: err.message });
+        }
+
+        // Note: We cannot use docker-compose from inside the container.
+        // The admin will need to run 'docker compose up -d npm' on the host,
+        // or we provide instructions.
+        logger.info('NPM container and volumes removed. Run "docker compose up -d npm" on host to recreate.');
+
+        return {
+            success: true,
+            needsManualStart: true,
+            message: 'Container removed. Run "docker compose up -d npm" on the server to recreate with new credentials.'
+        };
+    } catch (error) {
+        logger.error('Failed to recreate NPM container', { error: error.message });
+        return { success: false, error: error.message };
     }
 }
 
@@ -699,6 +736,7 @@ module.exports = {
     startContainer,
     stopContainer,
     restartContainer,
+    recreateContainer,
     getContainerLogs,
 
     // Database functions

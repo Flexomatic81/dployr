@@ -209,6 +209,11 @@
     "alreadyInitialized": "NPM is already configured with your credentials.",
     "credentialsRequired": "Email and password must be configured.",
     "apiNotReady": "NPM API is not reachable. Please wait until the container is fully started.",
-    "initializing": "Initializing..."
+    "initializing": "Initializing...",
+    "recreate": "Recreate",
+    "recreateHelp": "Deletes all NPM data and recreates the container with configured credentials.",
+    "recreateConfirm": "Warning: This will delete all NPM configurations (proxy hosts, SSL certificates). Continue?",
+    "recreateSuccess": "NPM container removed. Run 'docker compose up -d npm' on the server.",
+    "recreating": "Recreating..."
   }
 }
