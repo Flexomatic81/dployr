@@ -577,14 +577,16 @@ async function getContainerLogs(lines = 100) {
         });
 
         // Convert buffer to string and clean up
-        return logs.toString('utf8')
+        const logString = logs.toString('utf8')
             .split('\n')
             .map(line => line.substring(8)) // Remove Docker log prefix
             .filter(line => line.trim())
             .join('\n');
+
+        return { success: true, logs: logString };
     } catch (error) {
         logger.error('Failed to get NPM container logs', { error: error.message });
-        return 'Error loading logs: ' + error.message;
+        return { success: false, error: error.message };
     }
 }
 
