@@ -194,8 +194,7 @@ async function requestCertificate(domain, email) {
         provider: 'letsencrypt',
         meta: {
             letsencrypt_email: email || process.env.NPM_API_EMAIL,
-            letsencrypt_agree: true,
-            dns_challenge: false
+            letsencrypt_agree: true
         }
     };
 
