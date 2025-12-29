@@ -45,6 +45,9 @@
                 <button type="button" class="btn btn-outline-primary btn-sm" id="testConnectionBtn" <%= !npm.enabled ? 'disabled' : '' %>>
                     <i class="bi bi-plug"></i> <%= t('admin:npm.testConnection') %>
                 </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="initializeBtn" <%= !npm.enabled ? 'disabled' : '' %> title="<%= t('admin:npm.initializeHelp') %>">
+                    <i class="bi bi-key"></i> <%= t('admin:npm.initialize') %>
+                </button>
                 <a href="http://<%= setupMarker.serverIp || 'localhost' %>:<%= npm.adminPort %>" target="_blank" class="btn btn-outline-info btn-sm" id="openPanelBtn" style="display: none;">
                     <i class="bi bi-box-arrow-up-right"></i> <%= t('admin:npm.openPanel') %>
                 </a>
@@ -330,6 +333,46 @@ document.getElementById('testConnectionBtn').addEventListener('click', async fun
         btn.classList.remove('btn-outline-success', 'btn-outline-danger');
         btn.classList.add('btn-outline-primary');
     }, 3000);
+});
+
+// Initialize NPM credentials button
+document.getElementById('initializeBtn').addEventListener('click', async function() {
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("admin:npm.initializing") %>';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/admin/settings/npm/initialize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            btn.innerHTML = '<i class="bi bi-check-circle text-success"></i> ' + data.message;
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-success');
+        } else {
+            btn.innerHTML = '<i class="bi bi-x-circle text-danger"></i> ' + data.error;
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-danger');
+        }
+    } catch (error) {
+        btn.innerHTML = '<i class="bi bi-x-circle text-danger"></i> Error';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-outline-danger');
+    }
+
+    setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        btn.classList.remove('btn-outline-success', 'btn-outline-danger');
+        btn.classList.add('btn-outline-secondary');
+    }, 5000);
 });
 
 // Copy command to clipboard

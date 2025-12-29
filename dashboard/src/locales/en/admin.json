@@ -202,6 +202,13 @@
     "connectionFailed": "Connection failed.",
     "containerStarted": "NPM container started.",
     "containerStopped": "NPM container stopped.",
-    "containerRestarted": "NPM container restarted."
+    "containerRestarted": "NPM container restarted.",
+    "initialize": "Initialize",
+    "initializeHelp": "Changes the default credentials (admin@example.com) to your configured credentials.",
+    "initializeSuccess": "NPM has been successfully initialized with your credentials.",
+    "alreadyInitialized": "NPM is already configured with your credentials.",
+    "credentialsRequired": "Email and password must be configured.",
+    "apiNotReady": "NPM API is not reachable. Please wait until the container is fully started.",
+    "initializing": "Initializing..."
   }
 }

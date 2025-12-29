@@ -17,6 +17,10 @@ const NPM_CONTAINER_NAME = 'dployr-npm';
 const NPM_API_URL = process.env.NPM_API_URL || 'http://dployr-npm:81/api';
 const NPM_ENABLED = process.env.NPM_ENABLED === 'true';
 
+// Default NPM credentials (created on first start)
+const NPM_DEFAULT_EMAIL = 'admin@example.com';
+const NPM_DEFAULT_PASSWORD = 'changeme';
+
 // Token cache (in-memory, refreshed on expiry)
 let cachedToken = null;
 let tokenExpiry = null;
@@ -253,6 +257,130 @@ async function testConnection() {
     } catch (error) {
         return false;
     }
+}
+
+/**
+ * Initialize NPM with configured credentials
+ * This should be called after NPM first starts to change the default admin credentials.
+ *
+ * @param {string} email - The new admin email
+ * @param {string} password - The new admin password
+ * @returns {Promise<{success: boolean, error?: string, alreadyInitialized?: boolean}>}
+ */
+async function initializeCredentials(email, password) {
+    if (!email || !password) {
+        return { success: false, error: 'Email and password are required' };
+    }
+
+    // First try to login with the configured credentials (already initialized)
+    try {
+        const response = await axios.post(`${NPM_API_URL}/tokens`, {
+            identity: email,
+            secret: password
+        }, { timeout: 10000 });
+
+        if (response.data.token) {
+            logger.info('NPM already initialized with configured credentials');
+            return { success: true, alreadyInitialized: true };
+        }
+    } catch (error) {
+        // Continue - credentials might not be set yet
+    }
+
+    // Try to login with default credentials
+    let defaultToken;
+    try {
+        const response = await axios.post(`${NPM_API_URL}/tokens`, {
+            identity: NPM_DEFAULT_EMAIL,
+            secret: NPM_DEFAULT_PASSWORD
+        }, { timeout: 10000 });
+
+        defaultToken = response.data.token;
+    } catch (error) {
+        logger.error('Failed to login with default NPM credentials', { error: error.message });
+        return {
+            success: false,
+            error: 'Cannot login with default credentials. NPM may already be initialized with different credentials.'
+        };
+    }
+
+    // Get the default user ID (should be 1)
+    try {
+        const client = axios.create({
+            baseURL: NPM_API_URL,
+            headers: {
+                'Authorization': `Bearer ${defaultToken}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000
+        });
+
+        // Get users list to find admin user
+        const usersResponse = await client.get('/users');
+        const adminUser = usersResponse.data.find(u => u.email === NPM_DEFAULT_EMAIL);
+
+        if (!adminUser) {
+            return { success: false, error: 'Default admin user not found' };
+        }
+
+        // Update user credentials
+        await client.put(`/users/${adminUser.id}`, {
+            email: email,
+            name: 'Administrator',
+            nickname: 'Admin',
+            is_disabled: false,
+            roles: ['admin']
+        });
+
+        // Change password (separate API call)
+        await client.put(`/users/${adminUser.id}/auth`, {
+            type: 'password',
+            current: NPM_DEFAULT_PASSWORD,
+            secret: password
+        });
+
+        // Clear cached token so next request uses new credentials
+        cachedToken = null;
+        tokenExpiry = null;
+
+        logger.info('NPM credentials initialized successfully', { email });
+        return { success: true };
+    } catch (error) {
+        logger.error('Failed to update NPM credentials', {
+            error: error.message,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+        return {
+            success: false,
+            error: error.response?.data?.message || error.message
+        };
+    }
+}
+
+/**
+ * Wait for NPM API to become available
+ * @param {number} maxAttempts - Maximum number of attempts
+ * @param {number} delayMs - Delay between attempts in milliseconds
+ * @returns {Promise<boolean>}
+ */
+async function waitForApi(maxAttempts = 30, delayMs = 2000) {
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            // Just check if the API responds at all
+            await axios.get(`${NPM_API_URL}/`, { timeout: 5000 });
+            return true;
+        } catch (error) {
+            // API might return 401/404, but that means it's running
+            if (error.response) {
+                return true;
+            }
+            // Connection refused or timeout - keep waiting
+            logger.debug('Waiting for NPM API...', { attempt: i + 1 });
+            await new Promise(r => setTimeout(r, delayMs));
+        }
+    }
+    return false;
 }
 
 // ============================================
@@ -508,6 +636,10 @@ module.exports = {
     listProxyHosts,
     requestCertificate,
     enableSSL,
+
+    // Initialization functions
+    initializeCredentials,
+    waitForApi,
 
     // Container control functions
     getContainerStatus,

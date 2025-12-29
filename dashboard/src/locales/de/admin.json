@@ -202,6 +202,13 @@
     "connectionFailed": "Verbindung fehlgeschlagen.",
     "containerStarted": "NPM-Container wurde gestartet.",
     "containerStopped": "NPM-Container wurde gestoppt.",
-    "containerRestarted": "NPM-Container wurde neu gestartet."
+    "containerRestarted": "NPM-Container wurde neu gestartet.",
+    "initialize": "Initialisieren",
+    "initializeHelp": "Ändert die Standard-Zugangsdaten (admin@example.com) auf Ihre konfigurierten Zugangsdaten.",
+    "initializeSuccess": "NPM wurde erfolgreich mit Ihren Zugangsdaten initialisiert.",
+    "alreadyInitialized": "NPM ist bereits mit Ihren Zugangsdaten konfiguriert.",
+    "credentialsRequired": "E-Mail und Passwort müssen konfiguriert sein.",
+    "apiNotReady": "NPM API ist nicht erreichbar. Bitte warten Sie, bis der Container vollständig gestartet ist.",
+    "initializing": "Initialisiere..."
   }
 }

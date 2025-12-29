@@ -667,4 +667,45 @@ router.post('/settings/npm/restart', async (req, res) => {
     }
 });
 
+// Initialize NPM credentials (change default credentials to configured ones)
+router.post('/settings/npm/initialize', async (req, res) => {
+    try {
+        const email = process.env.NPM_API_EMAIL;
+        const password = process.env.NPM_API_PASSWORD;
+
+        if (!email || !password) {
+            return res.json({
+                success: false,
+                error: req.t('admin:npm.credentialsRequired')
+            });
+        }
+
+        // Wait for API to be ready (max 30 seconds)
+        const apiReady = await proxyService.waitForApi(15, 2000);
+        if (!apiReady) {
+            return res.json({
+                success: false,
+                error: req.t('admin:npm.apiNotReady')
+            });
+        }
+
+        const result = await proxyService.initializeCredentials(email, password);
+
+        if (result.success) {
+            logger.info('NPM credentials initialized by admin', { userId: req.session.user.id, email });
+            res.json({
+                success: true,
+                message: result.alreadyInitialized
+                    ? req.t('admin:npm.alreadyInitialized')
+                    : req.t('admin:npm.initializeSuccess')
+            });
+        } else {
+            res.json({ success: false, error: result.error });
+        }
+    } catch (error) {
+        logger.error('Failed to initialize NPM credentials', { error: error.message });
+        res.json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;
