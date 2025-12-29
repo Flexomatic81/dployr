@@ -32,6 +32,10 @@ const proxyRoutes = require('./routes/proxy');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy when behind reverse proxy (NPM/nginx)
+// Required for correct IP detection and rate limiting
+app.set('trust proxy', 1);
+
 // Security: Helmet for HTTP security headers
 app.use(helmet({
     contentSecurityPolicy: {
