@@ -226,19 +226,34 @@ async function enableSSL(proxyHostId, certificateId) {
         // First get the current proxy host to preserve settings
         const current = await client.get(`/nginx/proxy-hosts/${proxyHostId}`);
 
-        const response = await client.put(`/nginx/proxy-hosts/${proxyHostId}`, {
-            ...current.data,
+        // Only include allowed fields for NPM v2+ API
+        const payload = {
+            domain_names: current.data.domain_names,
+            forward_scheme: current.data.forward_scheme,
+            forward_host: current.data.forward_host,
+            forward_port: current.data.forward_port,
             certificate_id: certificateId,
             ssl_forced: true,
-            http2_support: true
-        });
+            http2_support: true,
+            block_exploits: current.data.block_exploits || false,
+            caching_enabled: current.data.caching_enabled || false,
+            allow_websocket_upgrade: current.data.allow_websocket_upgrade || false,
+            access_list_id: current.data.access_list_id || 0,
+            advanced_config: current.data.advanced_config || '',
+            enabled: current.data.enabled !== false,
+            meta: current.data.meta || {},
+            locations: current.data.locations || []
+        };
+
+        const response = await client.put(`/nginx/proxy-hosts/${proxyHostId}`, payload);
 
         logger.info('SSL enabled for proxy host', { proxyHostId, certificateId });
         return response.data;
     } catch (error) {
         logger.error('Failed to enable SSL', {
             proxyHostId,
-            error: error.response?.data?.message || error.message
+            error: error.response?.data?.message || error.message,
+            details: error.response?.data
         });
         throw new Error('Failed to enable SSL for this domain');
     }
