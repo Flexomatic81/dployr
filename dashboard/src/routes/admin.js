@@ -727,4 +727,19 @@ router.post('/settings/npm/initialize', async (req, res) => {
     }
 });
 
+// Get NPM container logs
+router.get('/settings/npm/logs', async (req, res) => {
+    try {
+        const lines = parseInt(req.query.lines) || 50;
+        const result = await proxyService.getContainerLogs(lines);
+        if (result.success) {
+            res.json({ success: true, logs: result.logs });
+        } else {
+            res.json({ success: false, error: result.error });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;

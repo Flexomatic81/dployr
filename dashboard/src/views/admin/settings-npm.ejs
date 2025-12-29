@@ -140,43 +140,16 @@
     </div>
 </div>
 
-<!-- Docker Command Info -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="bi bi-terminal"></i> <%= t('admin:npm.dockerCommands') %>
+<!-- Container Logs -->
+<div class="card mt-4" id="logsCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-terminal"></i> <%= t('admin:npm.containerLogs') %></span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshLogsBtn" <%= !npm.enabled ? 'disabled' : '' %>>
+            <i class="bi bi-arrow-clockwise"></i> <%= t('admin:npm.refreshLogs') %>
+        </button>
     </div>
-    <div class="card-body">
-        <p class="text-muted mb-3"><%= t('admin:npm.dockerCommandsHelp') %></p>
-
-        <div class="mb-3">
-            <label class="form-label fw-bold"><%= t('admin:npm.startCommand') %></label>
-            <div class="input-group">
-                <code class="form-control bg-dark text-light font-monospace">docker start dployr-npm</code>
-                <button class="btn btn-outline-secondary" type="button" onclick="copyCommand(this, 'docker start dployr-npm')">
-                    <i class="bi bi-clipboard"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label fw-bold"><%= t('admin:npm.stopCommand') %></label>
-            <div class="input-group">
-                <code class="form-control bg-dark text-light font-monospace">docker stop dployr-npm</code>
-                <button class="btn btn-outline-secondary" type="button" onclick="copyCommand(this, 'docker stop dployr-npm')">
-                    <i class="bi bi-clipboard"></i>
-                </button>
-            </div>
-        </div>
-
-        <div>
-            <label class="form-label fw-bold"><%= t('admin:npm.logsCommand') %></label>
-            <div class="input-group">
-                <code class="form-control bg-dark text-light font-monospace">docker logs -f dployr-npm</code>
-                <button class="btn btn-outline-secondary" type="button" onclick="copyCommand(this, 'docker logs -f dployr-npm')">
-                    <i class="bi bi-clipboard"></i>
-                </button>
-            </div>
-        </div>
+    <div class="card-body p-0">
+        <pre id="logsContent" class="bg-dark text-light p-3 mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word;"><span class="text-muted"><%= t('common:loading') %>...</span></pre>
     </div>
 </div>
 
@@ -422,14 +395,48 @@ document.getElementById('recreateBtn').addEventListener('click', async function(
     }, 5000);
 });
 
-// Copy command to clipboard
-function copyCommand(btn, command) {
-    navigator.clipboard.writeText(command).then(() => {
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check"></i>';
-        setTimeout(() => {
-            btn.innerHTML = originalHtml;
-        }, 1500);
-    });
+// Fetch and display NPM container logs
+async function fetchLogs() {
+    const logsContent = document.getElementById('logsContent');
+    const refreshBtn = document.getElementById('refreshLogsBtn');
+
+    if (!npmEnabled) {
+        logsContent.innerHTML = '<span class="text-muted"><%= t("admin:npm.noLogs") %></span>';
+        return;
+    }
+
+    try {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        const response = await fetch('/admin/settings/npm/logs?lines=100');
+        const data = await response.json();
+
+        if (data.success && data.logs) {
+            // Escape HTML and format logs
+            const escapedLogs = data.logs
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            logsContent.innerHTML = escapedLogs || '<span class="text-muted"><%= t("admin:npm.noLogs") %></span>';
+            // Scroll to bottom
+            logsContent.scrollTop = logsContent.scrollHeight;
+        } else {
+            logsContent.innerHTML = '<span class="text-warning"><%= t("admin:npm.logsNotRunning") %></span>';
+        }
+    } catch (error) {
+        logsContent.innerHTML = '<span class="text-danger">Error: ' + error.message + '</span>';
+    } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> <%= t("admin:npm.refreshLogs") %>';
+    }
+}
+
+// Refresh logs button
+document.getElementById('refreshLogsBtn').addEventListener('click', fetchLogs);
+
+// Load logs on page load (if NPM is enabled)
+if (npmEnabled) {
+    fetchLogs();
 }
 </script>
