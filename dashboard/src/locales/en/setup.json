@@ -14,10 +14,10 @@
   "config": {
     "title": "Server Configuration",
     "serverIp": {
-      "label": "Server IP Address",
-      "help": "The IP address or hostname where the server is accessible from other devices.",
-      "placeholder": "192.168.1.100",
-      "description": "IP address or hostname of the server"
+      "label": "Server Address",
+      "help": "The IP address or domain where the server is accessible. Examples: 192.168.1.100, server.example.com",
+      "placeholder": "192.168.1.100 or server.example.com",
+      "description": "IP address or domain of the server"
     },
     "mysqlPassword": {
       "label": "MySQL Root Password",
