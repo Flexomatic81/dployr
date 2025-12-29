@@ -9,6 +9,7 @@
     "autoDeploy": "Auto-Deploy",
     "databases": "Datenbanken",
     "sharing": "Projekt-Sharing",
+    "domains": "Domains & SSL",
     "admin": "Administration",
     "faq": "FAQ"
   },
@@ -231,6 +232,29 @@
       }
     },
     "ownerOnly": "Nur der Besitzer kann: Projekt löschen, Git-Verbindung trennen, Auto-Deploy konfigurieren, Freigaben verwalten"
+  },
+
+  "domains": {
+    "title": "Domains & SSL",
+    "intro": "Verbinde eigene Domains mit deinen Projekten und sichere sie mit kostenlosen SSL-Zertifikaten von Let's Encrypt.",
+    "howToTitle": "Domain hinzufügen",
+    "howTo": {
+      "open": "Öffne die Projektansicht deines Projekts",
+      "scroll": "Scrolle zum Bereich \"Domains & SSL\"",
+      "enter": "Gib deine Domain ein (z.B. app.example.com)",
+      "ssl": "Aktiviere optional \"SSL-Zertifikat anfordern\"",
+      "add": "Klicke auf \"Hinzufügen\" - die Domain ist sofort nutzbar"
+    },
+    "prerequisitesTitle": "Voraussetzungen",
+    "prerequisites": {
+      "dns": "DNS konfiguriert: Die Domain muss auf die Server-IP zeigen (A-Record)",
+      "running": "Projekt läuft: Der Container muss gestartet sein",
+      "permission": "Berechtigung: Du musst Owner sein oder \"Vollzugriff\" haben"
+    },
+    "sslTitle": "SSL-Zertifikate",
+    "sslDesc": "SSL-Zertifikate werden automatisch über Let's Encrypt angefordert. Falls die initiale Anforderung fehlschlägt (z.B. DNS noch nicht propagiert), kannst du später über den \"SSL aktivieren\"-Button erneut ein Zertifikat anfordern.",
+    "note": "Tipp: Die Domain-Funktion erscheint nur, wenn der Administrator NPM aktiviert hat.",
+    "dnsWarning": "Wichtig: Stelle sicher, dass deine Domain auf diesen Server zeigt, bevor du sie hinzufügst. SSL-Zertifikate können nur ausgestellt werden, wenn die Domain erreichbar ist."
   },
 
   "admin": {

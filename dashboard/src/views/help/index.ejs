@@ -27,6 +27,9 @@
             <a href="#sharing" class="list-group-item list-group-item-action">
                 <i class="bi bi-share"></i> <%= t('help:nav.sharing') %>
             </a>
+            <a href="#domains" class="list-group-item list-group-item-action">
+                <i class="bi bi-globe2"></i> <%= t('help:nav.domains') %>
+            </a>
             <% if (user && user.is_admin) { %>
             <a href="#admin" class="list-group-item list-group-item-action">
                 <i class="bi bi-shield-lock"></i> <%= t('help:nav.admin') %>
@@ -436,6 +439,47 @@ DB_NAME=deine_db</code></pre>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
                         <strong><%= t('help:sharing.ownerOnly') %></strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Domains & SSL -->
+        <section id="domains" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-globe2"></i> <%= t('help:domains.title') %></h4>
+                </div>
+                <div class="card-body">
+                    <p><%= t('help:domains.intro') %></p>
+
+                    <h5><%= t('help:domains.howToTitle') %></h5>
+                    <ol>
+                        <li><%= t('help:domains.howTo.open') %></li>
+                        <li><%= t('help:domains.howTo.scroll') %></li>
+                        <li><%= t('help:domains.howTo.enter') %></li>
+                        <li><%= t('help:domains.howTo.ssl') %></li>
+                        <li><%= t('help:domains.howTo.add') %></li>
+                    </ol>
+
+                    <h5 class="mt-4"><%= t('help:domains.prerequisitesTitle') %></h5>
+                    <ul>
+                        <li><strong><%= t('help:domains.prerequisites.dns') %></strong></li>
+                        <li><strong><%= t('help:domains.prerequisites.running') %></strong></li>
+                        <li><strong><%= t('help:domains.prerequisites.permission') %></strong></li>
+                    </ul>
+
+                    <h5 class="mt-4"><%= t('help:domains.sslTitle') %></h5>
+                    <p><%= t('help:domains.sslDesc') %></p>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong><%= t('help:domains.note') %></strong>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong><%= t('help:domains.dnsWarning') %></strong>
                     </div>
                 </div>
             </div>

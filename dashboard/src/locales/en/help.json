@@ -9,6 +9,7 @@
     "autoDeploy": "Auto‑Deploy",
     "databases": "Databases",
     "sharing": "Project Sharing",
+    "domains": "Domains & SSL",
     "admin": "Administration",
     "faq": "FAQ"
   },
@@ -231,6 +232,29 @@
       }
     },
     "ownerOnly": "Only the owner can: delete project, disconnect Git connection, configure Auto‑Deploy, manage shares"
+  },
+
+  "domains": {
+    "title": "Domains & SSL",
+    "intro": "Connect custom domains to your projects and secure them with free SSL certificates from Let's Encrypt.",
+    "howToTitle": "Add Domain",
+    "howTo": {
+      "open": "Open the project view of your project",
+      "scroll": "Scroll to the \"Domains & SSL\" section",
+      "enter": "Enter your domain (e.g. app.example.com)",
+      "ssl": "Optionally enable \"Request SSL certificate\"",
+      "add": "Click \"Add\" – the domain is immediately available"
+    },
+    "prerequisitesTitle": "Prerequisites",
+    "prerequisites": {
+      "dns": "DNS configured: The domain must point to the server IP (A record)",
+      "running": "Project running: The container must be started",
+      "permission": "Permission: You must be owner or have \"Full Access\""
+    },
+    "sslTitle": "SSL Certificates",
+    "sslDesc": "SSL certificates are automatically requested via Let's Encrypt. The certificate is renewed automatically before expiration. After activation your project is accessible via HTTPS.",
+    "note": "Tip: The domain feature only appears when the administrator has enabled NPM.",
+    "dnsWarning": "Important: Make sure your domain points to this server before adding it. Otherwise SSL certificate creation will fail."
   },
 
   "admin": {

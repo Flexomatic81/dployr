@@ -458,6 +458,28 @@ NPM_ADMIN_PORT=81          # NPM admin panel port (default: 81)
 - `POST /admin/settings/npm/recreate` - Remove container and volumes for fresh start
 - `GET /admin/settings/npm/logs` - Container logs API
 
+**User Routes (Domain Management):**
+- `GET /proxy/status` - Check if NPM is enabled and connected
+- `GET /proxy/:name/domains` - List domains for a project
+- `POST /proxy/:name/domains` - Add domain to project (requires full permission)
+- `DELETE /proxy/:name/domains/:domain` - Remove domain from project
+- `POST /proxy/:name/domains/:domain/ssl` - Request SSL certificate for domain
+
+**User Flow:**
+1. Project owner/full permission opens project details
+2. "Domains & SSL" card appears (if NPM enabled)
+3. User enters domain (e.g., `app.example.com`)
+4. System creates NPM proxy host → routes domain to project container
+5. Optional: Let's Encrypt SSL certificate is requested automatically
+6. Domain is immediately accessible
+
+**Prerequisites:**
+- NPM enabled (`NPM_ENABLED=true`)
+- NPM container running and initialized
+- Domain DNS pointing to server IP
+- Project container running
+- User is owner or has "full" permission
+
 **Service:** `proxy.js` - NPM API client, container control, domain mappings
 
 **Database Table:** `project_domains` - Domain-to-project mappings with SSL status
