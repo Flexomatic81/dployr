@@ -243,7 +243,17 @@
       "adminRights": "Admin-Rechte vergeben: Andere Benutzer zu Admins machen"
     },
     "pendingTitle": "Ausstehende Registrierungen",
-    "pendingDesc": "Im Admin-Bereich siehst du alle ausstehenden Registrierungen und kannst sie genehmigen oder ablehnen."
+    "pendingDesc": "Im Admin-Bereich siehst du alle ausstehenden Registrierungen und kannst sie genehmigen oder ablehnen.",
+    "npmTitle": "Nginx Proxy Manager",
+    "npmIntro": "Nginx Proxy Manager (NPM) ermöglicht Domain-Verwaltung und SSL-Zertifikate für Projekte:",
+    "npmFeatures": {
+      "enable": "NPM aktivieren/deaktivieren: Der NPM-Container wird vom Dashboard gesteuert",
+      "credentials": "Credentials konfigurieren: E-Mail und Passwort für NPM-Admin und Let's Encrypt",
+      "ports": "Ports anpassen: HTTP (80), HTTPS (443) und Admin (81) können geändert werden",
+      "initialize": "Initialisieren: Ändert die Standard-Credentials (admin@example.com) zu deinen konfigurierten",
+      "logs": "Container-Logs: Live-Ansicht der NPM-Logs für Debugging"
+    },
+    "npmNote": "Hinweis: Nach dem ersten Start und Initialisieren kannst du das NPM-Panel über den \"Panel öffnen\"-Button erreichen."
   },
 
   "faq": {

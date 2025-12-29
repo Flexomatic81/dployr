@@ -243,7 +243,17 @@
       "adminRights": "Grant admin rights: make other users admins"
     },
     "pendingTitle": "Pending Registrations",
-    "pendingDesc": "In the admin area you see all pending registrations and can approve or reject them."
+    "pendingDesc": "In the admin area you see all pending registrations and can approve or reject them.",
+    "npmTitle": "Nginx Proxy Manager",
+    "npmIntro": "Nginx Proxy Manager (NPM) enables domain management and SSL certificates for projects:",
+    "npmFeatures": {
+      "enable": "Enable/disable NPM: The NPM container is controlled from the dashboard",
+      "credentials": "Configure credentials: Email and password for NPM admin and Let's Encrypt",
+      "ports": "Adjust ports: HTTP (80), HTTPS (443) and Admin (81) can be changed",
+      "initialize": "Initialize: Changes default credentials (admin@example.com) to your configured ones",
+      "logs": "Container logs: Live view of NPM logs for debugging"
+    },
+    "npmNote": "Note: After first start and initialization, you can access the NPM panel via the \"Open Panel\" button."
   },
 
   "faq": {

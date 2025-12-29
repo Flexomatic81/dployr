@@ -417,6 +417,51 @@ Projects can be shared with other users.
 
 **Service:** `sharing.js` - Share management, permission checking, permission helpers
 
+## Nginx Proxy Manager (NPM) Integration
+
+Optional domain and SSL certificate management for projects via Nginx Proxy Manager.
+
+**Features:**
+- Automatic SSL certificates via Let's Encrypt
+- Domain-to-project routing
+- Admin panel for NPM configuration
+- Container control (start/stop/restart) from dashboard
+- Live container logs viewer
+
+**Configuration:**
+NPM can be enabled during initial setup or later via Admin → NPM Settings.
+
+**Environment Variables** (in `.env`):
+```
+NPM_ENABLED=true           # Enable/disable NPM integration
+NPM_API_EMAIL=admin@...    # NPM admin email (also for Let's Encrypt)
+NPM_API_PASSWORD=...       # NPM admin password (min 8 chars)
+NPM_HTTP_PORT=80           # HTTP port (default: 80)
+NPM_HTTPS_PORT=443         # HTTPS port (default: 443)
+NPM_ADMIN_PORT=81          # NPM admin panel port (default: 81)
+```
+
+**How NPM Credentials Work:**
+- NPM 2.9+ uses `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` env vars on first database creation
+- These are only read once when the NPM container first starts
+- To change credentials after initial setup, use the "Recreate" button which removes the container and data volumes
+
+**Admin Routes:**
+- `GET /admin/settings/npm` - NPM settings page
+- `POST /admin/settings/npm` - Save NPM configuration
+- `GET /admin/settings/npm/status` - Container status API
+- `POST /admin/settings/npm/start` - Start container
+- `POST /admin/settings/npm/stop` - Stop container
+- `POST /admin/settings/npm/restart` - Restart container
+- `POST /admin/settings/npm/test` - Test API connection
+- `POST /admin/settings/npm/initialize` - Initialize credentials
+- `POST /admin/settings/npm/recreate` - Remove container and volumes for fresh start
+- `GET /admin/settings/npm/logs` - Container logs API
+
+**Service:** `proxy.js` - NPM API client, container control, domain mappings
+
+**Database Table:** `project_domains` - Domain-to-project mappings with SSL status
+
 ## Key Services
 
 | Service | Purpose |
@@ -428,6 +473,7 @@ Projects can be shared with other users.
 | `zip.js` | ZIP extraction (to html/), auto-flatten, project creation |
 | `autodeploy.js` | Auto-deploy polling, deployment execution, history logging |
 | `sharing.js` | Project sharing, permission levels (read/manage/full), access control |
+| `proxy.js` | NPM integration, domain management, SSL certificates |
 
 ## Middleware
 
