@@ -52,7 +52,7 @@
                                             </button>
                                         </form>
                                         <form action="/admin/users/<%= u.id %>/reject" method="POST" class="d-inline"
-                                              onsubmit="return confirm('<%= t('admin:delete.confirmReject', { username: u.username }) %>')">
+                                              data-confirm="<%= t('admin:delete.confirmReject', { username: u.username }) %>">
                                             <button type="submit" class="btn btn-danger" title="<%= t('admin:pending.reject') %>">
                                                 <i class="bi bi-x-lg"></i> <%= t('admin:pending.reject') %>
                                             </button>
@@ -67,3 +67,16 @@
         <% } %>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirm dialogs for forms
+    document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm(this.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>

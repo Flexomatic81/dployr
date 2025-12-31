@@ -26,10 +26,10 @@
                         <div class="input-group">
                             <input type="password" class="form-control" id="password" name="password"
                                    minlength="6" placeholder="<%= t('admin:editUser.newPasswordHint') %>">
-                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                            <button class="btn btn-outline-secondary btn-toggle-password" type="button" data-target="password">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            <button class="btn btn-outline-primary" type="button" onclick="generatePassword()">
+                            <button class="btn btn-outline-primary" type="button" id="btnGeneratePassword">
                                 <i class="bi bi-shuffle"></i> <%= t('common:buttons.generate') %>
                             </button>
                         </div>
@@ -70,19 +70,25 @@
 </div>
 
 <script>
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    document.querySelectorAll('.btn-toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const input = document.getElementById(this.dataset.target);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+    });
 
-function generatePassword() {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
-    let password = '';
-    for (let i = 0; i < 16; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    const input = document.getElementById('password');
-    input.value = password;
-    input.type = 'text';
-}
+    // Generate password button
+    document.getElementById('btnGeneratePassword').addEventListener('click', function() {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
+        let password = '';
+        for (let i = 0; i < 16; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        const input = document.getElementById('password');
+        input.value = password;
+        input.type = 'text';
+    });
+});
 </script>

@@ -55,13 +55,13 @@
                                         <input type="password" class="form-control form-control-sm"
                                                value="<%= db.password %>" readonly
                                                id="pw-<%= dbId %>">
-                                        <button class="btn btn-outline-secondary btn-icon" type="button"
-                                                onclick="togglePassword('pw-<%= dbId %>')"
+                                        <button class="btn btn-outline-secondary btn-icon btn-toggle-password" type="button"
+                                                data-target="pw-<%= dbId %>"
                                                 title="<%= t('databases:credentials.showPassword') %>">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-icon" type="button"
-                                                onclick="copyPassword('pw-<%= dbId %>')"
+                                        <button class="btn btn-outline-secondary btn-icon btn-copy-password" type="button"
+                                                data-target="pw-<%= dbId %>"
                                                 title="<%= t('databases:credentials.copy') %>">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
@@ -159,22 +159,29 @@ DB_PASSWORD=&lt;password&gt;</code></pre>
 <% } %>
 
 <script>
-function togglePassword(id) {
-    const input = document.getElementById(id);
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    document.querySelectorAll('.btn-toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const input = document.getElementById(this.dataset.target);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+    });
 
-function copyPassword(id) {
-    const input = document.getElementById(id);
-    input.type = 'text';
-    input.select();
-    document.execCommand('copy');
-    input.type = 'password';
+    // Copy password
+    document.querySelectorAll('.btn-copy-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const input = document.getElementById(this.dataset.target);
+            input.type = 'text';
+            input.select();
+            document.execCommand('copy');
+            input.type = 'password';
 
-    // Feedback
-    const btn = input.nextElementSibling.nextElementSibling;
-    const originalIcon = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-check"></i>';
-    setTimeout(() => btn.innerHTML = originalIcon, 1500);
-}
+            // Feedback
+            const originalIcon = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-check"></i>';
+            setTimeout(() => this.innerHTML = originalIcon, 1500);
+        });
+    });
+});
 </script>

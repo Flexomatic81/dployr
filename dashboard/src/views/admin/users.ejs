@@ -57,13 +57,13 @@
                                     <a href="/admin/users/<%= u.id %>/edit" class="btn btn-sm btn-outline-primary btn-icon" title="<%= t('common:buttons.edit') %>">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-outline-warning btn-icon" title="<%= t('admin:editUser.resetPassword') %>"
-                                            onclick="resetPassword(<%= u.id %>, '<%= u.username %>')">
+                                    <button type="button" class="btn btn-sm btn-outline-warning btn-icon btn-reset-password" title="<%= t('admin:editUser.resetPassword') %>"
+                                            data-user-id="<%= u.id %>" data-username="<%= u.username %>">
                                         <i class="bi bi-key"></i>
                                     </button>
                                     <% if (u.id !== user.id) { %>
                                         <form action="/admin/users/<%= u.id %>?_method=DELETE" method="POST" class="d-inline"
-                                              onsubmit="return confirm('<%= t('admin:delete.confirmUser', { username: u.username }) %>')">
+                                              data-confirm="<%= t('admin:delete.confirmUser', { username: u.username }) %>">
                                             <%- csrfInput %>
                                             <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="<%= t('common:buttons.delete') %>">
                                                 <i class="bi bi-trash"></i>
@@ -96,10 +96,10 @@
                     <div class="mb-3">
                         <div class="input-group">
                             <input type="text" class="form-control" id="newPassword" name="password" required minlength="6">
-                            <button class="btn btn-outline-primary" type="button" onclick="generateNewPassword()">
+                            <button class="btn btn-outline-primary" type="button" id="btnGeneratePassword">
                                 <i class="bi bi-shuffle"></i>
                             </button>
-                            <button class="btn btn-outline-secondary" type="button" onclick="copyPassword()">
+                            <button class="btn btn-outline-secondary" type="button" id="btnCopyPassword">
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </div>
@@ -120,39 +120,59 @@
 </div>
 
 <script>
-const usersData = <%- JSON.stringify(users.map(u => ({ id: u.id, username: u.username, system_username: u.system_username }))) %>;
+document.addEventListener('DOMContentLoaded', function() {
+    const usersData = <%- JSON.stringify(users.map(u => ({ id: u.id, username: u.username, system_username: u.system_username }))) %>;
 
-function resetPassword(userId, username) {
-    const user = usersData.find(u => u.id === userId);
-    if (!user) return;
-
-    document.getElementById('resetUsername').textContent = username;
-    document.getElementById('resetUsernameField').value = user.username;
-    document.getElementById('resetSystemUsername').value = user.system_username;
-    document.getElementById('resetPasswordForm').action = '/admin/users/' + userId + '?_method=PUT';
-
-    generateNewPassword();
-
-    const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-    modal.show();
-}
-
-function generateNewPassword() {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
-    let password = '';
-    for (let i = 0; i < 16; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Generate random password
+    function generateNewPassword() {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
+        let password = '';
+        for (let i = 0; i < 16; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('newPassword').value = password;
     }
-    document.getElementById('newPassword').value = password;
-}
 
-function copyPassword() {
-    const password = document.getElementById('newPassword').value;
-    navigator.clipboard.writeText(password).then(() => {
-        const btn = event.target.closest('button');
-        const icon = btn.querySelector('i');
-        icon.className = 'bi bi-check';
-        setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 2000);
+    // Reset password button click - open modal
+    document.querySelectorAll('.btn-reset-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const userId = parseInt(this.dataset.userId);
+            const username = this.dataset.username;
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('resetUsername').textContent = username;
+            document.getElementById('resetUsernameField').value = user.username;
+            document.getElementById('resetSystemUsername').value = user.system_username;
+            document.getElementById('resetPasswordForm').action = '/admin/users/' + userId + '?_method=PUT';
+
+            generateNewPassword();
+
+            const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+            modal.show();
+        });
     });
-}
+
+    // Generate password button
+    document.getElementById('btnGeneratePassword').addEventListener('click', generateNewPassword);
+
+    // Copy password button
+    document.getElementById('btnCopyPassword').addEventListener('click', function() {
+        const password = document.getElementById('newPassword').value;
+        navigator.clipboard.writeText(password).then(() => {
+            const icon = this.querySelector('i');
+            icon.className = 'bi bi-check';
+            setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 2000);
+        });
+    });
+
+    // Confirm dialogs for delete forms
+    document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm(this.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
 </script>

@@ -27,7 +27,7 @@
                         <div class="input-group">
                             <input type="password" class="form-control" id="password" name="password"
                                    required minlength="6">
-                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                            <button class="btn btn-outline-secondary btn-toggle-password" type="button" data-target="password">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
@@ -66,8 +66,13 @@
 </div>
 
 <script>
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    document.querySelectorAll('.btn-toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const input = document.getElementById(this.dataset.target);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+    });
+});
 </script>

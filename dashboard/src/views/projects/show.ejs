@@ -249,8 +249,8 @@
                     <%- include('../partials/help-icon', { text: t('projects:show.autoDeployHelp') }) %>
                     <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
                         <span class="badge bg-success-subtle text-success"><%= t('projects:show.autoDeployActive') %></span>
-                        <form action="/projects/<%= project.name %>/autodeploy/interval" method="POST" class="d-inline">
-                            <select name="interval" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()"
+                        <form action="/projects/<%= project.name %>/autodeploy/interval" method="POST" class="d-inline" id="intervalForm">
+                            <select name="interval" class="form-select form-select-sm" style="width: auto; display: inline-block;" id="intervalSelect"
                                 data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('projects:show.intervalTooltip') %>">
                                 <% const currentInterval = autoDeployConfig.interval_minutes || 5; %>
                                 <option value="5" <%= currentInterval === 5 ? 'selected' : '' %>>5 Min</option>
@@ -491,7 +491,7 @@
             </h5>
             <div class="d-flex align-items-center">
                 <% if (userDatabases && userDatabases.length > 0) { %>
-                <div class="btn-group btn-group-sm me-2" onclick="event.stopPropagation();">
+                <div class="btn-group btn-group-sm me-2" data-stop-propagation>
                     <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
                         title="<%= envExample && envExample.exists ? t('projects:show.setupDbHelp', { filename: envExample.filename }) : t('projects:show.setupDbHelpNoExample') %>">
                         <i class="bi bi-database-add"></i> <%= t('projects:show.setupDb') %>
@@ -591,8 +591,8 @@
                             <small class="text-muted">(<%= share.shared_system_username %>)</small>
                         </td>
                         <td>
-                            <form action="/projects/<%= project.name %>/shares/<%= share.shared_with_id %>/update" method="POST" class="d-inline">
-                                <select name="permission" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                            <form action="/projects/<%= project.name %>/shares/<%= share.shared_with_id %>/update" method="POST" class="d-inline share-permission-form">
+                                <select name="permission" class="form-select form-select-sm share-permission-select" style="width: auto;">
                                     <option value="read" <%= share.permission === 'read' ? 'selected' : '' %>><%= t('projects:sharing.permissions.read') %></option>
                                     <option value="manage" <%= share.permission === 'manage' ? 'selected' : '' %>><%= t('projects:sharing.permissions.manage') %></option>
                                     <option value="full" <%= share.permission === 'full' ? 'selected' : '' %>><%= t('projects:sharing.permissions.full') %></option>
@@ -601,7 +601,7 @@
                         </td>
                         <td class="text-end">
                             <form action="/projects/<%= project.name %>/shares/<%= share.shared_with_id %>/delete" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('<%= t('projects:sharing.removeConfirm', { username: share.username }) %>')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" data-confirm="<%= t('projects:sharing.removeConfirm', { username: share.username }) %>">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </form>
@@ -713,7 +713,7 @@
                         </td>
                         <td class="text-end">
                             <form action="/proxy/<%= project.name %>/domains/<%= domain.domain %>?_method=DELETE" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-outline-danger btn-sm btn-icon" onclick="return confirm('<%= t('proxy:confirmDelete') %>')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm btn-icon" data-confirm="<%= t('proxy:confirmDelete') %>">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </form>
@@ -844,3 +844,38 @@
     </div>
 </div>
 <% } %><!-- End projectAccess.isOwner for Git Disconnect Modal -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit interval form on change
+    const intervalSelect = document.getElementById('intervalSelect');
+    if (intervalSelect) {
+        intervalSelect.addEventListener('change', function() {
+            document.getElementById('intervalForm').submit();
+        });
+    }
+
+    // Auto-submit share permission forms on change
+    document.querySelectorAll('.share-permission-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+
+    // Confirm dialogs for delete buttons
+    document.querySelectorAll('[data-confirm]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            if (!confirm(this.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Stop propagation for dropdown buttons in collapsible headers
+    document.querySelectorAll('[data-stop-propagation]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+});
+</script>
