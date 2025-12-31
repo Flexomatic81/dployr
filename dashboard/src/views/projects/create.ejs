@@ -62,12 +62,20 @@
                                     <%- include('../partials/help-icon', { text: t('projects:create.accessTokenHelp') }) %>
                                 </label>
                                 <input type="password" class="form-control" id="access_token" name="access_token"
-                                       placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                                       placeholder="ghp_... / glpat-... / ATBB...">
                                 <div class="form-text">
                                     <%= t('projects:create.accessTokenHint') %>
-                                    <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank" class="text-decoration-none">
-                                        <%= t('projects:create.createGitHubToken') %> <i class="bi bi-box-arrow-up-right"></i>
-                                    </a>
+                                    <span class="ms-1">
+                                        <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank" class="text-decoration-none me-2" title="GitHub Personal Access Token">
+                                            <i class="bi bi-github"></i> <%= t('projects:create.createTokenGithub') %>
+                                        </a>
+                                        <a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" class="text-decoration-none me-2" title="GitLab Personal Access Token">
+                                            <i class="bi bi-gitlab"></i> <%= t('projects:create.createTokenGitlab') %>
+                                        </a>
+                                        <a href="https://bitbucket.org/account/settings/app-passwords/" target="_blank" class="text-decoration-none" title="Bitbucket App Password">
+                                            <i class="bi bi-bucket"></i> <%= t('projects:create.createTokenBitbucket') %>
+                                        </a>
+                                    </span>
                                 </div>
                             </div>
 
