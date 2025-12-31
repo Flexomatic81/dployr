@@ -871,14 +871,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // DB setup forms - add hash to keep card open after submit
-    document.querySelectorAll('.db-setup-form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            sessionStorage.setItem('openCollapse', 'collapseEnv');
+    // Keep collapse cards open after form submit
+    // Find all forms inside collapse cards and remember which card to reopen
+    document.querySelectorAll('.collapse').forEach(function(collapseEl) {
+        const forms = collapseEl.querySelectorAll('form');
+        forms.forEach(function(form) {
+            form.addEventListener('submit', function() {
+                sessionStorage.setItem('openCollapse', collapseEl.id);
+            });
         });
     });
 
-    // Open collapse from sessionStorage (after DB setup redirect)
+    // Also handle auto-submit selects (share permissions, interval)
+    document.querySelectorAll('.share-permission-select').forEach(function(select) {
+        const collapseEl = select.closest('.collapse');
+        if (collapseEl) {
+            select.addEventListener('change', function() {
+                sessionStorage.setItem('openCollapse', collapseEl.id);
+            });
+        }
+    });
+
+    const intervalSelect = document.getElementById('intervalSelect');
+    if (intervalSelect) {
+        const collapseEl = intervalSelect.closest('.collapse');
+        if (collapseEl) {
+            intervalSelect.addEventListener('change', function() {
+                sessionStorage.setItem('openCollapse', collapseEl.id);
+            });
+        }
+    }
+
+    // Open collapse from sessionStorage (after form redirect)
     const openCollapse = sessionStorage.getItem('openCollapse');
     if (openCollapse) {
         sessionStorage.removeItem('openCollapse');
