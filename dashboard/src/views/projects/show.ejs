@@ -410,7 +410,7 @@
                         <input type="text" class="form-control font-monospace" id="webhookUrl"
                                value="<%= serverIp.includes('localhost') ? 'http' : 'https' %>://<%= serverIp %>/api/webhooks/<%= webhookConfig.id %>"
                                readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('webhookUrl')" title="<%= t('common:buttons.copy') %>">
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="webhookUrl" title="<%= t('common:buttons.copy') %>">
                             <i class="bi bi-clipboard"></i>
                         </button>
                     </div>
@@ -427,7 +427,7 @@
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control font-monospace" id="webhookSecret"
                                        value="<%= webhookSecret.secret %>" readonly>
-                                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('webhookSecret')" title="<%= t('common:buttons.copy') %>">
+                                <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="webhookSecret" title="<%= t('common:buttons.copy') %>">
                                     <i class="bi bi-clipboard"></i>
                                 </button>
                             </div>
@@ -972,27 +972,26 @@
 <% } %><!-- End projectAccess.isOwner for Git Disconnect Modal -->
 
 <script>
-// Copy to clipboard helper
-function copyToClipboard(elementId) {
-    const input = document.getElementById(elementId);
-    if (input) {
-        input.select();
-        input.setSelectionRange(0, 99999); // For mobile
-        navigator.clipboard.writeText(input.value).then(function() {
-            // Visual feedback
-            const btn = input.nextElementSibling;
-            if (btn) {
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    icon.className = 'bi bi-check';
-                    setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 1500);
-                }
+document.addEventListener('DOMContentLoaded', function() {
+    // Copy to clipboard buttons
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.copyTarget;
+            const input = document.getElementById(targetId);
+            if (input) {
+                input.select();
+                input.setSelectionRange(0, 99999); // For mobile
+                navigator.clipboard.writeText(input.value).then(function() {
+                    // Visual feedback
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = 'bi bi-check';
+                        setTimeout(function() { icon.className = 'bi bi-clipboard'; }, 1500);
+                    }
+                });
             }
         });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
+    });
     // Auto-submit interval form on change
     const intervalSelect = document.getElementById('intervalSelect');
     if (intervalSelect) {
