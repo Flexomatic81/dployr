@@ -41,6 +41,13 @@
                         <div class="form-text"><%= t('admin:createUser.usernameHelp') %></div>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="email" class="form-label"><%= t('common:labels.email') %></label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               placeholder="<%= t('auth:register.emailPlaceholder') %>">
+                        <div class="form-text"><%= t('admin:createUser.emailHelp') %></div>
+                    </div>
+
                     <div class="mb-4">
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin">

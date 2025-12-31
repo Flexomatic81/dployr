@@ -45,6 +45,22 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="email" class="form-label"><%= t('common:labels.email') %></label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="<%= editUser.email || '' %>"
+                               placeholder="<%= t('auth:register.emailPlaceholder') %>">
+                        <% if (editUser.email && editUser.email_verified) { %>
+                        <div class="form-text text-success">
+                            <i class="bi bi-check-circle"></i> <%= t('admin:editUser.emailVerified') %>
+                        </div>
+                        <% } else if (editUser.email) { %>
+                        <div class="form-text text-warning">
+                            <i class="bi bi-exclamation-triangle"></i> <%= t('admin:editUser.emailNotVerified') %>
+                        </div>
+                        <% } %>
+                    </div>
+
                     <div class="mb-4">
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin"

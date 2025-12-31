@@ -112,17 +112,17 @@ async function createUser(username, password, systemUsername, isAdmin = false, a
 /**
  * Update user
  */
-async function updateUser(id, { username, password, systemUsername, isAdmin }) {
+async function updateUser(id, { username, password, systemUsername, isAdmin, email }) {
     if (password) {
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
         await pool.query(
-            'UPDATE dashboard_users SET username = ?, password_hash = ?, system_username = ?, is_admin = ? WHERE id = ?',
-            [username, passwordHash, systemUsername, isAdmin, id]
+            'UPDATE dashboard_users SET username = ?, password_hash = ?, system_username = ?, is_admin = ?, email = ? WHERE id = ?',
+            [username, passwordHash, systemUsername, isAdmin, email, id]
         );
     } else {
         await pool.query(
-            'UPDATE dashboard_users SET username = ?, system_username = ?, is_admin = ? WHERE id = ?',
-            [username, systemUsername, isAdmin, id]
+            'UPDATE dashboard_users SET username = ?, system_username = ?, is_admin = ?, email = ? WHERE id = ?',
+            [username, systemUsername, isAdmin, email, id]
         );
     }
 

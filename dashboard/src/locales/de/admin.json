@@ -46,6 +46,7 @@
     "title": "Neuen Benutzer erstellen",
     "usernameHelp": "Wird als System-Benutzername für Projektordner verwendet",
     "passwordHelp": "Mindestens 6 Zeichen",
+    "emailHelp": "Optional. Wird für Passwort-Reset und Benachrichtigungen verwendet.",
     "makeAdmin": "Als Admin anlegen",
     "submit": "Benutzer erstellen"
   },
@@ -57,7 +58,9 @@
     "newPasswordHint": "Leer lassen, um das Passwort nicht zu ändern",
     "isAdmin": "Administrator",
     "submit": "Änderungen speichern",
-    "systemUsernameWarning": "Änderungen können bestehende Projekte unzugänglich machen!"
+    "systemUsernameWarning": "Änderungen können bestehende Projekte unzugänglich machen!",
+    "emailVerified": "E-Mail-Adresse ist bestätigt",
+    "emailNotVerified": "E-Mail-Adresse ist noch nicht bestätigt"
   },
 
   "pending": {

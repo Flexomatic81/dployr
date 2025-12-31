@@ -46,6 +46,7 @@
     "title": "Create New User",
     "usernameHelp": "Used as the system username for project folders",
     "passwordHelp": "At least 6 characters",
+    "emailHelp": "Optional. Used for password reset and notifications.",
     "makeAdmin": "Make admin",
     "submit": "Create User"
   },
@@ -57,7 +58,9 @@
     "newPasswordHint": "Leave blank to keep the current password",
     "isAdmin": "Administrator",
     "submit": "Save Changes",
-    "systemUsernameWarning": "Changes may make existing projects inaccessible!"
+    "systemUsernameWarning": "Changes may make existing projects inaccessible!",
+    "emailVerified": "Email address is verified",
+    "emailNotVerified": "Email address is not yet verified"
   },
 
   "pending": {

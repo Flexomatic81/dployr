@@ -144,7 +144,7 @@ router.get('/users/create', (req, res) => {
 // Create new user - Processing
 router.post('/users', async (req, res) => {
     try {
-        const { username, password, system_username, is_admin } = req.body;
+        const { username, password, system_username, is_admin, email } = req.body;
 
         // Validation
         if (!username || !password || !system_username) {
@@ -168,8 +168,14 @@ router.post('/users', async (req, res) => {
             return res.redirect('/admin/users/create');
         }
 
-        // Admin-created users are automatically approved
-        await userService.createUser(username, password, system_username, is_admin === 'on', true);
+        // Check if email is already in use
+        if (email && await userService.emailExists(email)) {
+            req.flash('error', req.t('auth:errors.emailExists'));
+            return res.redirect('/admin/users/create');
+        }
+
+        // Admin-created users are automatically approved (email is optional)
+        await userService.createUser(username, password, system_username, is_admin === 'on', true, email || null);
 
         req.flash('success', req.t('admin:flash.userCreated', { username }));
         res.redirect('/admin/users');
@@ -183,7 +189,8 @@ router.post('/users', async (req, res) => {
 // Edit user - Form
 router.get('/users/:id/edit', async (req, res) => {
     try {
-        const editUser = await userService.getUserById(req.params.id);
+        // Use getFullUserById to include email fields
+        const editUser = await userService.getFullUserById(req.params.id);
 
         if (!editUser) {
             req.flash('error', req.t('admin:errors.userNotFound'));
@@ -204,7 +211,7 @@ router.get('/users/:id/edit', async (req, res) => {
 // Edit user - Processing
 router.put('/users/:id', async (req, res) => {
     try {
-        const { username, password, system_username, is_admin } = req.body;
+        const { username, password, system_username, is_admin, email } = req.body;
         const userId = req.params.id;
 
         // Validation
@@ -219,11 +226,18 @@ router.put('/users/:id', async (req, res) => {
             return res.redirect(`/admin/users/${userId}/edit`);
         }
 
+        // Check if email is already in use by another user
+        if (email && await userService.emailExists(email, userId)) {
+            req.flash('error', req.t('auth:errors.emailExists'));
+            return res.redirect(`/admin/users/${userId}/edit`);
+        }
+
         await userService.updateUser(userId, {
             username,
             password: password || null,
             systemUsername: system_username,
-            isAdmin: is_admin === 'on'
+            isAdmin: is_admin === 'on',
+            email: email || null
         });
 
         req.flash('success', req.t('admin:flash.userUpdated', { username }));
