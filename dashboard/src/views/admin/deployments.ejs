@@ -1,74 +1,42 @@
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
-        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
-        <li class="breadcrumb-item active"><%= t('admin:deployments.title') %></li>
-    </ol>
-</nav>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-rocket-takeoff"></i> <%= t('admin:deployments.title') %></h1>
-</div>
+<%- include('../partials/pageHeader', {
+    title: t('admin:deployments.title'),
+    titleIcon: 'bi-rocket-takeoff',
+    backLink: { href: '/admin', label: t('common:nav.admin') }
+}) %>
 
 <!-- Statistics (last 24h) -->
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50"><%= t('admin:deployments.stats.title') %></h6>
-                        <h2 class="mb-0"><%= stats.total || 0 %></h2>
-                    </div>
-                    <i class="bi bi-rocket-takeoff fs-1 opacity-50"></i>
-                </div>
-            </div>
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <%- include('../components/statCard', {
+            label: t('admin:deployments.stats.title'),
+            value: stats.total || 0,
+            variant: 'primary',
+            icon: 'bi-rocket-takeoff'
+        }) %>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50"><%= t('admin:deployments.stats.success') %></h6>
-                        <h2 class="mb-0"><%= stats.successful || 0 %></h2>
-                    </div>
-                    <i class="bi bi-check-circle fs-1 opacity-50"></i>
-                </div>
-            </div>
-        </div>
+    <div class="col-6 col-lg-3">
+        <%- include('../components/statCard', {
+            label: t('admin:deployments.stats.success'),
+            value: stats.successful || 0,
+            variant: 'success',
+            icon: 'bi-check-circle'
+        }) %>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-danger text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50"><%= t('admin:deployments.stats.failed') %></h6>
-                        <h2 class="mb-0"><%= stats.failed || 0 %></h2>
-                    </div>
-                    <i class="bi bi-x-circle fs-1 opacity-50"></i>
-                </div>
-            </div>
-        </div>
+    <div class="col-6 col-lg-3">
+        <%- include('../components/statCard', {
+            label: t('admin:deployments.stats.failed'),
+            value: stats.failed || 0,
+            variant: 'danger',
+            icon: 'bi-x-circle'
+        }) %>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50"><%= t('admin:deployments.stats.avgDuration') %></h6>
-                        <h2 class="mb-0">
-                            <% if (stats.avg_duration) { %>
-                            <%= (stats.avg_duration / 1000).toFixed(1) %>s
-                            <% } else { %>
-                            -
-                            <% } %>
-                        </h2>
-                    </div>
-                    <i class="bi bi-stopwatch fs-1 opacity-50"></i>
-                </div>
-            </div>
-        </div>
+    <div class="col-6 col-lg-3">
+        <%- include('../components/statCard', {
+            label: t('admin:deployments.stats.avgDuration'),
+            value: stats.avg_duration ? (stats.avg_duration / 1000).toFixed(1) + 's' : '-',
+            variant: 'info',
+            icon: 'bi-stopwatch'
+        }) %>
     </div>
 </div>
 
