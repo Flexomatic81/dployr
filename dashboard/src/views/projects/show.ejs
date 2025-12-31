@@ -371,8 +371,7 @@
             <% } %>
         </div>
 
-        <!-- Webhook section -->
-        <% if (autoDeployConfig && autoDeployConfig.enabled) { %>
+        <!-- Webhook section (independent of polling auto-deploy) -->
         <div class="border-top pt-3 mt-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-2">
@@ -492,7 +491,6 @@
                 </p>
             <% } %>
         </div>
-        <% } %><!-- End webhook section -->
         <% } %><!-- End projectAccess.isOwner for Auto-Deploy -->
     </div>
     </div><!-- End collapse -->

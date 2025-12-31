@@ -346,17 +346,18 @@ async function getLastSuccessfulDeployment(userId, projectName) {
 
 /**
  * Enables webhook for a project and generates a secret
+ * Creates a record if it doesn't exist (independent of polling auto-deploy)
  * @returns {Promise<{secret: string, webhookId: number}>}
  */
-async function enableWebhook(userId, projectName) {
+async function enableWebhook(userId, projectName, branch = 'main') {
     const secret = generateWebhookSecret();
 
-    // Enable webhook and set secret
+    // Insert or update - webhook works independently of polling (enabled flag)
     await pool.execute(
-        `UPDATE project_autodeploy
-         SET webhook_enabled = TRUE, webhook_secret = ?, updated_at = CURRENT_TIMESTAMP
-         WHERE user_id = ? AND project_name = ?`,
-        [secret, userId, projectName]
+        `INSERT INTO project_autodeploy (user_id, project_name, branch, enabled, webhook_enabled, webhook_secret)
+         VALUES (?, ?, ?, FALSE, TRUE, ?)
+         ON DUPLICATE KEY UPDATE webhook_enabled = TRUE, webhook_secret = ?, updated_at = CURRENT_TIMESTAMP`,
+        [userId, projectName, branch, secret, secret]
     );
 
     // Get the autodeploy ID for webhook URL

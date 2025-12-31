@@ -235,16 +235,19 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
             userDatabases = await projectService.getUserDbCredentials(req.session.user.system_username);
         }
 
-        // Load auto-deploy config (only for owner with Git projects)
+        // Load auto-deploy and webhook config (only for owner with Git projects)
         let autoDeployConfig = null;
         let deploymentHistory = [];
         let webhookConfig = null;
         let webhookSecret = null;
         if (access.isOwner && gitStatus && gitStatus.connected) {
+            // Auto-deploy (polling) and webhook are independent features
             autoDeployConfig = await autoDeployService.getAutoDeployConfig(req.session.user.id, req.params.name);
-            if (autoDeployConfig) {
+            webhookConfig = await autoDeployService.getWebhookConfig(req.session.user.id, req.params.name);
+
+            // Load deployment history if either auto-deploy or webhook is configured
+            if (autoDeployConfig || webhookConfig) {
                 deploymentHistory = await autoDeployService.getDeploymentHistory(req.session.user.id, req.params.name, 5);
-                webhookConfig = await autoDeployService.getWebhookConfig(req.session.user.id, req.params.name);
             }
 
             // Check for one-time secret display from session
@@ -716,16 +719,12 @@ router.post('/:name/webhook/enable', requireAuth, getProjectAccess(), async (req
             return res.redirect(`/projects/${req.params.name}`);
         }
 
-        // Ensure auto-deploy is enabled first
-        const autoDeployConfig = await autoDeployService.getAutoDeployConfig(req.session.user.id, req.params.name);
-        if (!autoDeployConfig) {
-            // Enable auto-deploy first
-            const gitStatus = await gitService.getGitStatus(projectPath);
-            const branch = gitStatus?.branch || 'main';
-            await autoDeployService.enableAutoDeploy(req.session.user.id, req.params.name, branch);
-        }
+        // Get branch from git status for webhook config
+        const gitStatus = await gitService.getGitStatus(projectPath);
+        const branch = gitStatus?.branch || 'main';
 
-        const result = await autoDeployService.enableWebhook(req.session.user.id, req.params.name);
+        // Enable webhook (independent of polling auto-deploy)
+        const result = await autoDeployService.enableWebhook(req.session.user.id, req.params.name, branch);
 
         // Store secret in session temporarily for one-time display
         req.session.webhookSecret = {
