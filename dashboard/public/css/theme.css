@@ -50,17 +50,17 @@
     --d-font-mono: "SF Mono", Monaco, "Cascadia Code", "Consolas", monospace;
 }
 
-/* Dark Mode Tokens - Professional dark theme inspired by modern IDEs */
+/* Dark Mode Tokens - AWS/Enterprise Admin Style */
 [data-bs-theme="dark"] {
-    /* Subtle, professional grays with slight blue tint */
-    --d-bg: #111827;
-    --d-surface: #1f2937;
-    --d-surface-elevated: #1f2937;
-    --d-text: #e5e7eb;
-    --d-text-muted: #9ca3af;
-    --d-text-light: #6b7280;
-    --d-border: #374151;
-    --d-border-light: #1f2937;
+    /* Layered surfaces for depth hierarchy */
+    --d-bg: #0f1419;
+    --d-surface: #1a2332;
+    --d-surface-elevated: #232f3e;
+    --d-text: #d5dee8;
+    --d-text-muted: #8b949e;
+    --d-text-light: #6e7681;
+    --d-border: #30363d;
+    --d-border-light: #21262d;
 
     /* Softer shadows for dark mode */
     --d-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
@@ -68,20 +68,22 @@
     --d-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
     --d-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
 
-    /* More vibrant accent colors for dark mode */
-    --d-primary: #3b82f6;
-    --d-primary-hover: #2563eb;
-    --d-success: #22c55e;
-    --d-warning: #eab308;
-    --d-danger: #ef4444;
-    --d-info: #06b6d4;
+    /* Primary: Single accent color for interactive elements */
+    --d-primary: #58a6ff;
+    --d-primary-hover: #79b8ff;
 
-    /* Subtle backgrounds with proper opacity */
-    --d-primary-subtle: rgba(59, 130, 246, 0.15);
-    --d-success-subtle: rgba(34, 197, 94, 0.15);
-    --d-warning-subtle: rgba(234, 179, 8, 0.15);
-    --d-danger-subtle: rgba(239, 68, 68, 0.15);
-    --d-info-subtle: rgba(6, 182, 212, 0.15);
+    /* Desaturated status colors - recognizable but not loud */
+    --d-success: #56d364;
+    --d-warning: #d29922;
+    --d-danger: #f85149;
+    --d-info: #58a6ff;
+
+    /* Very subtle backgrounds - barely tinted */
+    --d-primary-subtle: rgba(88, 166, 255, 0.1);
+    --d-success-subtle: rgba(86, 211, 100, 0.1);
+    --d-warning-subtle: rgba(210, 153, 34, 0.1);
+    --d-danger-subtle: rgba(248, 81, 73, 0.1);
+    --d-info-subtle: rgba(88, 166, 255, 0.1);
 }
 
 /* ==========================================================================
@@ -193,25 +195,25 @@ body {
     border-color: transparent;
 }
 
-/* Dark mode card refinements */
+/* Dark mode card refinements - proper layering */
 [data-bs-theme="dark"] .card {
     background-color: var(--d-surface);
     border-color: var(--d-border);
 }
 
 [data-bs-theme="dark"] .card.d-elevated {
-    background-color: var(--d-surface);
+    background-color: var(--d-surface-elevated);
     border: 1px solid var(--d-border);
     box-shadow: var(--d-shadow);
 }
 
 [data-bs-theme="dark"] .card-header {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(255, 255, 255, 0.03);
     border-bottom-color: var(--d-border);
 }
 
 [data-bs-theme="dark"] .card-footer {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(255, 255, 255, 0.03);
     border-top-color: var(--d-border);
 }
 
@@ -519,12 +521,26 @@ body {
     color: #0c5460;
 }
 
+/* Slightly muted badge text colors for enterprise look */
 [data-bs-theme="dark"] .badge.bg-warning-subtle {
-    color: var(--d-warning);
+    color: #d4a72c;
 }
 
 [data-bs-theme="dark"] .badge.bg-info-subtle {
-    color: var(--d-info);
+    color: #79b8ff;
+}
+
+[data-bs-theme="dark"] .badge.bg-success-subtle {
+    color: #7ee787;
+}
+
+[data-bs-theme="dark"] .badge.bg-danger-subtle {
+    color: #ff7b72;
+}
+
+[data-bs-theme="dark"] .badge.bg-secondary-subtle {
+    background-color: rgba(139, 148, 158, 0.15) !important;
+    color: #8b949e;
 }
 
 /* ==========================================================================
@@ -765,14 +781,20 @@ a:hover {
     color: var(--d-danger);
 }
 
+/* Subtle danger zone - less aggressive */
 [data-bs-theme="dark"] .d-danger-zone {
     background-color: var(--d-surface);
-    border-color: rgba(239, 68, 68, 0.5);
+    border-color: var(--d-border);
+    border-left-color: var(--d-danger);
 }
 
 [data-bs-theme="dark"] .d-danger-zone .card-header {
-    background-color: rgba(239, 68, 68, 0.1);
-    border-bottom-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(248, 81, 73, 0.08);
+    border-bottom-color: var(--d-border);
+}
+
+[data-bs-theme="dark"] .d-danger-zone .card-header h5 {
+    color: var(--d-danger);
 }
 
 /* ==========================================================================
@@ -787,12 +809,13 @@ a:hover {
     color: #6f42c1 !important;
 }
 
+/* Desaturated purple for dark mode */
 [data-bs-theme="dark"] .bg-purple-subtle {
-    background-color: rgba(167, 139, 250, 0.15) !important;
+    background-color: rgba(163, 148, 204, 0.12) !important;
 }
 
 [data-bs-theme="dark"] .text-purple {
-    color: #a78bfa !important;
+    color: #a394cc !important;
 }
 
 /* ==========================================================================
@@ -818,11 +841,13 @@ a:hover {
     color: var(--d-text);
 }
 
+/* Neutral code styling - no bright colors */
 [data-bs-theme="dark"] code {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #f472b6;
+    background-color: rgba(110, 118, 129, 0.2);
+    color: #a5d6ff;
     padding: 0.125rem 0.375rem;
     border-radius: var(--d-radius-sm);
+    font-size: 0.875em;
 }
 
 [data-bs-theme="dark"] .list-group-item {
