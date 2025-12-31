@@ -758,6 +758,119 @@ function isDbVariable(varName) {
     return false;
 }
 
+/**
+ * Clone an existing project to a new name
+ * - Copies all files from the source project
+ * - Removes .git folder (clone is independent)
+ * - Assigns a new port
+ * - Updates docker-compose.yml with new container name
+ *
+ * @param {string} systemUsername - System username
+ * @param {string} sourceProjectName - Name of the project to clone
+ * @param {string} newProjectName - Name for the cloned project
+ * @returns {Object} Cloned project info
+ */
+async function cloneProject(systemUsername, sourceProjectName, newProjectName) {
+    // Validate new name
+    if (!/^[a-z0-9-]+$/.test(newProjectName)) {
+        throw new Error('Project name may only contain lowercase letters, numbers and hyphens');
+    }
+
+    const sourcePath = path.join(USERS_PATH, systemUsername, sourceProjectName);
+    const destPath = path.join(USERS_PATH, systemUsername, newProjectName);
+
+    // Check if source exists
+    try {
+        await fs.access(sourcePath);
+    } catch (error) {
+        throw new Error('Source project not found');
+    }
+
+    // Check if destination already exists
+    try {
+        await fs.access(destPath);
+        throw new Error('A project with this name already exists');
+    } catch (error) {
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
+    }
+
+    // Get new port
+    const newPort = await getNextAvailablePort();
+    const newContainerName = `${systemUsername}-${newProjectName}`;
+
+    // Copy entire directory
+    await copyDirectory(sourcePath, destPath);
+
+    // Remove .git folder if present (in html/ or root)
+    const gitPaths = [
+        path.join(destPath, 'html', '.git'),
+        path.join(destPath, '.git')
+    ];
+    for (const gitPath of gitPaths) {
+        try {
+            await fs.rm(gitPath, { recursive: true, force: true });
+        } catch (e) {
+            // .git doesn't exist, ignore
+        }
+    }
+
+    // Remove .git-credentials file if present
+    const gitCredentialsPath = path.join(destPath, '.git-credentials');
+    try {
+        await fs.rm(gitCredentialsPath, { force: true });
+    } catch (e) {
+        // File doesn't exist, ignore
+    }
+
+    // Update docker-compose.yml with new container name
+    const composePath = path.join(destPath, 'docker-compose.yml');
+    try {
+        let composeContent = await fs.readFile(composePath, 'utf8');
+        // Replace container_name
+        composeContent = composeContent.replace(
+            /container_name:\s*["']?[a-z0-9-]+["']?/gi,
+            `container_name: ${newContainerName}`
+        );
+        await fs.writeFile(composePath, composeContent, 'utf8');
+    } catch (e) {
+        logger.error('Error updating docker-compose.yml', { error: e.message });
+    }
+
+    // Update .env file (project root - system vars)
+    const envPath = path.join(destPath, '.env');
+    try {
+        let envContent = await fs.readFile(envPath, 'utf8');
+        envContent = envContent
+            .replace(/PROJECT_NAME=.*/, `PROJECT_NAME=${newContainerName}`)
+            .replace(/EXPOSED_PORT=.*/, `EXPOSED_PORT=${newPort}`);
+        await fs.writeFile(envPath, envContent, 'utf8');
+    } catch (e) {
+        // .env doesn't exist, create basic one
+        const envContent = `PROJECT_NAME=${newContainerName}\nEXPOSED_PORT=${newPort}\n`;
+        await fs.writeFile(envPath, envContent, 'utf8');
+    }
+
+    // Detect template type
+    const templateType = await detectTemplateType(destPath);
+
+    logger.info('Project cloned successfully', {
+        source: sourceProjectName,
+        destination: newProjectName,
+        user: systemUsername,
+        port: newPort
+    });
+
+    return {
+        name: newProjectName,
+        path: destPath,
+        port: newPort,
+        templateType,
+        clonedFrom: sourceProjectName
+    };
+}
+
 // Load database credentials for a user
 async function getUserDbCredentials(systemUsername) {
     const credentialsPath = path.join(USERS_PATH, systemUsername, '.db-credentials');
@@ -811,6 +924,7 @@ module.exports = {
     getAvailableTemplates,
     getNextAvailablePort,
     createProject,
+    cloneProject,
     deleteProject,
     changeProjectType,
     parseEnvFile,

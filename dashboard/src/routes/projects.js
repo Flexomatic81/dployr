@@ -444,6 +444,38 @@ router.post('/:name/env/add-db', requireAuth, getProjectAccess(), requirePermiss
     }
 });
 
+// Clone project (owner only)
+router.post('/:name/clone', requireAuth, getProjectAccess(), async (req, res) => {
+    try {
+        // Only owner can clone
+        if (!req.projectAccess.isOwner) {
+            req.flash('error', req.t('projects:errors.ownerOnly'));
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const systemUsername = req.projectAccess.systemUsername;
+        const { newName } = req.body;
+
+        if (!newName || !/^[a-z0-9-]+$/.test(newName)) {
+            req.flash('error', req.t('projects:errors.invalidName'));
+            return res.redirect(`/projects/${req.params.name}`);
+        }
+
+        const clonedProject = await projectService.cloneProject(
+            systemUsername,
+            req.params.name,
+            newName
+        );
+
+        req.flash('success', req.t('projects:flash.cloned', { source: req.params.name, name: newName }));
+        res.redirect(`/projects/${clonedProject.name}`);
+    } catch (error) {
+        logger.error('Error cloning project', { error: error.message });
+        req.flash('error', req.t('common:errors.actionFailed', { action: req.t('projects:clone.action'), error: error.message }));
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
 // Delete project (owner only)
 router.delete('/:name', requireAuth, getProjectAccess(), async (req, res) => {
     try {

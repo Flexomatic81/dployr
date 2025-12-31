@@ -249,6 +249,19 @@
     "changeType": "Typ ändern"
   },
 
+  "clone": {
+    "title": "Projekt klonen",
+    "description": "Erstelle eine unabhängige Kopie dieses Projekts mit neuem Namen und Port.",
+    "button": "Projekt klonen",
+    "action": "Klonen",
+    "modalDescription": "Es wird eine vollständige Kopie des Projekts erstellt. Die Kopie ist unabhängig vom Original.",
+    "newName": "Name für das geklonte Projekt",
+    "infoTitle": "Was passiert beim Klonen",
+    "info1": "Alle Dateien werden kopiert",
+    "info2": "Ein neuer Port wird automatisch zugewiesen",
+    "info3": "Git-Verbindung wird nicht übernommen (unabhängige Kopie)"
+  },
+
   "delete": {
     "title": "Projekt löschen",
     "warning": "Damit wird das gesamte Projekt unwiderruflich gelöscht, inklusive aller Dateien und Container.",
@@ -280,7 +293,8 @@
     "deployFailed": "Deployment fehlgeschlagen: {{error}}",
     "webhookEnabled": "Webhook aktiviert. Kopiere das Secret - es wird nur einmal angezeigt!",
     "webhookDisabled": "Webhook deaktiviert",
-    "webhookRegenerated": "Neues Webhook-Secret generiert. Aktualisiere den Webhook bei deinem Git-Provider!"
+    "webhookRegenerated": "Neues Webhook-Secret generiert. Aktualisiere den Webhook bei deinem Git-Provider!",
+    "cloned": "Projekt \"{{source}}\" erfolgreich geklont zu \"{{name}}\""
   },
 
   "errors": {

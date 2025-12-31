@@ -48,6 +48,27 @@
             </form>
             <% } %>
         <% } %>
+        <% if (projectAccess.isOwner) { %>
+        <!-- Owner actions dropdown -->
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#cloneModal">
+                        <i class="bi bi-copy me-2"></i> <%= t('projects:clone.action') %>
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash me-2"></i> <%= t('common:buttons.delete') %>
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <% } %>
     </div>
 </div>
 
@@ -882,25 +903,6 @@
 </div>
 <% } %>
 
-<!-- Danger zone (only for owner) -->
-<% if (projectAccess.isOwner) { %>
-<div class="card d-danger-zone">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> <%= t('projects:dangerZone') %></h5>
-    </div>
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h6 class="mb-1"><%= t('projects:show.deleteProject') %></h6>
-                <p class="text-muted mb-0 small"><%= t('projects:show.deleteProjectDesc') %></p>
-            </div>
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                <i class="bi bi-trash"></i> <%= t('common:buttons.delete') %>
-            </button>
-        </div>
-    </div>
-</div>
-<% } %><!-- End projectAccess.isOwner for danger zone -->
 
 <!-- Delete Modal (only for owner) -->
 <% if (projectAccess.isOwner) { %>
@@ -968,6 +970,50 @@
     </div>
 </div>
 <% } %><!-- End projectAccess.isOwner for Git Disconnect Modal -->
+
+<!-- Clone Modal (only for owner) -->
+<% if (projectAccess.isOwner) { %>
+<div class="modal fade" id="cloneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-copy"></i> <%= t('projects:clone.title') %>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/projects/<%= project.name %>/clone" method="POST">
+                <div class="modal-body">
+                    <p class="text-muted"><%= t('projects:clone.modalDescription') %></p>
+                    <div class="mb-3">
+                        <label for="cloneNewName" class="form-label"><%= t('projects:clone.newName') %></label>
+                        <input type="text" class="form-control" id="cloneNewName" name="newName"
+                               pattern="[a-z0-9-]+" required
+                               placeholder="<%= project.name %>-copy"
+                               value="<%= project.name %>-copy">
+                        <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong><%= t('projects:clone.infoTitle') %>:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><%= t('projects:clone.info1') %></li>
+                            <li><%= t('projects:clone.info2') %></li>
+                            <li><%= t('projects:clone.info3') %></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common:buttons.cancel') %></button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-copy"></i> <%= t('projects:clone.button') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<% } %><!-- End projectAccess.isOwner for Clone Modal -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
