@@ -583,6 +583,17 @@ router.post('/settings/email', async (req, res) => {
 
         await writeEnvFile(envVars);
 
+        // Update process.env so changes take effect immediately
+        process.env.EMAIL_ENABLED = envVars.EMAIL_ENABLED;
+        process.env.EMAIL_HOST = envVars.EMAIL_HOST || '';
+        process.env.EMAIL_PORT = envVars.EMAIL_PORT || '587';
+        process.env.EMAIL_USER = envVars.EMAIL_USER || '';
+        if (envVars.EMAIL_PASSWORD) {
+            process.env.EMAIL_PASSWORD = envVars.EMAIL_PASSWORD;
+        }
+        process.env.EMAIL_SECURE = envVars.EMAIL_SECURE;
+        process.env.EMAIL_FROM = envVars.EMAIL_FROM || '';
+
         // Reset the email transporter to pick up new config
         emailService.resetTransporter();
 
