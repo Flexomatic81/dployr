@@ -86,7 +86,7 @@ services:
   npm:
     image: jc21/nginx-proxy-manager:latest
     container_name: dployr-npm
-    restart: "no"
+    restart: unless-stopped
     environment:
       DISABLE_IPV6: "true"
       # Initial admin credentials (only used on first start)
