@@ -88,7 +88,9 @@ dashboard/src/
 │   ├── logs.js         # Container logs viewer
 │   ├── admin.js        # User management, approval workflow, system logs, deployments
 │   ├── setup.js        # Initial configuration wizard
-│   └── help.js         # Help/documentation page
+│   ├── help.js         # Help/documentation page
+│   ├── profile.js      # User profile, notification preferences
+│   └── webhooks.js     # Git webhook endpoints (GitHub, GitLab, Bitbucket)
 ├── services/           # Business logic layer
 │   ├── project.js      # Project lifecycle, type changes
 │   ├── docker.js       # Container orchestration via dockerode
@@ -98,6 +100,7 @@ dashboard/src/
 │   ├── zip.js          # ZIP extraction, auto-flatten
 │   ├── sharing.js      # Project sharing, permission management
 │   ├── autodeploy.js   # Auto-deploy polling, deployment execution
+│   ├── email.js        # Email service (SMTP, templates, notifications)
 │   ├── providers/      # Database-specific implementations
 │   │   ├── mariadb-provider.js
 │   │   └── postgresql-provider.js
@@ -527,6 +530,72 @@ Admins can configure a custom domain for the dashboard itself (e.g., `app.dployr
 - Port 3000 remains available as fallback
 - Stored in `.env` as `NPM_DASHBOARD_DOMAIN`
 
+## Email System
+
+Optional email functionality for user notifications and account management.
+
+**Features:**
+- Email verification on registration
+- Password reset via email
+- Account approval notifications
+- Deployment success/failure notifications
+- Configurable notification preferences per user
+
+**Configuration:**
+Email can be enabled during initial setup or later via Admin → Email Settings.
+
+**Environment Variables** (in `.env`):
+```
+EMAIL_ENABLED=true              # Enable/disable email functionality
+EMAIL_HOST=smtp.example.com     # SMTP server
+EMAIL_PORT=587                  # SMTP port
+EMAIL_SECURE=false              # Use TLS (true for port 465)
+EMAIL_USER=noreply@example.com  # SMTP username
+EMAIL_PASSWORD=...              # SMTP password
+EMAIL_FROM=Dployr <noreply@example.com>  # Sender address
+EMAIL_VERIFICATION_EXPIRES=24   # Verification token validity (hours)
+EMAIL_RESET_EXPIRES=1           # Password reset token validity (hours)
+```
+
+**Admin Routes:**
+- `GET /admin/settings/email` - Email configuration page
+- `POST /admin/settings/email` - Save email settings
+- `POST /admin/settings/email/test` - Test SMTP connection
+
+**User Routes:**
+- `GET /forgot-password` - Password reset request form
+- `POST /forgot-password` - Send reset email
+- `GET /reset-password?token=...` - Password reset form
+- `POST /reset-password` - Set new password
+- `GET /verify-email?token=...` - Verify email address
+- `POST /resend-verification` - Resend verification email
+- `GET /profile/notifications` - Notification preferences
+- `POST /profile/notifications` - Save notification preferences
+
+**Email Templates** (in `templates/emails/{de,en}/`):
+- `verification.ejs` - Email verification
+- `password-reset.ejs` - Password reset link
+- `account-approved.ejs` - Account approval notification
+- `deployment-success.ejs` - Deployment success notification
+- `deployment-failure.ejs` - Deployment failure notification
+
+**Notification Preferences:**
+Users can configure which emails they receive via `/profile/notifications`:
+- Deployment success notifications
+- Deployment failure notifications
+- Auto-deploy notifications
+
+**Service:** `email.js` - SMTP transport, template rendering, email sending functions
+
+**Database Columns** (in `dashboard_users`):
+- `email` - User email address
+- `email_verified` - Email verification status
+- `verification_token` / `verification_token_expires` - Email verification
+- `reset_token` / `reset_token_expires` - Password reset
+- `notify_deploy_success` - Notification preference
+- `notify_deploy_failure` - Notification preference
+- `notify_autodeploy` - Notification preference
+
 ## Key Services
 
 | Service | Purpose |
@@ -539,6 +608,7 @@ Admins can configure a custom domain for the dashboard itself (e.g., `app.dployr
 | `autodeploy.js` | Auto-deploy polling, deployment execution, history logging |
 | `sharing.js` | Project sharing, permission levels (read/manage/full), access control |
 | `proxy.js` | NPM integration, domain management, SSL certificates |
+| `email.js` | SMTP email sending, template rendering, deployment notifications |
 
 ## Middleware
 
@@ -556,6 +626,7 @@ Admins can configure a custom domain for the dashboard itself (e.g., `app.dployr
 | `utils/nginx.js` | `generateNginxConfig()` for static website nginx config |
 | `utils/crypto.js` | `generatePassword()` for secure password generation |
 | `utils/security.js` | `removeBlockedFiles()` for removing Docker files from uploads |
+| `utils/webhook.js` | Webhook signature validation, provider detection, payload parsing |
 
 ## Config Modules
 

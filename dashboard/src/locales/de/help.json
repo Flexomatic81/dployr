@@ -10,6 +10,7 @@
     "databases": "Datenbanken",
     "sharing": "Projekt-Sharing",
     "domains": "Domains & SSL",
+    "notifications": "Benachrichtigungen",
     "admin": "Administration",
     "faq": "FAQ"
   },
@@ -275,6 +276,49 @@
     "dnsWarning": "Wichtig: Stelle sicher, dass deine Domain auf diesen Server zeigt, bevor du sie hinzufügst. SSL-Zertifikate können nur ausgestellt werden, wenn die Domain erreichbar ist."
   },
 
+  "notifications": {
+    "title": "E-Mail-Benachrichtigungen",
+    "intro": "Dployr kann dich per E-Mail über wichtige Ereignisse informieren. Diese Funktion muss vom Administrator aktiviert werden.",
+    "typesTitle": "Benachrichtigungstypen",
+    "types": {
+      "verification": {
+        "name": "E-Mail-Verifizierung",
+        "desc": "Nach der Registrierung erhältst du eine E-Mail zur Bestätigung deiner E-Mail-Adresse."
+      },
+      "passwordReset": {
+        "name": "Passwort zurücksetzen",
+        "desc": "Wenn du dein Passwort vergessen hast, kannst du einen Reset-Link anfordern."
+      },
+      "approval": {
+        "name": "Kontofreigabe",
+        "desc": "Du wirst benachrichtigt, wenn ein Administrator dein Konto freigegeben hat."
+      },
+      "deploySuccess": {
+        "name": "Deployment erfolgreich",
+        "desc": "Benachrichtigung nach erfolgreichem Deployment (Pull, Auto-Deploy, Webhook)."
+      },
+      "deployFailure": {
+        "name": "Deployment fehlgeschlagen",
+        "desc": "Sofortige Benachrichtigung, wenn ein Deployment fehlschlägt."
+      }
+    },
+    "settingsTitle": "Einstellungen anpassen",
+    "settingsIntro": "Du kannst selbst entscheiden, welche Benachrichtigungen du erhalten möchtest:",
+    "settingsSteps": {
+      "goto": "Klicke oben rechts auf deinen Benutzernamen",
+      "select": "Wähle \"Benachrichtigungen\"",
+      "toggle": "Aktiviere oder deaktiviere die gewünschten Benachrichtigungstypen",
+      "save": "Klicke auf \"Speichern\""
+    },
+    "requirementsTitle": "Voraussetzungen",
+    "requirements": {
+      "enabled": "E-Mail-System vom Administrator aktiviert",
+      "verified": "Deine E-Mail-Adresse muss verifiziert sein",
+      "address": "Du musst eine E-Mail-Adresse hinterlegt haben"
+    },
+    "note": "Hinweis: Wenn du noch keine E-Mail-Adresse hinterlegt oder verifiziert hast, kannst du dies in den Benachrichtigungseinstellungen nachholen."
+  },
+
   "admin": {
     "title": "Administration",
     "userManagementTitle": "Benutzerverwaltung",
@@ -295,7 +339,17 @@
       "initialize": "Initialisieren: Ändert die Standard-Credentials (admin@example.com) zu deinen konfigurierten",
       "logs": "Container-Logs: Live-Ansicht der NPM-Logs für Debugging"
     },
-    "npmNote": "Hinweis: Nach dem ersten Start und Initialisieren kannst du das NPM-Panel über den \"Panel öffnen\"-Button erreichen."
+    "npmNote": "Hinweis: Nach dem ersten Start und Initialisieren kannst du das NPM-Panel über den \"Panel öffnen\"-Button erreichen.",
+    "emailTitle": "E-Mail-Konfiguration",
+    "emailIntro": "E-Mail-Benachrichtigungen ermöglichen:",
+    "emailFeatures": {
+      "verification": "E-Mail-Verifizierung bei Registrierung",
+      "reset": "Passwort-Reset per E-Mail",
+      "approval": "Benachrichtigung bei Kontofreigabe",
+      "deploy": "Deployment-Benachrichtigungen (Erfolg/Fehler)"
+    },
+    "emailSetup": "Einrichtung: Unter Admin → E-Mail-Einstellungen kannst du SMTP-Zugangsdaten konfigurieren und die Verbindung testen.",
+    "emailNote": "Hinweis: E-Mail ist optional. Ohne E-Mail-Konfiguration funktioniert die Plattform weiterhin, aber ohne die oben genannten Features."
   },
 
   "faq": {
