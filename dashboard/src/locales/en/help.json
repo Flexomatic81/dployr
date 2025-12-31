@@ -137,17 +137,35 @@
 
   "autoDeploy": {
     "title": "Auto‑Deploy",
-    "intro": "Auto‑Deploy automatically checks for new commits and deploys them.",
-    "howItWorksTitle": "How it Works",
-    "howItWorks": {
+    "intro": "Auto‑Deploy automatically updates your project when new commits are pushed. There are two methods: Polling and Webhooks.",
+    "pollingTitle": "Polling (Interval-based)",
+    "pollingDesc": "The server periodically checks the repository for new commits.",
+    "pollingHowItWorks": {
       "check": "Dployr periodically checks the repository (configurable: 5‑60 min)",
       "pull": "On new commits: automatic pull",
       "restart": "Containers are restarted",
       "log": "Deployment is logged in history"
     },
-    "enableTitle": "Enable",
-    "enableDesc": "In the project view under \"Git Connection\" click Enable.",
-    "note": "Note: Auto‑Deploy is only available for Git projects and can only be configured by the project owner."
+    "webhookTitle": "Webhooks (Instant)",
+    "webhookDesc": "The Git provider notifies Dployr directly on push events – no delay.",
+    "webhookHowItWorks": {
+      "push": "You push code to GitHub, GitLab or Bitbucket",
+      "notify": "The provider immediately sends a webhook to Dployr",
+      "deploy": "Dployr automatically performs pull + container restart",
+      "log": "Deployment is logged in history"
+    },
+    "webhookSetup": "Set up Webhook",
+    "webhookSetupSteps": {
+      "enable": "In the project view under \"Git\" enable the webhook",
+      "copy": "Copy webhook URL and secret (secret is only shown once!)",
+      "provider": "Create a webhook at your Git provider (GitHub/GitLab/Bitbucket)",
+      "paste": "Enter URL and secret, enable push events"
+    },
+    "webhookProviders": "Supported providers: GitHub, GitLab, Bitbucket",
+    "comparison": "Comparison",
+    "comparisonPolling": "Polling: Easy to set up, but delay depends on interval (5‑60 min)",
+    "comparisonWebhook": "Webhook: Instant deployment, but requires configuration at Git provider",
+    "note": "Note: Both methods are independent and can be used individually or together. Only the project owner can configure them."
   },
 
   "databases": {

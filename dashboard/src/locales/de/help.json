@@ -137,17 +137,35 @@
 
   "autoDeploy": {
     "title": "Auto-Deploy",
-    "intro": "Auto-Deploy prüft automatisch auf neue Commits und deployed sie.",
-    "howItWorksTitle": "Funktionsweise",
-    "howItWorks": {
+    "intro": "Auto-Deploy aktualisiert dein Projekt automatisch bei neuen Commits. Es gibt zwei Methoden: Polling und Webhooks.",
+    "pollingTitle": "Polling (Intervall-basiert)",
+    "pollingDesc": "Der Server prüft regelmäßig das Repository auf neue Commits.",
+    "pollingHowItWorks": {
       "check": "Dployr prüft regelmäßig das Repository (konfigurierbar: 5-60 Min)",
       "pull": "Bei neuen Commits: Automatischer Pull",
       "restart": "Container werden neu gestartet",
       "log": "Deployment wird in der Historie protokolliert"
     },
-    "enableTitle": "Aktivieren",
-    "enableDesc": "In der Projektansicht unter \"Git-Verbindung\" auf Aktivieren klicken.",
-    "note": "Hinweis: Auto-Deploy ist nur für Git-Projekte verfügbar und kann nur vom Projektbesitzer konfiguriert werden."
+    "webhookTitle": "Webhooks (Sofort)",
+    "webhookDesc": "Der Git-Provider benachrichtigt Dployr direkt bei Push-Events - ohne Verzögerung.",
+    "webhookHowItWorks": {
+      "push": "Du pushst Code zu GitHub, GitLab oder Bitbucket",
+      "notify": "Der Provider sendet sofort einen Webhook an Dployr",
+      "deploy": "Dployr führt automatisch Pull + Container-Neustart aus",
+      "log": "Deployment wird in der Historie protokolliert"
+    },
+    "webhookSetup": "Webhook einrichten",
+    "webhookSetupSteps": {
+      "enable": "In der Projektansicht unter \"Git\" den Webhook aktivieren",
+      "copy": "Webhook-URL und Secret kopieren (Secret wird nur einmal angezeigt!)",
+      "provider": "Im Git-Provider (GitHub/GitLab/Bitbucket) einen Webhook erstellen",
+      "paste": "URL und Secret eintragen, Push-Events aktivieren"
+    },
+    "webhookProviders": "Unterstützte Provider: GitHub, GitLab, Bitbucket",
+    "comparison": "Vergleich",
+    "comparisonPolling": "Polling: Einfach einzurichten, aber Verzögerung je nach Intervall (5-60 Min)",
+    "comparisonWebhook": "Webhook: Sofortiges Deployment, aber erfordert Konfiguration beim Git-Provider",
+    "note": "Hinweis: Beide Methoden sind unabhängig voneinander und können einzeln oder zusammen verwendet werden. Nur der Projektbesitzer kann sie konfigurieren."
   },
 
   "databases": {
