@@ -10,6 +10,7 @@
     "databases": "Databases",
     "sharing": "Project Sharing",
     "domains": "Domains & SSL",
+    "notifications": "Notifications",
     "admin": "Administration",
     "faq": "FAQ"
   },
@@ -275,6 +276,49 @@
     "dnsWarning": "Important: Make sure your domain points to this server before adding it. Otherwise SSL certificate creation will fail."
   },
 
+  "notifications": {
+    "title": "Email Notifications",
+    "intro": "Dployr can notify you via email about important events. This feature must be enabled by the administrator.",
+    "typesTitle": "Notification Types",
+    "types": {
+      "verification": {
+        "name": "Email Verification",
+        "desc": "After registration you receive an email to confirm your email address."
+      },
+      "passwordReset": {
+        "name": "Password Reset",
+        "desc": "If you forgot your password, you can request a reset link."
+      },
+      "approval": {
+        "name": "Account Approval",
+        "desc": "You will be notified when an administrator has approved your account."
+      },
+      "deploySuccess": {
+        "name": "Deployment Successful",
+        "desc": "Notification after successful deployment (pull, auto-deploy, webhook)."
+      },
+      "deployFailure": {
+        "name": "Deployment Failed",
+        "desc": "Immediate notification when a deployment fails."
+      }
+    },
+    "settingsTitle": "Configure Settings",
+    "settingsIntro": "You can choose which notifications you want to receive:",
+    "settingsSteps": {
+      "goto": "Click on your username in the top right",
+      "select": "Select \"Notifications\"",
+      "toggle": "Enable or disable the desired notification types",
+      "save": "Click \"Save\""
+    },
+    "requirementsTitle": "Requirements",
+    "requirements": {
+      "enabled": "Email system enabled by administrator",
+      "verified": "Your email address must be verified",
+      "address": "You must have an email address on file"
+    },
+    "note": "Note: If you haven't added or verified an email address yet, you can do so in the notification settings."
+  },
+
   "admin": {
     "title": "Administration",
     "userManagementTitle": "User Management",
@@ -295,7 +339,17 @@
       "initialize": "Initialize: Changes default credentials (admin@example.com) to your configured ones",
       "logs": "Container logs: Live view of NPM logs for debugging"
     },
-    "npmNote": "Note: After first start and initialization, you can access the NPM panel via the \"Open Panel\" button."
+    "npmNote": "Note: After first start and initialization, you can access the NPM panel via the \"Open Panel\" button.",
+    "emailTitle": "Email Configuration",
+    "emailIntro": "Email notifications enable:",
+    "emailFeatures": {
+      "verification": "Email verification on registration",
+      "reset": "Password reset via email",
+      "approval": "Notification on account approval",
+      "deploy": "Deployment notifications (success/failure)"
+    },
+    "emailSetup": "Setup: Under Admin → Email Settings you can configure SMTP credentials and test the connection.",
+    "emailNote": "Note: Email is optional. Without email configuration the platform still works, but without the features mentioned above."
   },
 
   "faq": {

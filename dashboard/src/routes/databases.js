@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
+const { validate } = require('../middleware/validation');
 const databaseService = require('../services/database');
 const { logger } = require('../config/logger');
 
@@ -41,9 +42,9 @@ router.get('/create', requireAuth, (req, res) => {
 });
 
 // Create new database - Processing
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, validate('createDatabase'), async (req, res) => {
     try {
-        const { name, type } = req.body;
+        const { name, type } = req.validatedBody || req.body;
         const systemUsername = req.session.user.system_username;
 
         const dbInfo = await databaseService.createDatabase(systemUsername, name, type || 'mariadb');

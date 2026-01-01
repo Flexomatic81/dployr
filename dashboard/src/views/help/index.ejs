@@ -31,6 +31,9 @@
             <a href="#domains" class="list-group-item list-group-item-action">
                 <i class="bi bi-globe2"></i> <%= t('help:nav.domains') %>
             </a>
+            <a href="#notifications" class="list-group-item list-group-item-action">
+                <i class="bi bi-bell"></i> <%= t('help:nav.notifications') %>
+            </a>
             <% if (user && user.is_admin) { %>
             <a href="#admin" class="list-group-item list-group-item-action">
                 <i class="bi bi-shield-lock"></i> <%= t('help:nav.admin') %>
@@ -525,6 +528,83 @@ DB_NAME=deine_db</code></pre>
             </div>
         </section>
 
+        <!-- Notifications -->
+        <section id="notifications" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bell me-2"></i><%= t('help:notifications.title') %></h5>
+                </div>
+                <div class="card-body">
+                    <p><%= t('help:notifications.intro') %></p>
+
+                    <h5><%= t('help:notifications.typesTitle') %></h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-envelope-check text-primary"></i> <%= t('help:notifications.types.verification.name') %></h6>
+                                    <small class="text-muted"><%= t('help:notifications.types.verification.desc') %></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-key text-warning"></i> <%= t('help:notifications.types.passwordReset.name') %></h6>
+                                    <small class="text-muted"><%= t('help:notifications.types.passwordReset.desc') %></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-person-check text-success"></i> <%= t('help:notifications.types.approval.name') %></h6>
+                                    <small class="text-muted"><%= t('help:notifications.types.approval.desc') %></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-check-circle text-success"></i> <%= t('help:notifications.types.deploySuccess.name') %></h6>
+                                    <small class="text-muted"><%= t('help:notifications.types.deploySuccess.desc') %></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-x-circle text-danger"></i> <%= t('help:notifications.types.deployFailure.name') %></h6>
+                                    <small class="text-muted"><%= t('help:notifications.types.deployFailure.desc') %></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5><%= t('help:notifications.settingsTitle') %></h5>
+                    <p><%= t('help:notifications.settingsIntro') %></p>
+                    <ol>
+                        <li><%= t('help:notifications.settingsSteps.goto') %></li>
+                        <li><%= t('help:notifications.settingsSteps.select') %></li>
+                        <li><%= t('help:notifications.settingsSteps.toggle') %></li>
+                        <li><%= t('help:notifications.settingsSteps.save') %></li>
+                    </ol>
+
+                    <h5 class="mt-4"><%= t('help:notifications.requirementsTitle') %></h5>
+                    <ul>
+                        <li><strong><%= t('help:notifications.requirements.enabled') %></strong></li>
+                        <li><strong><%= t('help:notifications.requirements.verified') %></strong></li>
+                        <li><strong><%= t('help:notifications.requirements.address') %></strong></li>
+                    </ul>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong><%= t('help:notifications.note') %></strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <% if (user && user.is_admin) { %>
         <!-- Administration -->
         <section id="admin" class="mb-5">
@@ -556,6 +636,20 @@ DB_NAME=deine_db</code></pre>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
                         <strong><%= t('help:admin.npmNote') %></strong>
+                    </div>
+
+                    <h5 class="mt-4"><i class="bi bi-envelope"></i> <%= t('help:admin.emailTitle') %></h5>
+                    <p><%= t('help:admin.emailIntro') %></p>
+                    <ul>
+                        <li><strong><%= t('help:admin.emailFeatures.verification') %></strong></li>
+                        <li><strong><%= t('help:admin.emailFeatures.reset') %></strong></li>
+                        <li><strong><%= t('help:admin.emailFeatures.approval') %></strong></li>
+                        <li><strong><%= t('help:admin.emailFeatures.deploy') %></strong></li>
+                    </ul>
+                    <p><%= t('help:admin.emailSetup') %></p>
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-info-circle"></i>
+                        <strong><%= t('help:admin.emailNote') %></strong>
                     </div>
                 </div>
             </div>

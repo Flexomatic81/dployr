@@ -56,7 +56,9 @@ describe('UserService', () => {
                 username: 'testuser',
                 system_username: 'testuser',
                 is_admin: false,
-                approved: false
+                approved: false,
+                email: null,
+                verificationToken: null
             });
 
             // Verify password was hashed
