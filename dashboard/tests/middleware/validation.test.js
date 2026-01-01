@@ -80,6 +80,7 @@ describe('Validation Middleware', () => {
         it('should validate correct registration data', () => {
             const data = {
                 username: 'newuser',
+                email: 'test@example.com',
                 password: 'password123',
                 password_confirm: 'password123'
             };
@@ -91,6 +92,7 @@ describe('Validation Middleware', () => {
         it('should reject username with invalid characters', () => {
             const data = {
                 username: 'User@Name!',
+                email: 'test@example.com',
                 password: 'password123',
                 password_confirm: 'password123'
             };
@@ -103,6 +105,7 @@ describe('Validation Middleware', () => {
         it('should reject username that is too short', () => {
             const data = {
                 username: 'ab',
+                email: 'test@example.com',
                 password: 'password123',
                 password_confirm: 'password123'
             };
@@ -115,6 +118,7 @@ describe('Validation Middleware', () => {
         it('should reject password that is too short', () => {
             const data = {
                 username: 'validuser',
+                email: 'test@example.com',
                 password: 'short',
                 password_confirm: 'short'
             };
@@ -127,6 +131,7 @@ describe('Validation Middleware', () => {
         it('should reject mismatched passwords', () => {
             const data = {
                 username: 'validuser',
+                email: 'test@example.com',
                 password: 'password123',
                 password_confirm: 'different123'
             };
@@ -135,13 +140,49 @@ describe('Validation Middleware', () => {
             expect(error).toBeDefined();
             expect(error.details[0].message).toContain('do not match');
         });
+
+        it('should reject invalid email', () => {
+            const data = {
+                username: 'validuser',
+                email: 'invalid-email',
+                password: 'password123',
+                password_confirm: 'password123'
+            };
+
+            const { error } = schemas.register.validate(data);
+            expect(error).toBeDefined();
+            expect(error.details[0].message).toContain('valid email');
+        });
+
+        it('should reject missing email', () => {
+            const data = {
+                username: 'validuser',
+                password: 'password123',
+                password_confirm: 'password123'
+            };
+
+            const { error } = schemas.register.validate(data);
+            expect(error).toBeDefined();
+            expect(error.details[0].message).toContain('Email is required');
+        });
     });
 
     describe('Create Project Schema', () => {
         it('should validate correct project data', () => {
             const data = {
                 name: 'my-project',
-                type: 'nodejs-app'
+                template: 'nodejs-app'
+            };
+
+            const { error } = schemas.createProject.validate(data);
+            expect(error).toBeUndefined();
+        });
+
+        it('should validate project data with optional port', () => {
+            const data = {
+                name: 'my-project',
+                template: 'nodejs-app',
+                port: 3000
             };
 
             const { error } = schemas.createProject.validate(data);
@@ -151,22 +192,55 @@ describe('Validation Middleware', () => {
         it('should reject project name with uppercase', () => {
             const data = {
                 name: 'MyProject',
-                type: 'nodejs-app'
+                template: 'nodejs-app'
             };
 
             const { error } = schemas.createProject.validate(data);
             expect(error).toBeDefined();
         });
 
-        it('should reject invalid project type', () => {
+        it('should reject invalid project template', () => {
             const data = {
                 name: 'my-project',
-                type: 'invalid-type'
+                template: 'invalid-type'
             };
 
             const { error } = schemas.createProject.validate(data);
             expect(error).toBeDefined();
-            expect(error.details[0].message).toContain('Invalid project type');
+            expect(error.details[0].message).toContain('Invalid project template');
+        });
+
+        it('should reject port below 1024', () => {
+            const data = {
+                name: 'my-project',
+                template: 'nodejs-app',
+                port: 80
+            };
+
+            const { error } = schemas.createProject.validate(data);
+            expect(error).toBeDefined();
+            expect(error.details[0].message).toContain('1024');
+        });
+    });
+
+    describe('Create Project from ZIP Schema', () => {
+        it('should validate correct ZIP project data', () => {
+            const data = {
+                name: 'my-zip-project'
+            };
+
+            const { error } = schemas.createProjectFromZip.validate(data);
+            expect(error).toBeUndefined();
+        });
+
+        it('should accept optional port', () => {
+            const data = {
+                name: 'my-zip-project',
+                port: 8080
+            };
+
+            const { error } = schemas.createProjectFromZip.validate(data);
+            expect(error).toBeUndefined();
         });
     });
 
@@ -176,6 +250,17 @@ describe('Validation Middleware', () => {
                 name: 'my-git-project',
                 repo_url: 'https://github.com/user/repo',
                 access_token: ''
+            };
+
+            const { error } = schemas.createProjectFromGit.validate(data);
+            expect(error).toBeUndefined();
+        });
+
+        it('should accept git project with optional port', () => {
+            const data = {
+                name: 'my-git-project',
+                repo_url: 'https://github.com/user/repo',
+                port: 4000
             };
 
             const { error } = schemas.createProjectFromGit.validate(data);

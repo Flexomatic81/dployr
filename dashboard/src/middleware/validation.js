@@ -95,12 +95,44 @@ const schemas = {
                 'string.max': 'Project name must not exceed 50 characters',
                 'any.required': 'Project name is required'
             }),
-        type: Joi.string()
-            .valid('static-website', 'php-website', 'nodejs-app', 'laravel', 'nextjs', 'nodejs-static')
+        template: Joi.string()
+            .valid('static-website', 'php-website', 'nodejs-app', 'python-flask', 'python-django')
             .required()
             .messages({
-                'any.only': 'Invalid project type',
-                'any.required': 'Project type is required'
+                'any.only': 'Invalid project template',
+                'any.required': 'Project template is required'
+            }),
+        port: Joi.number()
+            .integer()
+            .min(1024)
+            .max(65535)
+            .optional()
+            .messages({
+                'number.min': 'Port must be at least 1024',
+                'number.max': 'Port must not exceed 65535'
+            })
+    }),
+
+    createProjectFromZip: Joi.object({
+        name: Joi.string()
+            .pattern(/^[a-z0-9-]+$/)
+            .min(2)
+            .max(50)
+            .required()
+            .messages({
+                'string.pattern.base': 'Project name may only contain lowercase letters, numbers and -',
+                'string.min': 'Project name must be at least 2 characters long',
+                'string.max': 'Project name must not exceed 50 characters',
+                'any.required': 'Project name is required'
+            }),
+        port: Joi.number()
+            .integer()
+            .min(1024)
+            .max(65535)
+            .optional()
+            .messages({
+                'number.min': 'Port must be at least 1024',
+                'number.max': 'Port must not exceed 65535'
             })
     }),
 
@@ -125,7 +157,16 @@ const schemas = {
                 'string.pattern.base': 'Only GitHub, GitLab and Bitbucket URLs are supported',
                 'any.required': 'Repository URL is required'
             }),
-        access_token: Joi.string().allow('').optional()
+        access_token: Joi.string().allow('').optional(),
+        port: Joi.number()
+            .integer()
+            .min(1024)
+            .max(65535)
+            .optional()
+            .messages({
+                'number.min': 'Port must be at least 1024',
+                'number.max': 'Port must not exceed 65535'
+            })
     }),
 
     // Database Schemas
