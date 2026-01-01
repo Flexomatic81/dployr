@@ -60,22 +60,6 @@
                     <div class="form-text server-ip-desc"><%= t('setup:config.serverIp.description') %></div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="mysql_root_password" class="form-label">
-                        <span class="label-text"><%= t('setup:config.mysqlPassword.label') %></span>
-                        <%- include('../partials/help-icon', { text: t('setup:config.mysqlPassword.help') }) %>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-key"></i></span>
-                        <input type="password" class="form-control" id="mysql_root_password" name="mysql_root_password"
-                               required minlength="8" placeholder="<%= t('setup:config.mysqlPassword.placeholder') %>">
-                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="mysql_root_password">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                    <div class="form-text mysql-desc"><%= t('setup:config.mysqlPassword.description') %></div>
-                </div>
-
                 <div class="d-flex justify-content-between">
                     <button type="button" class="btn btn-outline-secondary go-to-step" data-step="1">
                         <i class="bi bi-arrow-left"></i> <span class="back-btn-text"><%= t('setup:buttons.back') %></span>
@@ -335,7 +319,7 @@
     document.getElementById('configForm').addEventListener('submit', function(e) {
         e.preventDefault();
         setupData.server_ip = document.getElementById('server_ip').value;
-        setupData.mysql_root_password = document.getElementById('mysql_root_password').value;
+        // MySQL root password is now read from environment variables on the server
         goToStep(3);
     });
 

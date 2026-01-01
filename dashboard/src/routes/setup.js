@@ -71,12 +71,20 @@ router.post('/run', async (req, res) => {
         admin_username,
         admin_password,
         system_username,
-        mysql_root_password,
         language,
         npm_enabled,
         npm_email,
         npm_password
     } = req.body;
+
+    // Read MySQL root password from environment variable (set in .env)
+    const mysqlRootPassword = process.env.MYSQL_ROOT_PASSWORD;
+    if (!mysqlRootPassword) {
+        return res.status(400).json({
+            success: false,
+            error: 'MYSQL_ROOT_PASSWORD not configured in .env file'
+        });
+    }
 
     try {
         const steps = [];
@@ -88,12 +96,12 @@ router.post('/run', async (req, res) => {
 
         // Step 2: Wait for MariaDB (already running via docker-compose)
         steps.push({ step: 'wait_db', status: 'running', message: 'Waiting for database...' });
-        await waitForMariaDB(mysql_root_password);
+        await waitForMariaDB(mysqlRootPassword);
         steps[1].status = 'done';
 
         // Step 3: Create dashboard database
         steps.push({ step: 'dashboard_db', status: 'running', message: 'Creating dashboard database...' });
-        await createDashboardDatabase(mysql_root_password);
+        await createDashboardDatabase(mysqlRootPassword);
         steps[2].status = 'done';
 
         // Step 4: Create admin user with selected language
