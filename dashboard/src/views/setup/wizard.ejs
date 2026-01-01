@@ -408,30 +408,109 @@
             const result = await response.json();
 
             if (result.success) {
-                // Mark all steps as done
-                steps.forEach(step => updateStepStatus(step, 'done'));
-
-                document.getElementById('setupResult').classList.remove('d-none');
-                document.getElementById('successAlert').classList.remove('d-none');
-                document.getElementById('errorAlert').classList.add('d-none');
-                document.getElementById('completedActions').classList.remove('d-none');
-
-                // Update dashboard link with the correct URL
-                if (result.dashboardUrl) {
-                    const dashboardLink = document.querySelector('#completedActions a.btn-success');
-                    if (dashboardLink) {
-                        dashboardLink.href = result.dashboardUrl;
-                    }
-                }
+                showSetupSuccess(steps, result.dashboardUrl);
             } else {
                 throw new Error(result.error);
             }
         } catch (error) {
-            document.getElementById('setupResult').classList.remove('d-none');
-            document.getElementById('successAlert').classList.add('d-none');
-            document.getElementById('errorAlert').classList.remove('d-none');
-            document.getElementById('errorMessage').textContent = error.message;
+            // Network error (e.g. connection lost during NPM/SSL setup)
+            // Check if setup actually completed despite the error
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                await checkSetupStatusAfterError(steps);
+            } else {
+                showSetupError(error.message);
+            }
         }
+    }
+
+    /**
+     * Check if setup completed despite network error
+     * This handles the case where NPM takes over port 80/443 during setup
+     */
+    async function checkSetupStatusAfterError(steps) {
+        // Wait a moment for any redirects/SSL to settle
+        await new Promise(r => setTimeout(r, 2000));
+
+        try {
+            // Try to check setup status via port 3000 (always available)
+            const port3000Url = window.location.protocol + '//' + window.location.hostname + ':3000/setup/status';
+            const response = await fetch(port3000Url, { timeout: 5000 });
+            const status = await response.json();
+
+            if (status.setupComplete) {
+                // Setup was successful! Determine the dashboard URL
+                const serverIp = setupData.server_ip;
+                const npmEnabled = setupData.npm_enabled;
+                let dashboardUrl = '/login';
+
+                if (npmEnabled && serverIp) {
+                    // Check if it's a domain (not IP)
+                    const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(serverIp) || serverIp === 'localhost';
+                    if (!isIp) {
+                        dashboardUrl = `https://${serverIp}/login`;
+                    } else {
+                        dashboardUrl = `http://${serverIp}/login`;
+                    }
+                }
+
+                showSetupSuccess(steps, dashboardUrl);
+            } else {
+                showSetupError('Setup connection lost. Please refresh and try again.');
+            }
+        } catch (statusError) {
+            // Could not verify status - show error with manual redirect option
+            showSetupErrorWithManualLink();
+        }
+    }
+
+    function showSetupSuccess(steps, dashboardUrl) {
+        // Mark all steps as done
+        steps.forEach(step => updateStepStatus(step, 'done'));
+
+        document.getElementById('setupResult').classList.remove('d-none');
+        document.getElementById('successAlert').classList.remove('d-none');
+        document.getElementById('errorAlert').classList.add('d-none');
+        document.getElementById('completedActions').classList.remove('d-none');
+
+        // Update dashboard link with the correct URL
+        if (dashboardUrl) {
+            const dashboardLink = document.querySelector('#completedActions a.btn-success');
+            if (dashboardLink) {
+                dashboardLink.href = dashboardUrl;
+            }
+        }
+    }
+
+    function showSetupError(message) {
+        document.getElementById('setupResult').classList.remove('d-none');
+        document.getElementById('successAlert').classList.add('d-none');
+        document.getElementById('errorAlert').classList.remove('d-none');
+        document.getElementById('errorMessage').textContent = message;
+    }
+
+    function showSetupErrorWithManualLink() {
+        const serverIp = setupData.server_ip;
+        const npmEnabled = setupData.npm_enabled;
+
+        // Build possible dashboard URLs
+        let urls = [];
+        if (npmEnabled && serverIp) {
+            const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(serverIp) || serverIp === 'localhost';
+            if (!isIp) {
+                urls.push(`https://${serverIp}/login`);
+            } else {
+                urls.push(`http://${serverIp}/login`);
+            }
+        }
+        urls.push(window.location.protocol + '//' + window.location.hostname + ':3000/login');
+
+        document.getElementById('setupResult').classList.remove('d-none');
+        document.getElementById('successAlert').classList.add('d-none');
+        document.getElementById('errorAlert').classList.remove('d-none');
+        document.getElementById('errorMessage').innerHTML =
+            'Connection lost during setup (this can happen when SSL is configured). ' +
+            'Setup may have completed successfully. Try: ' +
+            urls.map(url => `<a href="${url}" class="alert-link">${url}</a>`).join(' or ');
     }
 
     function updateStepStatus(stepName, status) {
