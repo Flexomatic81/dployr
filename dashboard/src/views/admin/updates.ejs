@@ -247,6 +247,13 @@ async function checkDashboardReady() {
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);
+            } else if (response.status === 401 || response.redirected) {
+                // Session expired or redirected to login
+                clearInterval(checkInterval);
+                document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.updateComplete") %>';
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1000);
             }
         } catch {
             // Dashboard not ready yet
