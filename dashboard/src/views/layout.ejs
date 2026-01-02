@@ -218,12 +218,17 @@
         <div class="container text-center text-muted">
             <small>
                 Dployr &copy; <%= new Date().getFullYear() %>
-                <% if (version && version.hash) { %>
+                <% if (version && (version.tag || version.hash)) { %>
                 <span class="ms-2">|</span>
+                <% if (version.tag) { %>
+                <span class="ms-2" title="<%= version.hash ? 'Commit: ' + version.hash : '' %>">
+                    <i class="bi bi-tag"></i> <%= version.tag %>
+                </span>
+                <% } else if (version.hash) { %>
                 <span class="ms-2" title="Commit: <%= version.hash %>">
                     <i class="bi bi-git"></i> <%= version.hash %>
                 </span>
-                <span class="ms-1">(<%= version.date %>)</span>
+                <% } %>
                 <% } %>
             </small>
         </div>
