@@ -369,6 +369,31 @@ async function getProjectBackups(userId, projectName, limit = 5) {
 }
 
 /**
+ * Gets recent backups for specific databases
+ * @param {number} userId - User ID
+ * @param {string[]} databaseNames - Array of database names to get backups for
+ * @param {number} limit - Max backups per database
+ */
+async function getDatabaseBackups(userId, databaseNames, limit = 3) {
+    if (!databaseNames || databaseNames.length === 0) {
+        return [];
+    }
+
+    // Create placeholders for IN clause
+    const placeholders = databaseNames.map(() => '?').join(',');
+
+    const [rows] = await pool.execute(
+        `SELECT id, backup_type, target_name, filename, file_size, status, created_at
+         FROM backup_logs
+         WHERE user_id = ? AND target_name IN (${placeholders}) AND backup_type = 'database'
+         ORDER BY created_at DESC
+         LIMIT ?`,
+        [userId, ...databaseNames, limit * databaseNames.length]
+    );
+    return rows;
+}
+
+/**
  * Formats file size for display
  */
 function formatFileSize(bytes) {
@@ -554,6 +579,7 @@ module.exports = {
     deleteBackup,
     getBackupStats,
     getProjectBackups,
+    getDatabaseBackups,
     formatFileSize,
     getBackupPreview,
     restoreProjectBackup,

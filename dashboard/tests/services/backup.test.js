@@ -167,6 +167,36 @@ describe('Backup Service', () => {
         });
     });
 
+    describe('getDatabaseBackups', () => {
+        it('should return empty array if no database names provided', async () => {
+            const result = await backupService.getDatabaseBackups(1, []);
+            expect(result).toEqual([]);
+            expect(mockExecute).not.toHaveBeenCalled();
+        });
+
+        it('should return empty array if database names is null', async () => {
+            const result = await backupService.getDatabaseBackups(1, null);
+            expect(result).toEqual([]);
+            expect(mockExecute).not.toHaveBeenCalled();
+        });
+
+        it('should return backups for given databases', async () => {
+            const mockBackups = [
+                { id: 1, target_name: 'testdb1', filename: 'db1.sql' },
+                { id: 2, target_name: 'testdb2', filename: 'db2.sql' }
+            ];
+            mockExecute.mockResolvedValueOnce([mockBackups]);
+
+            const result = await backupService.getDatabaseBackups(1, ['testdb1', 'testdb2'], 3);
+
+            expect(result).toEqual(mockBackups);
+            const [query, params] = mockExecute.mock.calls[0];
+            expect(query).toContain('IN (?,?)');
+            expect(params).toContain('testdb1');
+            expect(params).toContain('testdb2');
+        });
+    });
+
     describe('deleteBackup', () => {
         it('should delete backup file and database record', async () => {
             const mockBackup = {

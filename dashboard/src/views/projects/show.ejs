@@ -905,13 +905,18 @@
 
 <!-- Backup Card (for manage permission or higher) -->
 <% if (canManage) { %>
+<%
+    const hasProjectBackups = typeof projectBackups !== 'undefined' && projectBackups && projectBackups.length > 0;
+    const hasDatabaseBackups = typeof databaseBackups !== 'undefined' && databaseBackups && databaseBackups.length > 0;
+    const totalBackups = (hasProjectBackups ? projectBackups.length : 0) + (hasDatabaseBackups ? databaseBackups.length : 0);
+%>
 <div class="card d-elevated mb-4">
     <div class="card-header d-collapsible-header collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#collapseBackups" aria-expanded="false" aria-controls="collapseBackups">
         <h5 class="mb-0 d-flex justify-content-between align-items-center">
             <span>
                 <i class="bi bi-archive"></i> <%= t('backups:projectCard.title') %>
-                <% if (typeof projectBackups !== 'undefined' && projectBackups && projectBackups.length > 0) { %>
-                    <span class="badge bg-primary-subtle text-primary ms-2"><%= projectBackups.length %></span>
+                <% if (totalBackups > 0) { %>
+                    <span class="badge bg-primary-subtle text-primary ms-2"><%= totalBackups %></span>
                 <% } %>
             </span>
             <i class="bi bi-chevron-down collapse-icon"></i>
@@ -919,11 +924,13 @@
     </div>
     <div class="collapse" id="collapseBackups">
     <div class="card-body">
-        <% if (typeof projectBackups !== 'undefined' && projectBackups && projectBackups.length > 0) { %>
+        <% if (hasProjectBackups || hasDatabaseBackups) { %>
         <div class="table-responsive mb-3">
             <table class="table table-sm table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th><%= t('backups:table.type') %></th>
+                        <th><%= t('backups:table.name') %></th>
                         <th><%= t('backups:table.date') %></th>
                         <th><%= t('backups:table.size') %></th>
                         <th><%= t('backups:table.status') %></th>
@@ -931,8 +938,15 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <% if (hasProjectBackups) { %>
                     <% projectBackups.forEach(backup => { %>
                     <tr>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary">
+                                <i class="bi bi-folder"></i> <%= t('backups:types.project') %>
+                            </span>
+                        </td>
+                        <td><%= project.name %></td>
                         <td>
                             <small><%= new Date(backup.created_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-GB') %></small>
                         </td>
@@ -953,6 +967,9 @@
                             <% } %>
                         </td>
                         <td class="text-end">
+                            <a href="/backups/<%= backup.id %>" class="btn btn-sm btn-outline-secondary btn-icon" title="<%= t('backups:detail.title') %>">
+                                <i class="bi bi-eye"></i>
+                            </a>
                             <% if (backup.status === 'success') { %>
                             <a href="/backups/<%= backup.id %>/download" class="btn btn-sm btn-outline-primary btn-icon" title="<%= t('backups:download') %>">
                                 <i class="bi bi-download"></i>
@@ -961,6 +978,48 @@
                         </td>
                     </tr>
                     <% }) %>
+                    <% } %>
+                    <% if (hasDatabaseBackups) { %>
+                    <% databaseBackups.forEach(backup => { %>
+                    <tr>
+                        <td>
+                            <span class="badge bg-info-subtle text-info">
+                                <i class="bi bi-database"></i> <%= t('backups:types.database') %>
+                            </span>
+                        </td>
+                        <td><%= backup.target_name %></td>
+                        <td>
+                            <small><%= new Date(backup.created_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-GB') %></small>
+                        </td>
+                        <td>
+                            <% if (backup.file_size) { %>
+                                <%= typeof formatFileSize === 'function' ? formatFileSize(backup.file_size) : Math.round(backup.file_size / 1024) + ' KB' %>
+                            <% } else { %>
+                                <span class="text-muted">-</span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <% if (backup.status === 'success') { %>
+                                <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle"></i></span>
+                            <% } else if (backup.status === 'failed') { %>
+                                <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle"></i></span>
+                            <% } else { %>
+                                <span class="badge bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></span>
+                            <% } %>
+                        </td>
+                        <td class="text-end">
+                            <a href="/backups/<%= backup.id %>" class="btn btn-sm btn-outline-secondary btn-icon" title="<%= t('backups:detail.title') %>">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <% if (backup.status === 'success') { %>
+                            <a href="/backups/<%= backup.id %>/download" class="btn btn-sm btn-outline-primary btn-icon" title="<%= t('backups:download') %>">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% }) %>
+                    <% } %>
                 </tbody>
             </table>
         </div>
