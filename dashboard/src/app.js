@@ -17,6 +17,7 @@ const { initDatabase, getPool } = require('./config/database');
 const { setUserLocals } = require('./middleware/auth');
 const autoDeployService = require('./services/autodeploy');
 const proxyService = require('./services/proxy');
+const updateService = require('./services/update');
 const { logger, requestLogger } = require('./config/logger');
 
 // Import routes
@@ -425,6 +426,9 @@ async function start() {
 
             // Initialize NPM default host (async, non-blocking)
             initializeNpmDefaultHost();
+
+            // Initialize update checker (daily auto-check)
+            updateService.initUpdateChecker();
         } else {
             logger.info('Setup not yet completed - setup wizard active');
         }

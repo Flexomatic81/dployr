@@ -121,6 +121,8 @@ services:
     volumes:
       # Docker socket for container management
       - /var/run/docker.sock:/var/run/docker.sock
+      # Dployr root directory (for updates via git pull)
+      - ${HOST_DPLOYR_PATH:-/opt/dployr}:${HOST_DPLOYR_PATH:-/opt/dployr}
       # User projects (both paths for Docker socket compatibility)
       - ./users:/app/users
       - ${HOST_USERS_PATH:-/opt/dployr/users}:${HOST_USERS_PATH:-/opt/dployr/users}
@@ -150,6 +152,8 @@ services:
       - NPM_API_URL=${NPM_API_URL:-http://dployr-npm:81/api}
       - NPM_API_EMAIL=${NPM_API_EMAIL:-}
       - NPM_API_PASSWORD=${NPM_API_PASSWORD:-}
+      # Dployr installation path (for updates)
+      - HOST_DPLOYR_PATH=${HOST_DPLOYR_PATH:-/opt/dployr}
     networks:
       - dployr-network
     depends_on:

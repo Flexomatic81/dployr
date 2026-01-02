@@ -530,6 +530,58 @@ Admins can configure a custom domain for the dashboard itself (e.g., `app.dployr
 - Port 3000 remains available as fallback
 - Stored in `.env` as `NPM_DASHBOARD_DOMAIN`
 
+## System Updates
+
+Admins can update Dployr to the latest version directly from the dashboard.
+
+**Features:**
+- Version comparison via GitHub Releases API
+- One-click update with automatic container restart
+- Real-time progress display during update
+- Daily automatic check for new versions
+- Cached update status (1 hour) to reduce API calls
+
+**How it works:**
+1. Dashboard checks GitHub for latest release
+2. Compares current Git hash with latest release tag
+3. If update available, shows changelog and commit count
+4. On "Install Update": executes `deploy.sh` in Dployr root directory
+5. Dashboard container restarts automatically after update
+6. Browser auto-reconnects when dashboard is back online
+
+**Prerequisites:**
+- Dashboard container has Dployr root directory mounted (`HOST_DPLOYR_PATH`)
+- Git installed in container (available by default)
+- Docker CLI available in container (via socket mount)
+
+**Environment Variables:**
+```
+HOST_DPLOYR_PATH=/opt/dployr    # Dployr installation path on host
+```
+
+**Admin Routes:**
+- `GET /admin/updates` - Update management page
+- `GET /admin/updates/check` - Check for updates API (force=true to bypass cache)
+- `GET /admin/updates/version` - Current version info API
+- `POST /admin/updates/install` - Trigger update installation
+- `GET /admin/updates/status` - Cached update status for navbar badge
+
+**Service:** `update.js` - GitHub API integration, version comparison, update execution
+
+**Deploy Script:** `deploy.sh` in project root
+```bash
+./deploy.sh              # Full update (pull, build, restart)
+./deploy.sh --check      # Check for updates (JSON output)
+./deploy.sh --version    # Show current version (JSON output)
+```
+
+**Update Process:**
+1. `git pull origin main` - Download latest code
+2. `docker compose build dashboard` - Rebuild container with new version
+3. `docker compose up -d dashboard` - Restart with new image
+
+**Note:** During update, the dashboard is briefly unavailable (30-60 seconds). User projects and databases are not affected.
+
 ## Email System
 
 Optional email functionality for user notifications and account management.
@@ -609,6 +661,7 @@ Users can configure which emails they receive via `/profile/notifications`:
 | `sharing.js` | Project sharing, permission levels (read/manage/full), access control |
 | `proxy.js` | NPM integration, domain management, SSL certificates |
 | `email.js` | SMTP email sending, template rendering, deployment notifications |
+| `update.js` | System updates, version checking, GitHub release integration |
 
 ## Middleware
 

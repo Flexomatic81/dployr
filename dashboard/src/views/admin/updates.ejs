@@ -1,0 +1,227 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item active"><%= t('admin:updates.title') %></li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-cloud-download"></i> <%= t('admin:updates.title') %></h1>
+</div>
+
+<!-- Version Status -->
+<div class="row mb-4 g-3 align-items-stretch">
+    <div class="col-md-4">
+        <div class="card h-100" id="versionCard">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+                <i class="bi bi-box-seam display-3 text-secondary opacity-50 mb-3" id="versionIcon"></i>
+                <h6 class="text-muted mb-2"><%= t('admin:updates.currentVersion') %></h6>
+                <span class="fs-5 fw-bold" id="currentVersion">
+                    <% if (updateInfo.currentVersion.tag) { %>
+                        <%= updateInfo.currentVersion.tag %>
+                    <% } else { %>
+                        <%= updateInfo.currentVersion.hash %>
+                    <% } %>
+                </span>
+                <small class="text-muted"><%= updateInfo.currentVersion.date %></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted mb-3"><%= t('admin:updates.status') %></h6>
+
+                <% if (updateInfo.updateAvailable) { %>
+                    <!-- Update Available -->
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong><%= t('admin:updates.updateAvailable') %></strong>
+                        <% if (updateInfo.latestVersion && updateInfo.latestVersion.tag) { %>
+                            - Version <%= updateInfo.latestVersion.tag %>
+                        <% } else if (updateInfo.latestVersion && updateInfo.latestVersion.commits) { %>
+                            - <%= updateInfo.latestVersion.commits %> <%= t('admin:updates.newCommits') %>
+                        <% } %>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-success" id="installUpdateBtn">
+                            <i class="bi bi-cloud-download"></i> <%= t('admin:updates.installUpdate') %>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="checkUpdatesBtn">
+                            <i class="bi bi-arrow-clockwise"></i> <%= t('admin:updates.checkAgain') %>
+                        </button>
+                        <% if (updateInfo.latestVersion && updateInfo.latestVersion.htmlUrl) { %>
+                            <a href="<%= updateInfo.latestVersion.htmlUrl %>" target="_blank" class="btn btn-outline-info">
+                                <i class="bi bi-github"></i> <%= t('admin:updates.viewOnGithub') %>
+                            </a>
+                        <% } %>
+                    </div>
+                <% } else { %>
+                    <!-- Up to Date -->
+                    <div class="alert alert-success mb-3">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong><%= t('admin:updates.upToDate') %></strong>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-secondary" id="checkUpdatesBtn">
+                        <i class="bi bi-arrow-clockwise"></i> <%= t('admin:updates.checkForUpdates') %>
+                    </button>
+                <% } %>
+
+                <% if (updateInfo.cached) { %>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-clock-history"></i> <%= t('admin:updates.cachedResult') %>
+                    </small>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<% if (updateInfo.changelog) { %>
+<!-- Changelog -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-journal-text"></i> <%= t('admin:updates.changelog') %>
+    </div>
+    <div class="card-body">
+        <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;"><%= updateInfo.changelog %></pre>
+    </div>
+</div>
+<% } %>
+
+<!-- Update Info -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-info-circle"></i> <%= t('admin:updates.howItWorks') %>
+    </div>
+    <div class="card-body">
+        <p><%= t('admin:updates.howItWorksDesc') %></p>
+        <ol class="mb-0">
+            <li><%= t('admin:updates.step1') %></li>
+            <li><%= t('admin:updates.step2') %></li>
+            <li><%= t('admin:updates.step3') %></li>
+            <li><%= t('admin:updates.step4') %></li>
+        </ol>
+        <div class="alert alert-info mt-3 mb-0">
+            <i class="bi bi-lightbulb"></i>
+            <%= t('admin:updates.note') %>
+        </div>
+    </div>
+</div>
+
+<!-- Update Progress Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-cloud-download"></i> <%= t('admin:updates.updating') %></h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p id="updateStatus"><%= t('admin:updates.pleaseWait') %></p>
+                <div class="progress mb-3" style="height: 5px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                </div>
+                <small class="text-muted"><%= t('admin:updates.restartNote') %></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check for updates
+document.getElementById('checkUpdatesBtn')?.addEventListener('click', async function() {
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("common:loading") %>';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/admin/updates/check?force=true');
+        const result = await response.json();
+
+        if (result.success) {
+            // Reload page to show updated info
+            window.location.reload();
+        } else {
+            alert('<%= t("admin:updates.checkFailed") %>: ' + result.error);
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        alert('<%= t("admin:updates.checkFailed") %>: ' + error.message);
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+});
+
+// Install update
+document.getElementById('installUpdateBtn')?.addEventListener('click', async function() {
+    if (!confirm('<%= t("admin:updates.confirmUpdate") %>')) {
+        return;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('updateModal'));
+    modal.show();
+
+    try {
+        const response = await fetch('/admin/updates/install', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': '<%= csrfToken %>'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.restartingDashboard") %>';
+
+            // Wait for dashboard to restart and then reload
+            setTimeout(() => {
+                checkDashboardReady();
+            }, 5000);
+        } else {
+            modal.hide();
+            alert('<%= t("admin:updates.updateFailed") %>: ' + result.error);
+        }
+    } catch (error) {
+        modal.hide();
+        alert('<%= t("admin:updates.updateFailed") %>: ' + error.message);
+    }
+});
+
+// Check if dashboard is back online after restart
+async function checkDashboardReady() {
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    const checkInterval = setInterval(async () => {
+        attempts++;
+
+        try {
+            const response = await fetch('/admin/updates/version', { method: 'GET' });
+            if (response.ok) {
+                clearInterval(checkInterval);
+                document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.updateComplete") %>';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        } catch {
+            // Dashboard not ready yet
+        }
+
+        if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.manualRefresh") %>';
+        }
+    }, 2000);
+}
+</script>

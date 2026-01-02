@@ -21,7 +21,9 @@
     "npmDescription": "Domain-Verwaltung und SSL-Zertifikate für Projekte konfigurieren.",
     "configureNpm": "NPM konfigurieren",
     "emailDescription": "SMTP-Server für E-Mail-Benachrichtigungen einrichten.",
-    "configureEmail": "E-Mail konfigurieren"
+    "configureEmail": "E-Mail konfigurieren",
+    "updatesDescription": "Dployr auf die neueste Version aktualisieren.",
+    "checkUpdates": "Updates prüfen"
   },
 
   "users": {
@@ -270,5 +272,37 @@
     "operationLogs": "Operationen-Log",
     "operationLogsHelp": "Domain- und SSL-Operationen aus dem Dashboard-Log.",
     "noOperationLogs": "Keine Operationen protokolliert"
+  },
+
+  "updates": {
+    "title": "System-Updates",
+    "currentVersion": "Aktuelle Version",
+    "status": "Update-Status",
+    "updateAvailable": "Update verfügbar",
+    "newCommits": "neue Commits",
+    "upToDate": "Dployr ist auf dem neuesten Stand",
+    "checkForUpdates": "Nach Updates suchen",
+    "checkAgain": "Erneut prüfen",
+    "installUpdate": "Update installieren",
+    "viewOnGithub": "Auf GitHub ansehen",
+    "cachedResult": "Zuletzt geprüft vor weniger als einer Stunde",
+    "changelog": "Änderungen",
+    "howItWorks": "So funktioniert das Update",
+    "howItWorksDesc": "Das Update-System führt folgende Schritte automatisch aus:",
+    "step1": "Neueste Version von GitHub herunterladen (git pull)",
+    "step2": "Dashboard-Container neu bauen (docker compose build)",
+    "step3": "Dashboard-Container neu starten (docker compose up -d)",
+    "step4": "Seite automatisch neu laden, wenn das Dashboard wieder erreichbar ist",
+    "note": "Während des Updates ist das Dashboard kurzzeitig nicht erreichbar (ca. 30-60 Sekunden). Ihre Projekte und Datenbanken sind davon nicht betroffen.",
+    "updating": "Update wird installiert...",
+    "pleaseWait": "Bitte warten Sie, während das Update installiert wird...",
+    "restartNote": "Das Dashboard wird nach dem Update automatisch neu gestartet.",
+    "restartingDashboard": "Dashboard wird neu gestartet...",
+    "updateComplete": "Update erfolgreich! Seite wird neu geladen...",
+    "manualRefresh": "Dashboard ist bereit. Bitte laden Sie die Seite manuell neu.",
+    "confirmUpdate": "Möchten Sie das Update jetzt installieren? Das Dashboard wird kurzzeitig nicht erreichbar sein.",
+    "updateStarted": "Update wird gestartet...",
+    "updateFailed": "Update fehlgeschlagen",
+    "checkFailed": "Fehler beim Prüfen auf Updates"
   }
 }

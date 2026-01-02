@@ -21,7 +21,9 @@
     "npmDescription": "Configure domain management and SSL certificates for projects.",
     "configureNpm": "Configure NPM",
     "emailDescription": "Set up SMTP server for email notifications.",
-    "configureEmail": "Configure Email"
+    "configureEmail": "Configure Email",
+    "updatesDescription": "Update Dployr to the latest version.",
+    "checkUpdates": "Check Updates"
   },
 
   "users": {
@@ -270,5 +272,37 @@
     "operationLogs": "Operation Logs",
     "operationLogsHelp": "Domain and SSL operations from the dashboard log.",
     "noOperationLogs": "No operations logged"
+  },
+
+  "updates": {
+    "title": "System Updates",
+    "currentVersion": "Current Version",
+    "status": "Update Status",
+    "updateAvailable": "Update available",
+    "newCommits": "new commits",
+    "upToDate": "Dployr is up to date",
+    "checkForUpdates": "Check for Updates",
+    "checkAgain": "Check Again",
+    "installUpdate": "Install Update",
+    "viewOnGithub": "View on GitHub",
+    "cachedResult": "Last checked less than an hour ago",
+    "changelog": "Changes",
+    "howItWorks": "How Updates Work",
+    "howItWorksDesc": "The update system performs the following steps automatically:",
+    "step1": "Download latest version from GitHub (git pull)",
+    "step2": "Rebuild dashboard container (docker compose build)",
+    "step3": "Restart dashboard container (docker compose up -d)",
+    "step4": "Automatically reload page when dashboard is back online",
+    "note": "During the update, the dashboard will be briefly unavailable (approx. 30-60 seconds). Your projects and databases are not affected.",
+    "updating": "Installing Update...",
+    "pleaseWait": "Please wait while the update is being installed...",
+    "restartNote": "The dashboard will automatically restart after the update.",
+    "restartingDashboard": "Restarting dashboard...",
+    "updateComplete": "Update successful! Reloading page...",
+    "manualRefresh": "Dashboard is ready. Please reload the page manually.",
+    "confirmUpdate": "Do you want to install the update now? The dashboard will be briefly unavailable.",
+    "updateStarted": "Update is starting...",
+    "updateFailed": "Update failed",
+    "checkFailed": "Error checking for updates"
   }
 }

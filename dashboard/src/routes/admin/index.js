@@ -14,6 +14,7 @@ const { logger } = require('../../config/logger');
 const usersRouter = require('./users');
 const logsRouter = require('./logs');
 const settingsRouter = require('./settings');
+const updatesRouter = require('./updates');
 
 // All admin routes require admin privileges
 router.use(requireAuth);
@@ -90,5 +91,6 @@ router.get('/deployments', (req, res) => res.redirect('/admin/logs/deployments')
 router.use('/users', usersRouter);
 router.use('/logs', logsRouter);
 router.use('/settings', settingsRouter);
+router.use('/updates', updatesRouter);
 
 module.exports = router;
