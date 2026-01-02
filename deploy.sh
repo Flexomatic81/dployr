@@ -114,7 +114,8 @@ do_deploy() {
         echo "Updating from branch: $BRANCH"
     fi
 
-    # Git Pull from specified branch
+    # Git Pull from specified branch (including tags for version detection)
+    git fetch --tags origin "$BRANCH"
     git pull origin "$BRANCH"
 
     # Get version information for build args
