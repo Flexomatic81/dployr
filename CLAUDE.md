@@ -85,6 +85,7 @@ dashboard/src/
 │   ├── dashboard.js    # Main dashboard
 │   ├── projects.js     # Project CRUD, Git/ZIP deployment, sharing
 │   ├── databases.js    # Database CRUD with type selection
+│   ├── backups.js      # Backup creation, restore, download
 │   ├── logs.js         # Container logs viewer
 │   ├── admin.js        # User management, approval workflow, system logs, deployments
 │   ├── setup.js        # Initial configuration wizard
@@ -100,6 +101,7 @@ dashboard/src/
 │   ├── zip.js          # ZIP extraction, auto-flatten
 │   ├── sharing.js      # Project sharing, permission management
 │   ├── autodeploy.js   # Auto-deploy polling, deployment execution
+│   ├── backup.js       # Project and database backup/restore
 │   ├── email.js        # Email service (SMTP, templates, notifications)
 │   ├── providers/      # Database-specific implementations
 │   │   ├── mariadb-provider.js
@@ -107,7 +109,8 @@ dashboard/src/
 │   └── utils/          # Shared utility functions
 │       ├── nginx.js    # Nginx config generation
 │       ├── crypto.js   # Password generation
-│       └── security.js # Security utilities (blocked files removal)
+│       ├── security.js # Security utilities (blocked files, URL sanitization)
+│       └── webhook.js  # Webhook signature validation
 ├── views/              # EJS templates with express-ejs-layouts
 └── tests/              # Unit tests (Jest)
     ├── services/       # Service tests
@@ -677,6 +680,57 @@ Users can configure which emails they receive via `/profile/notifications`:
 - `notify_deploy_failure` - Notification preference
 - `notify_autodeploy` - Notification preference
 
+## Backup & Restore
+
+Manual backup functionality for projects and databases.
+
+**Features:**
+- Project backups as tar.gz archives (excludes node_modules, vendor, .git, etc.)
+- Database backups as SQL dumps (MariaDB: mysqldump, PostgreSQL: pg_dump)
+- Restore functionality for both project and database backups
+- Backup preview showing archive contents
+- Backup history with statistics
+
+**Storage:**
+Backups are stored per-user in `/app/users/{username}/.backups/`:
+```
+.backups/
+├── project_myapp_2026-01-02_12-00-00.tar.gz
+├── database_mydb_2026-01-02_12-05-00.sql
+└── ...
+```
+
+**Database Table:** `backup_logs`
+- `id`, `user_id`, `backup_type` (project/database)
+- `target_name`, `filename`, `file_size`
+- `status` (pending/running/success/failed)
+- `error_message`, `duration_ms`, `metadata`, `created_at`
+
+**Routes:**
+- `GET /backups` - List all user backups
+- `POST /backups/project/:name` - Create project backup
+- `POST /backups/database/:name` - Create database backup
+- `GET /backups/:id` - Backup details with preview
+- `GET /backups/:id/download` - Download backup file
+- `POST /backups/:id/restore` - Restore backup
+- `DELETE /backups/:id` - Delete backup
+
+**Service Functions:**
+- `createProjectBackup(userId, systemUsername, projectName)` - Create tar.gz of project
+- `createDatabaseBackup(userId, systemUsername, databaseName)` - Create SQL dump
+- `restoreProjectBackup(systemUsername, backupId)` - Extract and overwrite project
+- `restoreDatabaseBackup(systemUsername, backupId)` - Execute SQL dump
+- `getBackupPreview(systemUsername, filename)` - List files in archive
+- `listBackups(userId, type, targetName)` - Query backup history
+
+**Default Exclusion Patterns:**
+```javascript
+['node_modules', 'vendor', '.git', '__pycache__', '.cache', '*.log', '.npm', '.yarn']
+```
+
+**Project-Database Linking:**
+The project detail page shows a "Backup Database" button only if the project has a linked database (detected from `.env` variables like `DB_DATABASE`, `DB_NAME`, etc.).
+
 ## Key Services
 
 | Service | Purpose |
@@ -688,6 +742,7 @@ Users can configure which emails they receive via `/profile/notifications`:
 | `zip.js` | ZIP extraction (to html/), auto-flatten, project creation |
 | `autodeploy.js` | Auto-deploy polling, deployment execution, history logging |
 | `sharing.js` | Project sharing, permission levels (read/manage/full), access control |
+| `backup.js` | Project/database backup creation, restore, preview, history |
 | `proxy.js` | NPM integration, domain management, SSL certificates |
 | `email.js` | SMTP email sending, template rendering, deployment notifications |
 | `update.js` | System updates, version checking, GitHub release integration |
@@ -707,7 +762,7 @@ Users can configure which emails they receive via `/profile/notifications`:
 |--------|---------|
 | `utils/nginx.js` | `generateNginxConfig()` for static website nginx config |
 | `utils/crypto.js` | `generatePassword()` for secure password generation |
-| `utils/security.js` | `removeBlockedFiles()` for removing Docker files from uploads |
+| `utils/security.js` | `removeBlockedFiles()`, `sanitizeReturnUrl()` for security |
 | `utils/webhook.js` | Webhook signature validation, provider detection, payload parsing |
 
 ## Config Modules
