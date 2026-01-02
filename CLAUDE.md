@@ -565,7 +565,8 @@ UPDATE_CHANNEL=stable           # Update channel: 'stable' (main) or 'beta' (dev
 - `GET /admin/updates` - Update management page
 - `GET /admin/updates/check` - Check for updates API (force=true to bypass cache)
 - `GET /admin/updates/version` - Current version info API
-- `POST /admin/updates/install` - Trigger update installation
+- `POST /admin/updates/install` - Trigger update installation (legacy, returns immediately)
+- `GET /admin/updates/install-stream` - SSE endpoint for real-time update progress
 - `GET /admin/updates/status` - Cached update status for navbar badge
 - `GET /admin/updates/channel` - Get current update channel
 - `POST /admin/updates/channel` - Set update channel (stable/beta)
@@ -578,12 +579,27 @@ UPDATE_CHANNEL=stable           # Update channel: 'stable' (main) or 'beta' (dev
 ./deploy.sh --branch dev # Update from specific branch
 ./deploy.sh --check      # Check for updates (JSON output)
 ./deploy.sh --version    # Show current version (JSON output)
+./deploy.sh --json       # Enable JSON output for deploy (used by SSE)
 ```
 
-**Update Process:**
-1. `git pull origin <branch>` - Download latest code from selected channel
-2. `docker compose build dashboard` - Rebuild container with new version
-3. `docker compose up -d dashboard` - Restart with new image
+**Update Process (with real-time progress):**
+1. Browser opens SSE connection to `/admin/updates/install-stream`
+2. Server spawns `deploy.sh --json` and streams progress events
+3. Each step sends JSON: `{"step": "pull"}`, `{"step": "build"}`, etc.
+4. Browser shows 5-step progress modal with live status updates
+5. After completion, browser uses two-phase detection:
+   - Phase 1: Wait for dashboard to go OFFLINE (connection error)
+   - Phase 2: Wait for 5 consecutive successful health checks
+6. Auto-redirect to login page when dashboard is fully ready
+
+**Update Steps (displayed in UI):**
+| Step | Description |
+|------|-------------|
+| pull | Download code from GitHub (git pull) |
+| pull-images | Update Docker images (docker compose pull) |
+| build | Rebuild dashboard container |
+| restart | Restart all services |
+| ready | Wait for dashboard to come back online |
 
 **Update Channels:**
 | Channel | Branch | Description |

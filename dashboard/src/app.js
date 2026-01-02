@@ -100,6 +100,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
 app.set('layout', 'layout');
 
+// Health check endpoint - no auth required, used for update readiness checks
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // Webhook route - MUST be registered BEFORE express.json() middleware
 // Webhooks need raw body for HMAC signature validation
 // Also registered before session/CSRF (authenticated via signature, not session)
@@ -259,6 +264,8 @@ app.use(async (req, res, next) => {
     res.locals.info = req.flash('info');
     res.locals.serverIp = await getServerIp();
     res.locals.version = versionInfo;
+    // Update status for navbar badge (only for admins, from cache - no API call)
+    res.locals.updateStatus = updateService.getCachedUpdateStatus();
     next();
 });
 

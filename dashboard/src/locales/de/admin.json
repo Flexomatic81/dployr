@@ -290,9 +290,10 @@
     "howItWorks": "So funktioniert das Update",
     "howItWorksDesc": "Das Update-System führt folgende Schritte automatisch aus:",
     "step1": "Neueste Version von GitHub herunterladen (git pull)",
-    "step2": "Dashboard-Container neu bauen (docker compose build)",
-    "step3": "Dashboard-Container neu starten (docker compose up -d)",
-    "step4": "Seite automatisch neu laden, wenn das Dashboard wieder erreichbar ist",
+    "step2": "Aktuelle Docker-Images für alle Services pullen (docker compose pull)",
+    "step3": "Dashboard-Container neu bauen (docker compose build)",
+    "step4": "Alle Services neu starten (docker compose up -d)",
+    "step5": "Seite automatisch neu laden, wenn das Dashboard wieder erreichbar ist",
     "note": "Während des Updates ist das Dashboard kurzzeitig nicht erreichbar (ca. 30-60 Sekunden). Ihre Projekte und Datenbanken sind davon nicht betroffen.",
     "updating": "Update wird installiert...",
     "pleaseWait": "Bitte warten Sie, während das Update installiert wird...",
@@ -310,6 +311,12 @@
     "channelBeta": "Beta",
     "channelBetaDesc": "Neueste Features, möglicherweise instabil",
     "channelChanged": "Update-Kanal geändert",
-    "channelWarning": "Beta-Updates können instabil sein und zu Problemen führen."
+    "channelWarning": "Beta-Updates können instabil sein und zu Problemen führen.",
+    "stepPull": "Code herunterladen (git pull)",
+    "stepImages": "Docker Images aktualisieren",
+    "stepBuild": "Dashboard neu bauen",
+    "stepRestart": "Services neu starten",
+    "stepReady": "Warten auf Dashboard",
+    "toLogin": "Zum Login"
   }
 }

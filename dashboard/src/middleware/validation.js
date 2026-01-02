@@ -209,6 +209,108 @@ const schemas = {
                 'any.only': 'Invalid permission',
                 'any.required': 'Permission is required'
             })
+    }),
+
+    // Admin User Schemas
+    createUser: Joi.object({
+        username: Joi.string()
+            .pattern(/^[a-z0-9_-]+$/)
+            .min(3)
+            .max(30)
+            .required()
+            .messages({
+                'string.pattern.base': 'Username may only contain lowercase letters, numbers, - and _',
+                'string.min': 'Username must be at least 3 characters long',
+                'string.max': 'Username must not exceed 30 characters',
+                'any.required': 'Username is required'
+            }),
+        system_username: Joi.string()
+            .pattern(/^[a-z0-9_-]+$/)
+            .min(3)
+            .max(30)
+            .required()
+            .messages({
+                'string.pattern.base': 'System username may only contain lowercase letters, numbers, - and _',
+                'string.min': 'System username must be at least 3 characters long',
+                'string.max': 'System username must not exceed 30 characters',
+                'any.required': 'System username is required'
+            }),
+        password: Joi.string()
+            .min(6)
+            .required()
+            .messages({
+                'string.min': 'Password must be at least 6 characters long',
+                'any.required': 'Password is required'
+            }),
+        email: Joi.string()
+            .email()
+            .allow('')
+            .optional()
+            .messages({
+                'string.email': 'Please enter a valid email address'
+            }),
+        is_admin: Joi.string()
+            .valid('on')
+            .optional()
+    }),
+
+    updateUser: Joi.object({
+        username: Joi.string()
+            .pattern(/^[a-z0-9_-]+$/)
+            .min(3)
+            .max(30)
+            .required()
+            .messages({
+                'string.pattern.base': 'Username may only contain lowercase letters, numbers, - and _',
+                'string.min': 'Username must be at least 3 characters long',
+                'string.max': 'Username must not exceed 30 characters',
+                'any.required': 'Username is required'
+            }),
+        system_username: Joi.string()
+            .pattern(/^[a-z0-9_-]+$/)
+            .min(3)
+            .max(30)
+            .required()
+            .messages({
+                'string.pattern.base': 'System username may only contain lowercase letters, numbers, - and _',
+                'string.min': 'System username must be at least 3 characters long',
+                'string.max': 'System username must not exceed 30 characters',
+                'any.required': 'System username is required'
+            }),
+        password: Joi.string()
+            .min(6)
+            .allow('')
+            .optional()
+            .messages({
+                'string.min': 'Password must be at least 6 characters long'
+            }),
+        email: Joi.string()
+            .email()
+            .allow('')
+            .optional()
+            .messages({
+                'string.email': 'Please enter a valid email address'
+            }),
+        is_admin: Joi.string()
+            .valid('on')
+            .optional()
+    }),
+
+    // Domain Schema
+    addDomain: Joi.object({
+        domain: Joi.string()
+            .pattern(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/)
+            .min(4)
+            .max(253)
+            .required()
+            .messages({
+                'string.pattern.base': 'Invalid domain format',
+                'string.min': 'Domain must be at least 4 characters long',
+                'string.max': 'Domain must not exceed 253 characters',
+                'any.required': 'Domain is required'
+            }),
+        ssl: Joi.boolean()
+            .optional()
     })
 };
 

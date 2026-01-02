@@ -27,7 +27,7 @@ services:
 
   # phpMyAdmin for database management
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5
     container_name: dployr-phpmyadmin
     restart: unless-stopped
     environment:
@@ -84,7 +84,7 @@ services:
 
   # Nginx Proxy Manager (optional - controlled via Dashboard Admin Panel)
   npm:
-    image: jc21/nginx-proxy-manager:latest
+    image: jc21/nginx-proxy-manager:2
     container_name: dployr-npm
     restart: unless-stopped
     environment:

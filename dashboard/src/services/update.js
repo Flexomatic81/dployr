@@ -373,7 +373,7 @@ function initUpdateChecker() {
         }
     }, 30000);
 
-    // Schedule daily check (every 24 hours)
+    // Schedule check every 12 hours
     setInterval(async () => {
         try {
             await checkForUpdates(true);
@@ -381,7 +381,7 @@ function initUpdateChecker() {
         } catch (error) {
             logger.error('Scheduled update check failed', { error: error.message });
         }
-    }, 24 * 60 * 60 * 1000);
+    }, 12 * 60 * 60 * 1000);
 
     logger.info('Update checker initialized');
 }

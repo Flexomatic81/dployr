@@ -8,6 +8,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const { getProjectAccess, requirePermission } = require('../middleware/projectAccess');
+const { validate } = require('../middleware/validation');
 const proxyService = require('../services/proxy');
 const projectService = require('../services/project');
 const dockerService = require('../services/docker');
@@ -65,28 +66,21 @@ router.get('/:name/domains', requireAuth, getProjectAccess(), async (req, res) =
  * POST /proxy/:name/domains
  * Add domain to project (requires full permission or owner)
  */
-router.post('/:name/domains', requireAuth, getProjectAccess(), requirePermission('full'), async (req, res) => {
+router.post('/:name/domains', requireAuth, getProjectAccess(), requirePermission('full'), validate('addDomain'), async (req, res) => {
     try {
         if (!proxyService.isEnabled()) {
             req.flash('error', req.t('proxy:errors.notEnabled'));
             return res.redirect(`/projects/${req.params.name}`);
         }
 
-        const { domain, enableSsl } = req.body;
+        const { domain, ssl: enableSsl } = req.validatedBody;
         const projectName = req.params.name;
         const userId = req.projectAccess.isOwner ? req.session.user.id : req.projectAccess.ownerId;
         const systemUsername = req.projectAccess.isOwner
             ? req.session.user.system_username
             : req.projectAccess.ownerSystemUsername;
 
-        // Validate domain format
-        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,}$/;
-        if (!domain || !domainRegex.test(domain.trim())) {
-            req.flash('error', req.t('proxy:errors.invalidDomain'));
-            return res.redirect(`/projects/${projectName}`);
-        }
-
-        const cleanDomain = domain.trim().toLowerCase();
+        const cleanDomain = domain.toLowerCase();
 
         // Get project info for container name and port
         const project = await projectService.getProjectInfo(systemUsername, projectName);

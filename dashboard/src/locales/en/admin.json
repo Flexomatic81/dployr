@@ -290,9 +290,10 @@
     "howItWorks": "How Updates Work",
     "howItWorksDesc": "The update system performs the following steps automatically:",
     "step1": "Download latest version from GitHub (git pull)",
-    "step2": "Rebuild dashboard container (docker compose build)",
-    "step3": "Restart dashboard container (docker compose up -d)",
-    "step4": "Automatically reload page when dashboard is back online",
+    "step2": "Pull latest Docker images for all services (docker compose pull)",
+    "step3": "Rebuild dashboard container (docker compose build)",
+    "step4": "Restart all services (docker compose up -d)",
+    "step5": "Automatically reload page when dashboard is back online",
     "note": "During the update, the dashboard will be briefly unavailable (approx. 30-60 seconds). Your projects and databases are not affected.",
     "updating": "Installing Update...",
     "pleaseWait": "Please wait while the update is being installed...",
@@ -310,6 +311,12 @@
     "channelBeta": "Beta",
     "channelBetaDesc": "Latest features, may be unstable",
     "channelChanged": "Update channel changed",
-    "channelWarning": "Beta updates may be unstable and cause issues."
+    "channelWarning": "Beta updates may be unstable and cause issues.",
+    "stepPull": "Download code (git pull)",
+    "stepImages": "Update Docker images",
+    "stepBuild": "Rebuild dashboard",
+    "stepRestart": "Restart services",
+    "stepReady": "Waiting for dashboard",
+    "toLogin": "Go to Login"
   }
 }

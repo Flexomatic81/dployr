@@ -122,9 +122,18 @@ do_deploy() {
     export GIT_DATE=$(git log -1 --format=%cd --date=format:'%d.%m.%Y')
 
     if [ "$JSON_OUTPUT" = true ]; then
-        echo "{\"status\":\"building\",\"step\":\"build\",\"version\":\"$GIT_HASH\"}"
+        echo "{\"status\":\"pulling\",\"step\":\"pull-images\",\"version\":\"$GIT_HASH\"}"
     else
         echo "Version: $GIT_HASH ($GIT_DATE)"
+        echo "Pulling latest images..."
+    fi
+
+    # Pull latest images for all services (respects pinned versions in docker-compose.yml)
+    docker compose pull --ignore-pull-failures || true
+
+    if [ "$JSON_OUTPUT" = true ]; then
+        echo "{\"status\":\"building\",\"step\":\"build\",\"version\":\"$GIT_HASH\"}"
+    else
         echo "Building dashboard..."
     fi
 
@@ -134,17 +143,29 @@ do_deploy() {
     if [ "$JSON_OUTPUT" = true ]; then
         echo "{\"status\":\"restarting\",\"step\":\"restart\"}"
     else
-        echo "Restarting dashboard..."
+        echo "Restarting services..."
     fi
 
-    # Restart dashboard
-    docker compose up -d dashboard
+    # Restart all services EXCEPT dashboard first (to avoid container name conflicts)
+    docker compose up -d mariadb postgresql pgadmin phpmyadmin npm 2>/dev/null || true
 
     if [ "$JSON_OUTPUT" = true ]; then
         echo "{\"status\":\"complete\",\"success\":true,\"version\":\"$GIT_HASH\",\"date\":\"$GIT_DATE\"}"
     else
         echo "=== Done ==="
     fi
+
+    # Restart dashboard LAST (this will terminate the current process)
+    # Small delay to ensure the JSON response is sent
+    sleep 1
+    # Use a separate Docker container to restart dashboard after this container stops
+    # This container runs detached and executes the restart commands on the host
+    docker run --rm -d \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v "$PWD:$PWD" \
+        -w "$PWD" \
+        docker:cli \
+        sh -c 'sleep 3 && docker compose rm -f -s dashboard 2>/dev/null; docker compose up -d dashboard'
 }
 
 # Execute requested action
@@ -159,3 +180,10 @@ case $ACTION in
         do_deploy
         ;;
 esac
+
+
+
+
+
+
+
