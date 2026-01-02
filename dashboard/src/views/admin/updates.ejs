@@ -309,7 +309,7 @@ async function waitForDashboardReady() {
     let attempts = 0;
     let successCount = 0;
     const maxAttempts = 180; // 3 minutes max
-    const requiredSuccesses = 5; // Require 5 consecutive successful health checks
+    const requiredSuccesses = 5; // Require 5 consecutive successful health checks before redirect
 
     const checkInterval = setInterval(async () => {
         attempts++;
