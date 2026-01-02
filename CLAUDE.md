@@ -540,6 +540,7 @@ Admins can update Dployr to the latest version directly from the dashboard.
 - Real-time progress display during update
 - Daily automatic check for new versions
 - Cached update status (1 hour) to reduce API calls
+- Update channel selection (Stable/Beta)
 
 **How it works:**
 1. Dashboard checks GitHub for latest release
@@ -557,6 +558,7 @@ Admins can update Dployr to the latest version directly from the dashboard.
 **Environment Variables:**
 ```
 HOST_DPLOYR_PATH=/opt/dployr    # Dployr installation path on host
+UPDATE_CHANNEL=stable           # Update channel: 'stable' (main) or 'beta' (dev)
 ```
 
 **Admin Routes:**
@@ -565,20 +567,31 @@ HOST_DPLOYR_PATH=/opt/dployr    # Dployr installation path on host
 - `GET /admin/updates/version` - Current version info API
 - `POST /admin/updates/install` - Trigger update installation
 - `GET /admin/updates/status` - Cached update status for navbar badge
+- `GET /admin/updates/channel` - Get current update channel
+- `POST /admin/updates/channel` - Set update channel (stable/beta)
 
 **Service:** `update.js` - GitHub API integration, version comparison, update execution
 
 **Deploy Script:** `deploy.sh` in project root
 ```bash
-./deploy.sh              # Full update (pull, build, restart)
+./deploy.sh              # Full update (pull, build, restart) from main
+./deploy.sh --branch dev # Update from specific branch
 ./deploy.sh --check      # Check for updates (JSON output)
 ./deploy.sh --version    # Show current version (JSON output)
 ```
 
 **Update Process:**
-1. `git pull origin main` - Download latest code
+1. `git pull origin <branch>` - Download latest code from selected channel
 2. `docker compose build dashboard` - Rebuild container with new version
 3. `docker compose up -d dashboard` - Restart with new image
+
+**Update Channels:**
+| Channel | Branch | Description |
+|---------|--------|-------------|
+| Stable | main | Tested, stable releases (recommended) |
+| Beta | dev | Latest features, may be unstable |
+
+Channel preference is stored in `/opt/dployr/.env` as `UPDATE_CHANNEL`.
 
 **Note:** During update, the dashboard is briefly unavailable (30-60 seconds). User projects and databases are not affected.
 
