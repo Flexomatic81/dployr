@@ -9,6 +9,7 @@ const userService = require('../../services/user');
 const projectService = require('../../services/project');
 const emailService = require('../../services/email');
 const { logger } = require('../../config/logger');
+const { validate } = require('../../middleware/validation');
 
 // Show pending registrations
 router.get('/pending', async (req, res) => {
@@ -99,25 +100,9 @@ router.get('/create', (req, res) => {
 });
 
 // Create new user - Processing
-router.post('/', async (req, res) => {
+router.post('/', validate('createUser'), async (req, res) => {
     try {
-        const { username, password, system_username, is_admin, email } = req.body;
-
-        // Validation
-        if (!username || !password || !system_username) {
-            req.flash('error', req.t('common:validation.required'));
-            return res.redirect('/admin/users/create');
-        }
-
-        if (!/^[a-z0-9_-]+$/.test(username)) {
-            req.flash('error', req.t('common:validation.lowercaseOnly'));
-            return res.redirect('/admin/users/create');
-        }
-
-        if (!/^[a-z0-9_-]+$/.test(system_username)) {
-            req.flash('error', req.t('common:validation.lowercaseOnly'));
-            return res.redirect('/admin/users/create');
-        }
+        const { username, password, system_username, is_admin, email } = req.validatedBody;
 
         // Check if user exists
         if (await userService.existsUsernameOrSystemUsername(username, system_username)) {
@@ -166,16 +151,10 @@ router.get('/:id/edit', async (req, res) => {
 });
 
 // Edit user - Processing
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate('updateUser'), async (req, res) => {
     try {
-        const { username, password, system_username, is_admin, email } = req.body;
+        const { username, password, system_username, is_admin, email } = req.validatedBody;
         const userId = req.params.id;
-
-        // Validation
-        if (!username || !system_username) {
-            req.flash('error', req.t('common:validation.required'));
-            return res.redirect(`/admin/users/${userId}/edit`);
-        }
 
         // Check if username/system username is already in use
         if (await userService.existsUsernameOrSystemUsername(username, system_username, userId)) {
