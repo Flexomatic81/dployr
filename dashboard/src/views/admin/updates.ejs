@@ -215,12 +215,9 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
         const result = await response.json();
 
         if (result.success) {
-            document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.restartingDashboard") %>';
-
-            // Wait for dashboard to restart and then reload
-            setTimeout(() => {
-                checkDashboardReady();
-            }, 5000);
+            document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.pleaseWait") %>';
+            // Start waiting for dashboard to go offline, then come back online
+            waitForOfflineThenOnline();
         } else {
             modal.hide();
             alert('<%= t("admin:updates.updateFailed") %>: ' + result.error);
@@ -231,31 +228,39 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
     }
 });
 
-// Check if dashboard is back online after restart
-async function checkDashboardReady() {
+// Wait for dashboard to go offline first, then wait for it to come back
+async function waitForOfflineThenOnline() {
+    let offlineDetected = false;
     let attempts = 0;
-    const maxAttempts = 60; // 2 minutes max (60 * 2s)
+    const maxAttempts = 90; // 3 minutes max (90 * 2s)
 
     const checkInterval = setInterval(async () => {
         attempts++;
 
         try {
-            // Use /health endpoint - no auth required
             const response = await fetch('/health', {
                 method: 'GET',
                 cache: 'no-store'
             });
 
             if (response.ok) {
-                clearInterval(checkInterval);
-                document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.updateComplete") %>';
-                // Redirect to login since session is lost after restart
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1500);
+                if (offlineDetected) {
+                    // Dashboard is back online after being offline
+                    clearInterval(checkInterval);
+                    document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.updateComplete") %>';
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                }
+                // Still online, waiting for it to go offline...
             }
         } catch {
-            // Dashboard not ready yet - connection refused or timeout
+            // Dashboard is offline (connection refused/timeout)
+            if (!offlineDetected) {
+                offlineDetected = true;
+                document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.restartingDashboard") %>';
+            }
+            // Keep waiting for it to come back online
         }
 
         if (attempts >= maxAttempts) {
