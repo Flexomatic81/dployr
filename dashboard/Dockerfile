@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Docker CLI, Compose Plugin und Git installieren
-RUN apk add --no-cache docker-cli docker-cli-compose git
+# Docker CLI, Compose Plugin, Git und Bash installieren
+RUN apk add --no-cache docker-cli docker-cli-compose git bash
 
 # Package files kopieren
 COPY package*.json ./
