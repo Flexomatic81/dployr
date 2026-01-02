@@ -305,10 +305,11 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
 
 // Wait for dashboard to come back online after restart
 async function waitForDashboardReady() {
+    let phase = 'waiting-offline'; // First wait for dashboard to go offline
     let attempts = 0;
     let successCount = 0;
-    const maxAttempts = 90; // 3 minutes max
-    const requiredSuccesses = 3; // Require 3 consecutive successful health checks
+    const maxAttempts = 180; // 3 minutes max
+    const requiredSuccesses = 5; // Require 5 consecutive successful health checks
 
     const checkInterval = setInterval(async () => {
         attempts++;
@@ -316,28 +317,42 @@ async function waitForDashboardReady() {
         try {
             const response = await fetch('/health', {
                 method: 'GET',
-                cache: 'no-store'
+                cache: 'no-store',
+                signal: AbortSignal.timeout(2000) // 2 second timeout
             });
 
             if (response.ok) {
-                successCount++;
-                if (successCount >= requiredSuccesses) {
-                    clearInterval(checkInterval);
-                    // Show success state briefly, then redirect
-                    setStepStatus('step-ready', 'done');
-                    document.getElementById('updateStatusContainer').classList.add('d-none');
-                    document.getElementById('updateSuccessContainer').classList.remove('d-none');
-                    // Auto-redirect to login after short delay
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 1500);
+                if (phase === 'waiting-offline') {
+                    // Dashboard is still running, keep waiting for it to go offline
+                    successCount = 0;
+                } else {
+                    // Phase: waiting-online - dashboard is coming back
+                    successCount++;
+                    if (successCount >= requiredSuccesses) {
+                        clearInterval(checkInterval);
+                        // Show success state briefly, then redirect
+                        setStepStatus('step-ready', 'done');
+                        document.getElementById('updateStatusContainer').classList.add('d-none');
+                        document.getElementById('updateSuccessContainer').classList.remove('d-none');
+                        // Auto-redirect to login after short delay
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 1000);
+                    }
                 }
             } else {
-                successCount = 0; // Reset on failure
+                // Non-OK response - dashboard is restarting
+                if (phase === 'waiting-offline') {
+                    phase = 'waiting-online';
+                }
+                successCount = 0;
             }
         } catch {
-            // Dashboard not ready yet
-            successCount = 0; // Reset on error
+            // Connection error - dashboard is offline/restarting
+            if (phase === 'waiting-offline') {
+                phase = 'waiting-online';
+            }
+            successCount = 0;
         }
 
         if (attempts >= maxAttempts) {
@@ -345,7 +360,7 @@ async function waitForDashboardReady() {
             document.getElementById('updateSpinner').classList.add('d-none');
             document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.manualRefresh") %> <a href="/login" class="btn btn-sm btn-primary ms-2"><%= t("admin:updates.toLogin") %></a>';
         }
-    }, 1000); // Check every second instead of 2 seconds
+    }, 1000);
 }
 
 // Update channel selection
