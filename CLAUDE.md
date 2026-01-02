@@ -739,5 +739,6 @@ Project-specific skills for development workflow (in `.claude/commands/`):
 | `/dployr-review` | Deep code review (architecture, best practices, security, performance) |
 | `/dployr-test` | Run tests and analyze results with improvement suggestions |
 | `/dployr-changelog` | Generate changelog from Git commits for releases |
+| `/dployr-release` | Create a new release (changelog, tag, GitHub release) |
 
 Usage: Type the skill name (e.g., `/dployr-check`) in Claude Code to execute.
