@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install Docker CLI, Compose Plugin, Git and Bash
-RUN apk add --no-cache docker-cli docker-cli-compose git bash
+# Install Docker CLI, Compose Plugin, Git, Bash, and database clients for backup/restore
+RUN apk add --no-cache docker-cli docker-cli-compose git bash mariadb-client postgresql-client
 
 # Copy package files
 COPY package*.json ./
