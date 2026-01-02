@@ -303,6 +303,13 @@
     "confirmUpdate": "Do you want to install the update now? The dashboard will be briefly unavailable.",
     "updateStarted": "Update is starting...",
     "updateFailed": "Update failed",
-    "checkFailed": "Error checking for updates"
+    "checkFailed": "Error checking for updates",
+    "channel": "Update Channel",
+    "channelStable": "Stable",
+    "channelStableDesc": "Only tested, stable versions (recommended)",
+    "channelBeta": "Beta",
+    "channelBetaDesc": "Latest features, may be unstable",
+    "channelChanged": "Update channel changed",
+    "channelWarning": "Beta updates may be unstable and cause issues."
   }
 }

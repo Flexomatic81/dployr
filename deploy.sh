@@ -3,7 +3,8 @@
 # Updates the repository and rebuilds the dashboard with version information
 #
 # Usage:
-#   ./deploy.sh              # Full update (pull, build, restart)
+#   ./deploy.sh              # Full update (pull, build, restart) from main
+#   ./deploy.sh --branch dev # Update from specific branch
 #   ./deploy.sh --check      # Check for updates only (returns JSON)
 #   ./deploy.sh --version    # Show current version (returns JSON)
 
@@ -14,6 +15,7 @@ cd "$(dirname "$0")"
 # Parse arguments
 ACTION="deploy"
 JSON_OUTPUT=false
+BRANCH="main"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -31,15 +33,20 @@ while [[ $# -gt 0 ]]; do
             JSON_OUTPUT=true
             shift
             ;;
+        --branch)
+            BRANCH="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "Dployr Deploy Script"
             echo ""
             echo "Usage:"
-            echo "  ./deploy.sh              Full update (pull, build, restart)"
-            echo "  ./deploy.sh --check      Check for updates (JSON output)"
-            echo "  ./deploy.sh --version    Show current version (JSON output)"
-            echo "  ./deploy.sh --json       Enable JSON output for deploy"
-            echo "  ./deploy.sh --help       Show this help"
+            echo "  ./deploy.sh                  Full update from main branch"
+            echo "  ./deploy.sh --branch dev     Update from specific branch"
+            echo "  ./deploy.sh --check          Check for updates (JSON output)"
+            echo "  ./deploy.sh --version        Show current version (JSON output)"
+            echo "  ./deploy.sh --json           Enable JSON output for deploy"
+            echo "  ./deploy.sh --help           Show this help"
             exit 0
             ;;
         *)
@@ -101,14 +108,14 @@ check_updates() {
 # Perform the update
 do_deploy() {
     if [ "$JSON_OUTPUT" = true ]; then
-        echo "{\"status\":\"starting\",\"step\":\"pull\"}"
+        echo "{\"status\":\"starting\",\"step\":\"pull\",\"branch\":\"$BRANCH\"}"
     else
         echo "=== Dployr Deploy ==="
-        echo "Updating repository..."
+        echo "Updating from branch: $BRANCH"
     fi
 
-    # Git Pull
-    git pull origin main
+    # Git Pull from specified branch
+    git pull origin "$BRANCH"
 
     # Get version information for build args
     export GIT_HASH=$(git rev-parse --short HEAD)

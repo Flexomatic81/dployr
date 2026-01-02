@@ -303,6 +303,13 @@
     "confirmUpdate": "Möchten Sie das Update jetzt installieren? Das Dashboard wird kurzzeitig nicht erreichbar sein.",
     "updateStarted": "Update wird gestartet...",
     "updateFailed": "Update fehlgeschlagen",
-    "checkFailed": "Fehler beim Prüfen auf Updates"
+    "checkFailed": "Fehler beim Prüfen auf Updates",
+    "channel": "Update-Kanal",
+    "channelStable": "Stabil",
+    "channelStableDesc": "Nur getestete, stabile Versionen (empfohlen)",
+    "channelBeta": "Beta",
+    "channelBetaDesc": "Neueste Features, möglicherweise instabil",
+    "channelChanged": "Update-Kanal geändert",
+    "channelWarning": "Beta-Updates können instabil sein und zu Problemen führen."
   }
 }

@@ -115,4 +115,57 @@ router.get('/status', (req, res) => {
     });
 });
 
+/**
+ * GET /admin/updates/channel
+ * API: Get current update channel
+ */
+router.get('/channel', async (req, res) => {
+    try {
+        const channel = await updateService.getUpdateChannel();
+        res.json({
+            success: true,
+            channel,
+            channels: Object.keys(updateService.UPDATE_CHANNELS)
+        });
+    } catch (error) {
+        logger.error('Error getting update channel', { error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /admin/updates/channel
+ * API: Set update channel
+ */
+router.post('/channel', async (req, res) => {
+    try {
+        const { channel } = req.body;
+
+        if (!channel || !updateService.UPDATE_CHANNELS[channel]) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid channel. Must be "stable" or "beta".'
+            });
+        }
+
+        await updateService.setUpdateChannel(channel);
+        logger.info('Update channel changed', { userId: req.session.userId, channel });
+
+        res.json({
+            success: true,
+            channel,
+            message: req.t('admin:updates.channelChanged')
+        });
+    } catch (error) {
+        logger.error('Error setting update channel', { error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

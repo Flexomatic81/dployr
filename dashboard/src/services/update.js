@@ -20,14 +20,87 @@ const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_RE
 const DPLOYR_PATH = process.env.HOST_DPLOYR_PATH || '/opt/dployr';
 const DEPLOY_SCRIPT = path.join(DPLOYR_PATH, 'deploy.sh');
 
+// Update channels
+const UPDATE_CHANNELS = {
+    stable: 'main',
+    beta: 'dev'
+};
+
 // Cache for update check results
 let updateCache = {
     lastCheck: null,
     currentVersion: null,
     latestVersion: null,
     updateAvailable: false,
-    changelog: null
+    changelog: null,
+    channel: null
 };
+
+/**
+ * Get the current update channel
+ * @returns {Promise<string>} 'stable' or 'beta'
+ */
+async function getUpdateChannel() {
+    try {
+        const envPath = path.join(DPLOYR_PATH, '.env');
+        const content = await fs.readFile(envPath, 'utf8');
+        const match = content.match(/^UPDATE_CHANNEL=(.+)$/m);
+        const channel = match ? match[1].trim() : 'stable';
+        return UPDATE_CHANNELS[channel] ? channel : 'stable';
+    } catch {
+        return 'stable';
+    }
+}
+
+/**
+ * Set the update channel
+ * @param {string} channel - 'stable' or 'beta'
+ * @returns {Promise<boolean>}
+ */
+async function setUpdateChannel(channel) {
+    if (!UPDATE_CHANNELS[channel]) {
+        throw new Error(`Invalid update channel: ${channel}`);
+    }
+
+    try {
+        const envPath = path.join(DPLOYR_PATH, '.env');
+        let content = '';
+
+        try {
+            content = await fs.readFile(envPath, 'utf8');
+        } catch {
+            // .env doesn't exist, create with just this setting
+            content = '';
+        }
+
+        // Update or add UPDATE_CHANNEL
+        if (content.match(/^UPDATE_CHANNEL=/m)) {
+            content = content.replace(/^UPDATE_CHANNEL=.*/m, `UPDATE_CHANNEL=${channel}`);
+        } else {
+            content = content.trim() + `\nUPDATE_CHANNEL=${channel}\n`;
+        }
+
+        await fs.writeFile(envPath, content);
+
+        // Clear cache to force re-check with new channel
+        updateCache.lastCheck = null;
+        updateCache.channel = channel;
+        logger.info('Update channel changed', { channel });
+        return true;
+    } catch (error) {
+        logger.error('Failed to set update channel', { error: error.message, channel });
+        throw error;
+    }
+}
+
+/**
+ * Get the branch name for the current channel
+ * @returns {Promise<string>}
+ */
+async function getUpdateBranch() {
+    const channel = await getUpdateChannel();
+    return UPDATE_CHANNELS[channel];
+}
 
 /**
  * Get the current installed version from git
@@ -108,16 +181,17 @@ async function getLatestRelease() {
 /**
  * Get commits since current version (for changelog when no releases)
  * @param {string} sinceHash - Git hash to get commits since
+ * @param {string} branch - Branch to compare against
  * @returns {Promise<Array<{hash: string, message: string, date: string}>>}
  */
-async function getCommitsSince(sinceHash) {
+async function getCommitsSince(sinceHash, branch = 'main') {
     try {
         // Fetch latest from origin first
-        await execAsync('git fetch origin main --quiet', { cwd: DPLOYR_PATH });
+        await execAsync(`git fetch origin ${branch} --quiet`, { cwd: DPLOYR_PATH });
 
-        // Get commits between current and origin/main
+        // Get commits between current and origin/branch
         const { stdout } = await execAsync(
-            `git log ${sinceHash}..origin/main --oneline --format="%h|%s|%cd" --date=format:'%Y-%m-%d' 2>/dev/null || echo ""`,
+            `git log ${sinceHash}..origin/${branch} --oneline --format="%h|%s|%cd" --date=format:'%Y-%m-%d' 2>/dev/null || echo ""`,
             { cwd: DPLOYR_PATH }
         );
 
@@ -130,7 +204,7 @@ async function getCommitsSince(sinceHash) {
             return { hash, message, date };
         });
     } catch (error) {
-        logger.error('Failed to get commits since', { error: error.message, sinceHash });
+        logger.error('Failed to get commits since', { error: error.message, sinceHash, branch });
         return [];
     }
 }
@@ -138,53 +212,60 @@ async function getCommitsSince(sinceHash) {
 /**
  * Check if an update is available
  * @param {boolean} force - Force check even if recently checked
- * @returns {Promise<{updateAvailable: boolean, currentVersion: object, latestVersion: object|null, changelog: string|null}>}
+ * @returns {Promise<{updateAvailable: boolean, currentVersion: object, latestVersion: object|null, changelog: string|null, channel: string}>}
  */
 async function checkForUpdates(force = false) {
-    // Return cached result if checked within last hour (unless forced)
+    const channel = await getUpdateChannel();
+    const branch = UPDATE_CHANNELS[channel];
+
+    // Return cached result if checked within last hour (unless forced) and channel hasn't changed
     const oneHour = 60 * 60 * 1000;
-    if (!force && updateCache.lastCheck && (Date.now() - updateCache.lastCheck) < oneHour) {
+    if (!force && updateCache.lastCheck && updateCache.channel === channel && (Date.now() - updateCache.lastCheck) < oneHour) {
         return {
             updateAvailable: updateCache.updateAvailable,
             currentVersion: updateCache.currentVersion,
             latestVersion: updateCache.latestVersion,
             changelog: updateCache.changelog,
+            channel,
             cached: true
         };
     }
 
-    logger.info('Checking for updates...');
+    logger.info('Checking for updates...', { channel, branch });
 
     const currentVersion = await getCurrentVersion();
-    const latestRelease = await getLatestRelease();
 
     let updateAvailable = false;
     let latestVersion = null;
     let changelog = null;
 
-    if (latestRelease) {
-        // Compare with release tag
-        latestVersion = {
-            tag: latestRelease.tag,
-            name: latestRelease.name,
-            publishedAt: latestRelease.publishedAt,
-            htmlUrl: latestRelease.htmlUrl
-        };
+    // For stable channel, check releases first
+    if (channel === 'stable') {
+        const latestRelease = await getLatestRelease();
+        if (latestRelease) {
+            latestVersion = {
+                tag: latestRelease.tag,
+                name: latestRelease.name,
+                publishedAt: latestRelease.publishedAt,
+                htmlUrl: latestRelease.htmlUrl
+            };
 
-        // Update available if current tag doesn't match latest release
-        // or if we're not on a tag at all
-        if (currentVersion.tag !== latestRelease.tag) {
-            updateAvailable = true;
-            changelog = latestRelease.body;
+            if (currentVersion.tag !== latestRelease.tag) {
+                updateAvailable = true;
+                changelog = latestRelease.body;
+            }
         }
-    } else {
-        // No releases - check for new commits on main
-        const commits = await getCommitsSince(currentVersion.hash);
+    }
+
+    // If no release found (or beta channel), check for new commits
+    if (!latestVersion) {
+        const commits = await getCommitsSince(currentVersion.hash, branch);
         if (commits.length > 0) {
             updateAvailable = true;
             latestVersion = {
                 commits: commits.length,
-                latestHash: commits[0]?.hash
+                latestHash: commits[0]?.hash,
+                branch
             };
             changelog = commits.map(c => `- ${c.message} (${c.hash})`).join('\n');
         }
@@ -196,11 +277,13 @@ async function checkForUpdates(force = false) {
         currentVersion,
         latestVersion,
         updateAvailable,
-        changelog
+        changelog,
+        channel
     };
 
     logger.info('Update check complete', {
         updateAvailable,
+        channel,
         currentVersion: currentVersion.tag || currentVersion.hash,
         latestVersion: latestVersion?.tag || latestVersion?.latestHash || 'none'
     });
@@ -210,6 +293,7 @@ async function checkForUpdates(force = false) {
         currentVersion,
         latestVersion,
         changelog,
+        channel,
         cached: false
     };
 }
@@ -219,7 +303,10 @@ async function checkForUpdates(force = false) {
  * @returns {Promise<{success: boolean, message: string, output: string}>}
  */
 async function performUpdate() {
-    logger.info('Starting Dployr update...');
+    const channel = await getUpdateChannel();
+    const branch = UPDATE_CHANNELS[channel];
+
+    logger.info('Starting Dployr update...', { channel, branch });
 
     try {
         // Check if deploy script exists
@@ -229,8 +316,8 @@ async function performUpdate() {
             throw new Error(`Deploy script not found at ${DEPLOY_SCRIPT}`);
         }
 
-        // Execute the deploy script
-        const { stdout, stderr } = await execAsync(`bash ${DEPLOY_SCRIPT}`, {
+        // Execute the deploy script with branch parameter
+        const { stdout, stderr } = await execAsync(`bash ${DEPLOY_SCRIPT} --branch ${branch}`, {
             cwd: DPLOYR_PATH,
             timeout: 300000, // 5 minute timeout
             env: {
@@ -240,7 +327,7 @@ async function performUpdate() {
         });
 
         const output = stdout + (stderr ? `\n${stderr}` : '');
-        logger.info('Update completed successfully', { output: output.substring(0, 500) });
+        logger.info('Update completed successfully', { output: output.substring(0, 500), branch });
 
         // Clear cache to force re-check
         updateCache.lastCheck = null;
@@ -251,7 +338,7 @@ async function performUpdate() {
             output
         };
     } catch (error) {
-        logger.error('Update failed', { error: error.message });
+        logger.error('Update failed', { error: error.message, branch });
         return {
             success: false,
             message: `Update failed: ${error.message}`,
@@ -305,5 +392,8 @@ module.exports = {
     checkForUpdates,
     performUpdate,
     getCachedUpdateStatus,
-    initUpdateChecker
+    initUpdateChecker,
+    getUpdateChannel,
+    setUpdateChannel,
+    UPDATE_CHANNELS
 };

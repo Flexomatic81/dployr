@@ -92,6 +92,39 @@
 </div>
 <% } %>
 
+<!-- Update Channel -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-sliders"></i> <%= t('admin:updates.channel') %>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="updateChannel" id="channelStable" value="stable" <%= updateInfo.channel === 'stable' ? 'checked' : '' %>>
+                    <label class="form-check-label" for="channelStable">
+                        <strong><%= t('admin:updates.channelStable') %></strong>
+                        <small class="d-block text-muted"><%= t('admin:updates.channelStableDesc') %></small>
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="updateChannel" id="channelBeta" value="beta" <%= updateInfo.channel === 'beta' ? 'checked' : '' %>>
+                    <label class="form-check-label" for="channelBeta">
+                        <strong><%= t('admin:updates.channelBeta') %></strong>
+                        <small class="d-block text-muted"><%= t('admin:updates.channelBetaDesc') %></small>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div id="channelWarning" class="alert alert-warning mb-0 <%= updateInfo.channel === 'beta' ? '' : 'd-none' %>">
+            <i class="bi bi-exclamation-triangle"></i>
+            <%= t('admin:updates.channelWarning') %>
+        </div>
+    </div>
+</div>
+
 <!-- Update Info -->
 <div class="card">
     <div class="card-header">
@@ -224,4 +257,40 @@ async function checkDashboardReady() {
         }
     }, 2000);
 }
+
+// Update channel selection
+document.querySelectorAll('input[name="updateChannel"]').forEach(radio => {
+    radio.addEventListener('change', async function() {
+        const channel = this.value;
+        const warning = document.getElementById('channelWarning');
+
+        try {
+            const response = await fetch('/admin/updates/channel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': '<%= csrfToken %>'
+                },
+                body: JSON.stringify({ channel })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Show/hide warning based on channel
+                if (channel === 'beta') {
+                    warning.classList.remove('d-none');
+                } else {
+                    warning.classList.add('d-none');
+                }
+                // Reload page to check for updates with new channel
+                window.location.reload();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    });
+});
 </script>
