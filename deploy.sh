@@ -158,6 +158,8 @@ do_deploy() {
     # Restart dashboard LAST (this will terminate the current process)
     # Small delay to ensure the JSON response is sent
     sleep 1
+    # Force remove old dashboard container to avoid name conflicts
+    docker compose rm -f -s dashboard 2>/dev/null || true
     docker compose up -d dashboard
 }
 
