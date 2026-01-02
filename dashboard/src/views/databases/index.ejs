@@ -69,6 +69,13 @@
                                 </td>
                                 <td><code><%= host %>:<%= port %></code></td>
                                 <td class="text-end">
+                                    <form action="/backups/database/<%= db.database %>" method="POST" class="d-inline">
+                                        <%- csrfInput %>
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary btn-icon"
+                                                title="<%= t('backups:create') %>">
+                                            <i class="bi bi-archive"></i>
+                                        </button>
+                                    </form>
                                     <button type="button" class="btn btn-sm btn-outline-danger btn-icon"
                                             data-bs-toggle="modal" data-bs-target="#deleteModal-<%= dbId %>"
                                             title="<%= t('common:buttons.delete') %>">

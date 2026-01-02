@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const { logger } = require('../config/logger');
+const databaseService = require('./database');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -38,12 +39,12 @@ async function ensureBackupDir(systemUsername) {
 /**
  * Generates a backup filename with timestamp
  */
-function generateBackupFilename(type, targetName) {
+function generateBackupFilename(type, targetName, extension = 'tar.gz') {
     const timestamp = new Date().toISOString()
         .replace(/[:.]/g, '-')
         .replace('T', '_')
         .slice(0, 19);
-    return `${type}_${targetName}_${timestamp}.tar.gz`;
+    return `${type}_${targetName}_${timestamp}.${extension}`;
 }
 
 /**
@@ -150,6 +151,91 @@ async function createProjectBackup(userId, systemUsername, projectName, options 
         logger.error('Project backup failed', {
             userId,
             projectName,
+            error: error.message
+        });
+
+        throw error;
+    }
+}
+
+/**
+ * Creates a database backup as SQL dump
+ */
+async function createDatabaseBackup(userId, systemUsername, databaseName) {
+    // Get database credentials
+    const databases = await databaseService.getUserDatabases(systemUsername);
+    const dbInfo = databases.find(db => db.database === databaseName);
+
+    if (!dbInfo) {
+        throw new Error('Database not found');
+    }
+
+    const backupDir = await ensureBackupDir(systemUsername);
+    const filename = generateBackupFilename('database', databaseName, 'sql');
+    const backupPath = path.join(backupDir, filename);
+
+    // Create backup log entry
+    const [result] = await pool.execute(
+        `INSERT INTO backup_logs (user_id, backup_type, target_name, filename, status, metadata)
+         VALUES (?, 'database', ?, ?, 'running', ?)`,
+        [userId, databaseName, filename, JSON.stringify({ dbType: dbInfo.type })]
+    );
+    const backupId = result.insertId;
+
+    const startTime = Date.now();
+
+    try {
+        // Get appropriate provider and dump database
+        const provider = databaseService.getProvider(dbInfo.type);
+        await provider.dumpDatabase(databaseName, dbInfo.username, dbInfo.password, backupPath);
+
+        // Get file size
+        const stats = await fs.stat(backupPath);
+        const duration = Date.now() - startTime;
+
+        // Update backup log
+        await pool.execute(
+            `UPDATE backup_logs
+             SET status = 'success', file_size = ?, duration_ms = ?
+             WHERE id = ?`,
+            [stats.size, duration, backupId]
+        );
+
+        logger.info('Database backup created', {
+            userId,
+            databaseName,
+            dbType: dbInfo.type,
+            filename,
+            size: stats.size,
+            durationMs: duration
+        });
+
+        return {
+            id: backupId,
+            filename,
+            path: backupPath,
+            size: stats.size,
+            durationMs: duration
+        };
+
+    } catch (error) {
+        // Update backup log with error
+        await pool.execute(
+            `UPDATE backup_logs
+             SET status = 'failed', error_message = ?, duration_ms = ?
+             WHERE id = ?`,
+            [error.message, Date.now() - startTime, backupId]
+        );
+
+        // Cleanup partial backup file
+        try {
+            await fs.unlink(backupPath);
+        } catch {}
+
+        logger.error('Database backup failed', {
+            userId,
+            databaseName,
+            dbType: dbInfo.type,
             error: error.message
         });
 
@@ -299,6 +385,7 @@ function formatFileSize(bytes) {
 
 module.exports = {
     createProjectBackup,
+    createDatabaseBackup,
     listBackups,
     getBackupInfo,
     getBackupFilePath,

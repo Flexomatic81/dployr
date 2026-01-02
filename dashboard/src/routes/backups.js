@@ -10,6 +10,7 @@ const { requireAuth } = require('../middleware/auth');
 const { getProjectAccess, requirePermission } = require('../middleware/projectAccess');
 const backupService = require('../services/backup');
 const projectService = require('../services/project');
+const databaseService = require('../services/database');
 const { logger } = require('../config/logger');
 
 // All backup routes require authentication
@@ -71,6 +72,51 @@ router.post('/project/:name', getProjectAccess(), requirePermission('manage'), a
         });
         req.flash('error', req.t('backups:errors.createFailed', { error: error.message }));
         res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+/**
+ * POST /backups/database/:name
+ * Create a new database backup
+ */
+router.post('/database/:name', async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const systemUsername = req.session.user.system_username;
+        const databaseName = req.params.name;
+
+        // Verify the user owns this database
+        const databases = await databaseService.getUserDatabases(systemUsername);
+        const dbInfo = databases.find(db => db.database === databaseName);
+
+        if (!dbInfo) {
+            req.flash('error', req.t('backups:errors.accessDenied'));
+            return res.redirect('/databases');
+        }
+
+        // Create backup
+        const backup = await backupService.createDatabaseBackup(
+            userId,
+            systemUsername,
+            databaseName
+        );
+
+        req.flash('success', req.t('backups:flash.created', {
+            filename: backup.filename,
+            size: backupService.formatFileSize(backup.size)
+        }));
+
+        // Redirect back to databases page or backups page
+        const returnTo = req.query.returnTo || '/databases';
+        res.redirect(returnTo);
+
+    } catch (error) {
+        logger.error('Error creating database backup', {
+            error: error.message,
+            database: req.params.name
+        });
+        req.flash('error', req.t('backups:errors.createFailed', { error: error.message }));
+        res.redirect('/databases');
     }
 });
 

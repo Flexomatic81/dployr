@@ -1,5 +1,9 @@
 const mysql = require('mysql2/promise');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const { generatePassword } = require('../utils/crypto');
+
+const execAsync = promisify(exec);
 
 const DB_HOST = 'dployr-mariadb';
 const DB_PORT = 3306;
@@ -112,11 +116,52 @@ function getConnectionInfo() {
     };
 }
 
+/**
+ * Dumps a database to a SQL file using mysqldump
+ * @param {string} databaseName - Full database name
+ * @param {string} username - Database username
+ * @param {string} password - Database password
+ * @param {string} outputPath - Path to output SQL file
+ * @returns {Promise<{success: boolean, path: string}>}
+ */
+async function dumpDatabase(databaseName, username, password, outputPath) {
+    // Use mysqldump command - available in the dashboard container
+    const command = `mysqldump -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${password}" --single-transaction --routines --triggers "${databaseName}" > "${outputPath}"`;
+
+    try {
+        await execAsync(command, { timeout: 300000 }); // 5 minute timeout
+        return { success: true, path: outputPath };
+    } catch (error) {
+        throw new Error(`mysqldump failed: ${error.message}`);
+    }
+}
+
+/**
+ * Restores a database from a SQL file
+ * @param {string} databaseName - Full database name
+ * @param {string} username - Database username
+ * @param {string} password - Database password
+ * @param {string} inputPath - Path to SQL file
+ * @returns {Promise<{success: boolean}>}
+ */
+async function restoreDatabase(databaseName, username, password, inputPath) {
+    const command = `mysql -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${password}" "${databaseName}" < "${inputPath}"`;
+
+    try {
+        await execAsync(command, { timeout: 300000 }); // 5 minute timeout
+        return { success: true };
+    } catch (error) {
+        throw new Error(`mysql restore failed: ${error.message}`);
+    }
+}
+
 module.exports = {
     createDatabase,
     deleteDatabase,
     testConnection,
     getConnectionInfo,
+    dumpDatabase,
+    restoreDatabase,
     DB_HOST,
     DB_PORT
 };

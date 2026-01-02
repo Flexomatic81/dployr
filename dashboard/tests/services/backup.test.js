@@ -30,6 +30,14 @@ jest.mock('child_process', () => ({
     spawn: mockSpawn
 }));
 
+// Mock database service
+const mockGetUserDatabases = jest.fn();
+const mockGetProvider = jest.fn();
+jest.mock('../../src/services/database', () => ({
+    getUserDatabases: mockGetUserDatabases,
+    getProvider: mockGetProvider
+}));
+
 const backupService = require('../../src/services/backup');
 
 describe('Backup Service', () => {
@@ -219,6 +227,112 @@ describe('Backup Service', () => {
             expect(backupService.DEFAULT_EXCLUDE_PATTERNS).toContain('node_modules');
             expect(backupService.DEFAULT_EXCLUDE_PATTERNS).toContain('vendor');
             expect(backupService.DEFAULT_EXCLUDE_PATTERNS).toContain('.git');
+        });
+    });
+
+    describe('createDatabaseBackup', () => {
+        const mockDumpDatabase = jest.fn();
+
+        beforeEach(() => {
+            mockGetUserDatabases.mockReset();
+            mockGetProvider.mockReset();
+            mockDumpDatabase.mockReset();
+            mockGetProvider.mockReturnValue({ dumpDatabase: mockDumpDatabase });
+        });
+
+        it('should throw error if database not found', async () => {
+            mockGetUserDatabases.mockResolvedValue([]);
+
+            await expect(backupService.createDatabaseBackup(1, testUser, 'nonexistent'))
+                .rejects.toThrow('Database not found');
+        });
+
+        it('should call provider dumpDatabase with correct parameters', async () => {
+            const dbInfo = {
+                database: 'testuser_mydb',
+                username: 'testuser_mydb',
+                password: 'secret123',
+                type: 'mariadb'
+            };
+            mockGetUserDatabases.mockResolvedValue([dbInfo]);
+            mockDumpDatabase.mockResolvedValue({ success: true });
+
+            // Mock database insert for backup log
+            mockExecute
+                .mockResolvedValueOnce([{ insertId: 1 }])  // INSERT
+                .mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+
+            // Create backup dir
+            fs.mkdirSync(backupDir, { recursive: true });
+
+            // Create a mock backup file that would be created by dumpDatabase
+            mockDumpDatabase.mockImplementation(async (dbName, user, pass, outputPath) => {
+                fs.writeFileSync(outputPath, 'SQL DUMP DATA');
+                return { success: true };
+            });
+
+            const result = await backupService.createDatabaseBackup(1, testUser, 'testuser_mydb');
+
+            expect(mockGetUserDatabases).toHaveBeenCalledWith(testUser);
+            expect(mockGetProvider).toHaveBeenCalledWith('mariadb');
+            expect(mockDumpDatabase).toHaveBeenCalledWith(
+                'testuser_mydb',
+                'testuser_mydb',
+                'secret123',
+                expect.stringContaining('.sql')
+            );
+            expect(result).toHaveProperty('filename');
+            expect(result.filename).toContain('database_testuser_mydb');
+            expect(result.filename).toContain('.sql');
+        });
+
+        it('should use correct provider for PostgreSQL', async () => {
+            const dbInfo = {
+                database: 'testuser_pgdb',
+                username: 'testuser_pgdb',
+                password: 'secret456',
+                type: 'postgresql'
+            };
+            mockGetUserDatabases.mockResolvedValue([dbInfo]);
+
+            mockDumpDatabase.mockImplementation(async (dbName, user, pass, outputPath) => {
+                fs.writeFileSync(outputPath, 'PG SQL DUMP');
+                return { success: true };
+            });
+
+            mockExecute
+                .mockResolvedValueOnce([{ insertId: 2 }])
+                .mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+            fs.mkdirSync(backupDir, { recursive: true });
+
+            await backupService.createDatabaseBackup(1, testUser, 'testuser_pgdb');
+
+            expect(mockGetProvider).toHaveBeenCalledWith('postgresql');
+        });
+
+        it('should log error on dump failure', async () => {
+            const dbInfo = {
+                database: 'testuser_faildb',
+                username: 'testuser_faildb',
+                password: 'secret789',
+                type: 'mariadb'
+            };
+            mockGetUserDatabases.mockResolvedValue([dbInfo]);
+            mockDumpDatabase.mockRejectedValue(new Error('mysqldump failed'));
+
+            mockExecute
+                .mockResolvedValueOnce([{ insertId: 3 }])
+                .mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+            fs.mkdirSync(backupDir, { recursive: true });
+
+            await expect(backupService.createDatabaseBackup(1, testUser, 'testuser_faildb'))
+                .rejects.toThrow('mysqldump failed');
+
+            // Verify status was updated to failed
+            const updateCall = mockExecute.mock.calls[1];
+            expect(updateCall[0]).toContain('status = \'failed\'');
         });
     });
 });

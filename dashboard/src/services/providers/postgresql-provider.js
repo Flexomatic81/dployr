@@ -1,5 +1,9 @@
 const { Pool } = require('pg');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const { generatePassword } = require('../utils/crypto');
+
+const execAsync = promisify(exec);
 
 const DB_HOST = 'dployr-postgresql';
 const DB_PORT = 5432;
@@ -130,11 +134,58 @@ function getConnectionInfo() {
     };
 }
 
+/**
+ * Dumps a database to a SQL file using pg_dump
+ * @param {string} databaseName - Full database name
+ * @param {string} username - Database username
+ * @param {string} password - Database password
+ * @param {string} outputPath - Path to output SQL file
+ * @returns {Promise<{success: boolean, path: string}>}
+ */
+async function dumpDatabase(databaseName, username, password, outputPath) {
+    // Use pg_dump with PGPASSWORD env variable for authentication
+    const command = `PGPASSWORD="${password}" pg_dump -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -F p -b -v "${databaseName}" > "${outputPath}"`;
+
+    try {
+        await execAsync(command, {
+            timeout: 300000, // 5 minute timeout
+            shell: '/bin/sh'
+        });
+        return { success: true, path: outputPath };
+    } catch (error) {
+        throw new Error(`pg_dump failed: ${error.message}`);
+    }
+}
+
+/**
+ * Restores a database from a SQL file
+ * @param {string} databaseName - Full database name
+ * @param {string} username - Database username
+ * @param {string} password - Database password
+ * @param {string} inputPath - Path to SQL file
+ * @returns {Promise<{success: boolean}>}
+ */
+async function restoreDatabase(databaseName, username, password, inputPath) {
+    const command = `PGPASSWORD="${password}" psql -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -d "${databaseName}" -f "${inputPath}"`;
+
+    try {
+        await execAsync(command, {
+            timeout: 300000, // 5 minute timeout
+            shell: '/bin/sh'
+        });
+        return { success: true };
+    } catch (error) {
+        throw new Error(`psql restore failed: ${error.message}`);
+    }
+}
+
 module.exports = {
     createDatabase,
     deleteDatabase,
     testConnection,
     getConnectionInfo,
+    dumpDatabase,
+    restoreDatabase,
     DB_HOST,
     DB_PORT
 };
