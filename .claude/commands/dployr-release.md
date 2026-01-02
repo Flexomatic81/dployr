@@ -108,6 +108,27 @@ git ls-remote --tags origin | grep vX.X.X
 gh release view vX.X.X
 ```
 
+### 8. Sync dev Branch
+
+After a successful release, merge `main` back into `dev` to keep branches synchronized:
+
+```bash
+# Switch to dev and merge main
+git checkout dev
+git merge main --no-edit
+
+# Push updated dev branch
+git push origin dev
+
+# Switch back to main
+git checkout main
+```
+
+This ensures:
+- CHANGELOG.md is available on both branches
+- Release commits are included in dev history
+- No merge conflicts when next feature branch is merged
+
 ## Dployr-Specific Considerations
 
 ### version.json in Docker Build
