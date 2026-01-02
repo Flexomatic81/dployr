@@ -50,8 +50,13 @@
                     </li>
                     <% if (user && user.is_admin) { %>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">
+                        <a class="nav-link position-relative" href="/admin">
                             <i class="bi bi-shield-lock"></i> <%= t('common:nav.admin') %>
+                            <% if (updateStatus && updateStatus.updateAvailable) { %>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6rem;" title="<%= t('admin:updates.updateAvailable') %>">
+                                <i class="bi bi-arrow-up-circle-fill"></i>
+                            </span>
+                            <% } %>
                         </a>
                     </li>
                     <% } %>

@@ -259,6 +259,8 @@ app.use(async (req, res, next) => {
     res.locals.info = req.flash('info');
     res.locals.serverIp = await getServerIp();
     res.locals.version = versionInfo;
+    // Update status for navbar badge (only for admins, from cache - no API call)
+    res.locals.updateStatus = updateService.getCachedUpdateStatus();
     next();
 });
 
