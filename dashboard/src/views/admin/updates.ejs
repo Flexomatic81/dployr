@@ -234,29 +234,28 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
 // Check if dashboard is back online after restart
 async function checkDashboardReady() {
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 60; // 2 minutes max (60 * 2s)
 
     const checkInterval = setInterval(async () => {
         attempts++;
 
         try {
-            const response = await fetch('/admin/updates/version', { method: 'GET' });
+            // Use /health endpoint - no auth required
+            const response = await fetch('/health', {
+                method: 'GET',
+                cache: 'no-store'
+            });
+
             if (response.ok) {
                 clearInterval(checkInterval);
                 document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.updateComplete") %>';
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else if (response.status === 401 || response.redirected) {
-                // Session expired or redirected to login
-                clearInterval(checkInterval);
-                document.getElementById('updateStatus').innerHTML = '<%= t("admin:updates.updateComplete") %>';
+                // Redirect to login since session is lost after restart
                 setTimeout(() => {
                     window.location.href = '/login';
-                }, 1000);
+                }, 1500);
             }
         } catch {
-            // Dashboard not ready yet
+            // Dashboard not ready yet - connection refused or timeout
         }
 
         if (attempts >= maxAttempts) {
