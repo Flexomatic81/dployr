@@ -158,9 +158,9 @@ do_deploy() {
     # Restart dashboard LAST (this will terminate the current process)
     # Small delay to ensure the JSON response is sent
     sleep 1
-    # Force remove old dashboard container to avoid name conflicts
-    docker compose rm -f -s dashboard 2>/dev/null || true
-    docker compose up -d dashboard
+    # Run in background with nohup because rm -s will terminate this process
+    # The subshell ensures both commands run even after container stops
+    nohup sh -c 'sleep 2 && docker compose rm -f -s dashboard 2>/dev/null; docker compose up -d dashboard' > /dev/null 2>&1 &
 }
 
 # Execute requested action
