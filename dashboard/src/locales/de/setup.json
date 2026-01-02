@@ -50,7 +50,10 @@
       "network": "Docker-Netzwerk prüfen",
       "waitDb": "Auf Datenbank warten",
       "dashboardDb": "Dashboard-Datenbank erstellen",
-      "admin": "Admin-Benutzer erstellen"
+      "admin": "Admin-Benutzer erstellen",
+      "npm": "Nginx Proxy Manager konfigurieren",
+      "dashboardDomain": "Dashboard-Domain mit SSL konfigurieren",
+      "dashboardIp": "Dashboard-Zugriff über Port 80 konfigurieren"
     },
     "success": {
       "title": "Installation erfolgreich!",

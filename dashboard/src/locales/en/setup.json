@@ -50,7 +50,10 @@
       "network": "Check Docker network",
       "waitDb": "Wait for database",
       "dashboardDb": "Create dashboard database",
-      "admin": "Create admin user"
+      "admin": "Create admin user",
+      "npm": "Configure Nginx Proxy Manager",
+      "dashboardDomain": "Configure dashboard domain with SSL",
+      "dashboardIp": "Configure dashboard access via port 80"
     },
     "success": {
       "title": "Installation successful!",

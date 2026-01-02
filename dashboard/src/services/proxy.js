@@ -14,8 +14,100 @@ const { logger } = require('../config/logger');
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const NPM_CONTAINER_NAME = 'dployr-npm';
-const NPM_API_URL = process.env.NPM_API_URL || 'http://dployr-npm:81/api';
-const NPM_ENABLED = process.env.NPM_ENABLED === 'true';
+
+// Retry configuration
+const RETRY_CONFIG = {
+    maxAttempts: 3,
+    baseDelayMs: 1000,
+    maxDelayMs: 5000
+};
+
+/**
+ * Execute a function with retry logic for handling transient errors
+ * @param {Function} fn - Async function to execute
+ * @param {string} operationName - Name of the operation (for logging)
+ * @param {object} options - Retry options (maxAttempts, baseDelayMs, maxDelayMs)
+ * @returns {Promise<any>}
+ */
+async function withRetry(fn, operationName, options = {}) {
+    const config = { ...RETRY_CONFIG, ...options };
+    let lastError;
+
+    for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
+            const isRetryable = isRetryableError(error);
+
+            if (!isRetryable || attempt === config.maxAttempts) {
+                logger.error(`${operationName} failed after ${attempt} attempt(s)`, {
+                    error: error.message,
+                    attempt,
+                    maxAttempts: config.maxAttempts,
+                    retryable: isRetryable
+                });
+                throw error;
+            }
+
+            // Exponential backoff with jitter
+            const delay = Math.min(
+                config.baseDelayMs * Math.pow(2, attempt - 1) + Math.random() * 500,
+                config.maxDelayMs
+            );
+
+            logger.warn(`${operationName} failed, retrying in ${Math.round(delay)}ms`, {
+                error: error.message,
+                attempt,
+                maxAttempts: config.maxAttempts
+            });
+
+            await new Promise(r => setTimeout(r, delay));
+        }
+    }
+
+    throw lastError;
+}
+
+/**
+ * Check if an error is retryable
+ * @param {Error} error - The error to check
+ * @returns {boolean}
+ */
+function isRetryableError(error) {
+    // Explicitly marked as non-retryable
+    if (error.nonRetryable) {
+        return false;
+    }
+
+    // Socket hang up, connection reset, timeout errors
+    if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        return true;
+    }
+
+    // Axios errors with socket issues
+    if (error.message && (
+        error.message.includes('socket hang up') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('network') ||
+        error.message.includes('timeout')
+    )) {
+        return true;
+    }
+
+    // HTTP 5xx errors (server errors)
+    if (error.response && error.response.status >= 500) {
+        return true;
+    }
+
+    // HTTP 429 (rate limiting)
+    if (error.response && error.response.status === 429) {
+        return true;
+    }
+
+    return false;
+}
 
 // Default NPM credentials (created on first start)
 const NPM_DEFAULT_EMAIL = 'admin@example.com';
@@ -26,10 +118,18 @@ let cachedToken = null;
 let tokenExpiry = null;
 
 /**
+ * Get NPM API URL (read dynamically to support runtime changes)
+ */
+function getNpmApiUrl() {
+    return process.env.NPM_API_URL || 'http://dployr-npm:81/api';
+}
+
+/**
  * Check if NPM integration is enabled
+ * Reads from process.env directly to support runtime changes during setup
  */
 function isEnabled() {
-    return NPM_ENABLED;
+    return process.env.NPM_ENABLED === 'true';
 }
 
 /**
@@ -49,7 +149,7 @@ async function getToken() {
     }
 
     try {
-        const response = await axios.post(`${NPM_API_URL}/tokens`, {
+        const response = await axios.post(`${getNpmApiUrl()}/tokens`, {
             identity: email,
             secret: password
         }, {
@@ -73,16 +173,18 @@ async function getToken() {
 
 /**
  * Create authenticated axios instance
+ * @param {object} options - Options for the client
+ * @param {number} options.timeout - Request timeout in ms (default: 30000)
  */
-async function getApiClient() {
+async function getApiClient(options = {}) {
     const token = await getToken();
     return axios.create({
-        baseURL: NPM_API_URL,
+        baseURL: getNpmApiUrl(),
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         },
-        timeout: 30000
+        timeout: options.timeout || 30000
     });
 }
 
@@ -91,14 +193,20 @@ async function getApiClient() {
  * @param {string} containerName - The container name to proxy to
  * @param {string} domain - The domain name
  * @param {number} port - The target port
- * @param {object} options - Additional options (sslEnabled, http2)
+ * @param {object} options - Additional options (sslEnabled, http2, isDefault)
  */
 async function createProxyHost(containerName, domain, port, options = {}) {
     if (!isEnabled()) {
         throw new Error('NPM integration is not enabled');
     }
 
-    const client = await getApiClient();
+    // NPM uses advanced_config for default_server directive
+    // When is_default is true, add 'default_server' to the nginx config
+    let advancedConfig = options.advancedConfig || '';
+
+    // Note: NPM doesn't have a built-in "default host" flag in the API
+    // The default_server directive needs to be added via advanced config
+    // However, a simpler approach is to use a wildcard domain or catch-all
 
     const payload = {
         domain_names: [domain],
@@ -115,27 +223,27 @@ async function createProxyHost(containerName, domain, port, options = {}) {
             letsencrypt_agree: true,
             dns_challenge: false
         },
-        advanced_config: ''
+        advanced_config: advancedConfig
     };
 
-    try {
-        const response = await client.post('/nginx/proxy-hosts', payload);
-        logger.info('Proxy host created', { domain, containerName, proxyHostId: response.data.id });
-        return response.data;
-    } catch (error) {
-        const errorMessage = error.response?.data?.message || error.message;
-        logger.error('Failed to create proxy host', {
-            domain,
-            containerName,
-            error: errorMessage,
-            status: error.response?.status
-        });
+    return withRetry(async () => {
+        const client = await getApiClient();
+        try {
+            const response = await client.post('/nginx/proxy-hosts', payload);
+            logger.info('Proxy host created', { domain, containerName, proxyHostId: response.data.id });
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.message;
 
-        if (error.response?.status === 400 && errorMessage.includes('already exists')) {
-            throw new Error('Domain is already configured in another proxy host');
+            // Don't retry if domain already exists (not a transient error)
+            if (error.response?.status === 400 && errorMessage.includes('already exists')) {
+                const nonRetryableError = new Error('Domain is already configured in another proxy host');
+                nonRetryableError.nonRetryable = true;
+                throw nonRetryableError;
+            }
+            throw new Error(`Failed to create proxy host: ${errorMessage}`);
         }
-        throw new Error(`Failed to create proxy host: ${errorMessage}`);
-    }
+    }, `Create proxy host for ${domain}`);
 }
 
 /**
@@ -187,27 +295,29 @@ async function requestCertificate(domain, email) {
         throw new Error('NPM integration is not enabled');
     }
 
-    const client = await getApiClient();
-
     // NPM v2+ API format for Let's Encrypt certificates
     const payload = {
         domain_names: [domain],
         provider: 'letsencrypt'
     };
 
-    try {
-        const response = await client.post('/nginx/certificates', payload);
-        logger.info('Certificate requested', { domain, certificateId: response.data.id });
-        return response.data;
-    } catch (error) {
-        // Log detailed error for debugging
-        logger.error('Failed to request certificate', {
-            domain,
-            error: error.response?.data?.message || error.message,
-            details: error.response?.data
-        });
-        throw new Error('Failed to request SSL certificate. Make sure the domain points to this server.');
-    }
+    return withRetry(async () => {
+        // Use longer timeout for certificate requests (Let's Encrypt can be slow)
+        const client = await getApiClient({ timeout: 90000 });
+        try {
+            const response = await client.post('/nginx/certificates', payload);
+            logger.info('Certificate requested', { domain, certificateId: response.data.id });
+            return response.data;
+        } catch (error) {
+            // Log detailed error for debugging
+            logger.error('Failed to request certificate', {
+                domain,
+                error: error.response?.data?.message || error.message,
+                details: error.response?.data
+            });
+            throw new Error('Failed to request SSL certificate. Make sure the domain points to this server.');
+        }
+    }, `Request SSL certificate for ${domain}`, { maxAttempts: 2 });
 }
 
 /**
@@ -220,43 +330,45 @@ async function enableSSL(proxyHostId, certificateId) {
         throw new Error('NPM integration is not enabled');
     }
 
-    const client = await getApiClient();
+    return withRetry(async () => {
+        const client = await getApiClient();
 
-    try {
-        // First get the current proxy host to preserve settings
-        const current = await client.get(`/nginx/proxy-hosts/${proxyHostId}`);
+        try {
+            // First get the current proxy host to preserve settings
+            const current = await client.get(`/nginx/proxy-hosts/${proxyHostId}`);
 
-        // Only include allowed fields for NPM v2+ API
-        const payload = {
-            domain_names: current.data.domain_names,
-            forward_scheme: current.data.forward_scheme,
-            forward_host: current.data.forward_host,
-            forward_port: current.data.forward_port,
-            certificate_id: certificateId,
-            ssl_forced: true,
-            http2_support: true,
-            block_exploits: current.data.block_exploits || false,
-            caching_enabled: current.data.caching_enabled || false,
-            allow_websocket_upgrade: current.data.allow_websocket_upgrade || false,
-            access_list_id: current.data.access_list_id || 0,
-            advanced_config: current.data.advanced_config || '',
-            enabled: current.data.enabled !== false,
-            meta: current.data.meta || {},
-            locations: current.data.locations || []
-        };
+            // Only include allowed fields for NPM v2+ API
+            const payload = {
+                domain_names: current.data.domain_names,
+                forward_scheme: current.data.forward_scheme,
+                forward_host: current.data.forward_host,
+                forward_port: current.data.forward_port,
+                certificate_id: certificateId,
+                ssl_forced: true,
+                http2_support: true,
+                block_exploits: current.data.block_exploits || false,
+                caching_enabled: current.data.caching_enabled || false,
+                allow_websocket_upgrade: current.data.allow_websocket_upgrade || false,
+                access_list_id: current.data.access_list_id || 0,
+                advanced_config: current.data.advanced_config || '',
+                enabled: current.data.enabled !== false,
+                meta: current.data.meta || {},
+                locations: current.data.locations || []
+            };
 
-        const response = await client.put(`/nginx/proxy-hosts/${proxyHostId}`, payload);
+            const response = await client.put(`/nginx/proxy-hosts/${proxyHostId}`, payload);
 
-        logger.info('SSL enabled for proxy host', { proxyHostId, certificateId });
-        return response.data;
-    } catch (error) {
-        logger.error('Failed to enable SSL', {
-            proxyHostId,
-            error: error.response?.data?.message || error.message,
-            details: error.response?.data
-        });
-        throw new Error('Failed to enable SSL for this domain');
-    }
+            logger.info('SSL enabled for proxy host', { proxyHostId, certificateId });
+            return response.data;
+        } catch (error) {
+            logger.error('Failed to enable SSL', {
+                proxyHostId,
+                error: error.response?.data?.message || error.message,
+                details: error.response?.data
+            });
+            throw new Error('Failed to enable SSL for this domain');
+        }
+    }, `Enable SSL for proxy host ${proxyHostId}`);
 }
 
 /**
@@ -279,7 +391,7 @@ async function testConnection() {
  */
 async function checkSetupStatus() {
     try {
-        const response = await axios.get(`${NPM_API_URL}/`, { timeout: 5000 });
+        const response = await axios.get(`${getNpmApiUrl()}/`, { timeout: 5000 });
         return { needsSetup: response.data.setup === false };
     } catch (error) {
         return { needsSetup: false, error: error.message };
@@ -301,7 +413,7 @@ async function initializeCredentials(email, password) {
 
     // First try to login with the configured credentials (already initialized)
     try {
-        const response = await axios.post(`${NPM_API_URL}/tokens`, {
+        const response = await axios.post(`${getNpmApiUrl()}/tokens`, {
             identity: email,
             secret: password
         }, { timeout: 10000 });
@@ -331,7 +443,7 @@ async function initializeCredentials(email, password) {
     // Try to login with default credentials (legacy NPM versions with changeme password)
     let defaultToken;
     try {
-        const response = await axios.post(`${NPM_API_URL}/tokens`, {
+        const response = await axios.post(`${getNpmApiUrl()}/tokens`, {
             identity: NPM_DEFAULT_EMAIL,
             secret: NPM_DEFAULT_PASSWORD
         }, { timeout: 10000 });
@@ -350,7 +462,7 @@ async function initializeCredentials(email, password) {
     // Update default user to configured credentials
     try {
         const client = axios.create({
-            baseURL: NPM_API_URL,
+            baseURL: getNpmApiUrl(),
             headers: {
                 'Authorization': `Bearer ${defaultToken}`,
                 'Content-Type': 'application/json'
@@ -472,7 +584,7 @@ async function waitForApi(maxAttempts = 30, delayMs = 2000) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
             // Just check if the API responds at all
-            await axios.get(`${NPM_API_URL}/`, { timeout: 5000 });
+            await axios.get(`${getNpmApiUrl()}/`, { timeout: 5000 });
             return true;
         } catch (error) {
             // API might return 401/404, but that means it's running
@@ -731,10 +843,176 @@ async function deleteProjectDomains(userId, projectName) {
 }
 
 // ============================================
+// Default Host functions
+// ============================================
+
+// Special domain name used for default/catch-all host
+const DEFAULT_HOST_DOMAIN = 'default.localhost';
+let defaultHostId = null;
+
+/**
+ * Create or update the default host that catches all unmatched requests
+ * This redirects unknown domains to the dashboard
+ * @returns {Promise<{success: boolean, proxyHostId?: number, error?: string}>}
+ */
+async function ensureDefaultHost() {
+    if (!isEnabled()) {
+        return { success: false, error: 'NPM integration is not enabled' };
+    }
+
+    try {
+        const client = await getApiClient();
+
+        // Check if default host already exists
+        const existingHosts = await listProxyHosts();
+        const existingDefault = existingHosts.find(h =>
+            h.domain_names && h.domain_names.includes(DEFAULT_HOST_DOMAIN)
+        );
+
+        if (existingDefault) {
+            defaultHostId = existingDefault.id;
+            logger.debug('Default host already exists', { proxyHostId: existingDefault.id });
+            return { success: true, proxyHostId: existingDefault.id, existed: true };
+        }
+
+        // Create default host with special nginx config to act as catch-all
+        // The advanced_config adds 'default_server' to make this the fallback
+        const advancedConfig = `
+# Dployr Default Host - Catches all unmatched requests
+# This host uses default_server to handle unknown domains
+`;
+
+        const payload = {
+            domain_names: [DEFAULT_HOST_DOMAIN],
+            forward_scheme: 'http',
+            forward_host: 'dashboard',
+            forward_port: 3000,
+            certificate_id: 0,
+            ssl_forced: false,
+            http2_support: true,
+            block_exploits: true,
+            allow_websocket_upgrade: true,
+            access_list_id: 0,
+            meta: {
+                letsencrypt_agree: false,
+                dns_challenge: false
+            },
+            advanced_config: advancedConfig
+        };
+
+        const response = await client.post('/nginx/proxy-hosts', payload);
+        defaultHostId = response.data.id;
+
+        logger.info('Default host created', { proxyHostId: response.data.id });
+        return { success: true, proxyHostId: response.data.id };
+    } catch (error) {
+        logger.error('Failed to create default host', { error: error.message });
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Update the default host to redirect to a specific target
+ * @param {string} targetHost - Container name to forward to
+ * @param {number} targetPort - Port to forward to
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+async function updateDefaultHost(targetHost, targetPort) {
+    if (!isEnabled()) {
+        return { success: false, error: 'NPM integration is not enabled' };
+    }
+
+    try {
+        const client = await getApiClient();
+
+        // Find existing default host
+        const existingHosts = await listProxyHosts();
+        const existingDefault = existingHosts.find(h =>
+            h.domain_names && h.domain_names.includes(DEFAULT_HOST_DOMAIN)
+        );
+
+        if (!existingDefault) {
+            // Create it if it doesn't exist
+            return ensureDefaultHost();
+        }
+
+        // Update the existing default host
+        const payload = {
+            domain_names: [DEFAULT_HOST_DOMAIN],
+            forward_scheme: 'http',
+            forward_host: targetHost,
+            forward_port: parseInt(targetPort) || 3000,
+            certificate_id: existingDefault.certificate_id || 0,
+            ssl_forced: existingDefault.ssl_forced || false,
+            http2_support: true,
+            block_exploits: true,
+            allow_websocket_upgrade: true,
+            access_list_id: 0,
+            meta: existingDefault.meta || {},
+            advanced_config: existingDefault.advanced_config || '',
+            enabled: true,
+            locations: existingDefault.locations || []
+        };
+
+        await client.put(`/nginx/proxy-hosts/${existingDefault.id}`, payload);
+        logger.info('Default host updated', { targetHost, targetPort, proxyHostId: existingDefault.id });
+        return { success: true, proxyHostId: existingDefault.id };
+    } catch (error) {
+        logger.error('Failed to update default host', { error: error.message });
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Remove the default host
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+async function removeDefaultHost() {
+    if (!isEnabled()) {
+        return { success: true };
+    }
+
+    try {
+        const existingHosts = await listProxyHosts();
+        const existingDefault = existingHosts.find(h =>
+            h.domain_names && h.domain_names.includes(DEFAULT_HOST_DOMAIN)
+        );
+
+        if (existingDefault) {
+            await deleteProxyHost(existingDefault.id);
+            defaultHostId = null;
+            logger.info('Default host removed', { proxyHostId: existingDefault.id });
+        }
+
+        return { success: true };
+    } catch (error) {
+        logger.error('Failed to remove default host', { error: error.message });
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Check if default host exists
+ * @returns {Promise<boolean>}
+ */
+async function hasDefaultHost() {
+    if (!isEnabled()) return false;
+
+    try {
+        const existingHosts = await listProxyHosts();
+        return existingHosts.some(h =>
+            h.domain_names && h.domain_names.includes(DEFAULT_HOST_DOMAIN)
+        );
+    } catch (error) {
+        return false;
+    }
+}
+
+// ============================================
 // Dashboard Domain functions
 // ============================================
 
-// Use in-memory cache for dashboard proxy host ID to avoid database dependency
+// Cache for dashboard proxy host ID
 let dashboardProxyHostId = null;
 
 /**
@@ -792,6 +1070,62 @@ async function createDashboardProxyHost(domain, withSsl = true) {
         return { success: true, proxyHostId: proxyHost.id };
     } catch (error) {
         logger.error('Failed to create dashboard proxy host', { domain, error: error.message });
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Create proxy host for IP-based dashboard access (no SSL)
+ * Routes traffic from server IP to dashboard:3000 via port 80
+ * @param {string} serverIp - The server IP address
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+async function createDashboardIpProxyHost(serverIp) {
+    if (!isEnabled()) {
+        return { success: false, error: 'NPM integration is not enabled' };
+    }
+
+    try {
+        // Check if we already have a proxy host for this IP
+        const existingHosts = await listProxyHosts();
+        const ipHost = existingHosts.find(h =>
+            h.domain_names && h.domain_names.includes(serverIp)
+        );
+
+        if (ipHost) {
+            logger.debug('IP-based dashboard proxy host already exists', { serverIp, proxyHostId: ipHost.id });
+            return { success: true, proxyHostId: ipHost.id, existed: true };
+        }
+
+        // Create proxy host for IP access (no SSL possible for IPs)
+        const payload = {
+            domain_names: [serverIp],
+            forward_scheme: 'http',
+            forward_host: 'dashboard',
+            forward_port: 3000,
+            certificate_id: 0,
+            ssl_forced: false,
+            http2_support: false,
+            block_exploits: true,
+            allow_websocket_upgrade: true,
+            access_list_id: 0,
+            meta: {
+                letsencrypt_agree: false,
+                dns_challenge: false
+            },
+            advanced_config: ''
+        };
+
+        const result = await withRetry(async () => {
+            const client = await getApiClient();
+            const response = await client.post('/nginx/proxy-hosts', payload);
+            return response.data;
+        }, `Create IP-based dashboard proxy host for ${serverIp}`);
+
+        logger.info('IP-based dashboard proxy host created', { serverIp, proxyHostId: result.id });
+        return { success: true, proxyHostId: result.id };
+    } catch (error) {
+        logger.error('Failed to create IP-based dashboard proxy host', { serverIp, error: error.message });
         return { success: false, error: error.message };
     }
 }
@@ -857,7 +1191,14 @@ module.exports = {
     updateDomainSSL,
     deleteProjectDomains,
 
+    // Default Host functions (catch-all for unknown domains)
+    ensureDefaultHost,
+    updateDefaultHost,
+    removeDefaultHost,
+    hasDefaultHost,
+
     // Dashboard Domain functions
     createDashboardProxyHost,
+    createDashboardIpProxyHost,
     deleteDashboardProxyHost
 };

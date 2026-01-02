@@ -12,50 +12,51 @@
     <h1><i class="bi bi-hdd-network"></i> <%= t('admin:npm.title') %></h1>
 </div>
 
-<!-- Status Card -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card" id="statusCard">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted mb-1"><%= t('admin:npm.status.title') %></h6>
-                        <span id="statusBadge" class="badge bg-secondary fs-6">
-                            <span class="spinner-border spinner-border-sm"></span> <%= t('common:loading') %>
-                        </span>
-                    </div>
-                    <i class="bi bi-hdd-network fs-1 text-secondary opacity-50" id="statusIcon"></i>
-                </div>
+<!-- Status and Quick Actions -->
+<div class="row mb-4 g-3 align-items-stretch">
+    <div class="col-md-4">
+        <div class="card h-100" id="statusCard">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+                <i class="bi bi-hdd-network display-3 text-secondary opacity-50 mb-3" id="statusIcon"></i>
+                <h6 class="text-muted mb-2"><%= t('admin:npm.status.title') %></h6>
+                <span id="statusBadge" class="badge bg-secondary fs-6">
+                    <span class="spinner-border spinner-border-sm"></span> <%= t('common:loading') %>
+                </span>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-8">
+        <div class="card h-100">
             <div class="card-body">
-                <h6 class="text-muted mb-2"><%= t('admin:npm.quickActions') %></h6>
-                <div class="btn-group me-2" role="group">
-                    <button type="button" class="btn btn-outline-success btn-sm" id="startBtn" <%= !npm.enabled ? 'disabled' : '' %>>
-                        <i class="bi bi-play-fill"></i> <%= t('admin:npm.start') %>
+                <h6 class="text-muted mb-3"><%= t('admin:npm.quickActions') %></h6>
+
+                <!-- Container Controls -->
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <div class="btn-group" role="group" aria-label="Container controls">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="startBtn" <%= !npm.enabled ? 'disabled' : '' %>>
+                            <i class="bi bi-play-fill"></i> <%= t('admin:npm.start') %>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="stopBtn" <%= !npm.enabled ? 'disabled' : '' %>>
+                            <i class="bi bi-stop-fill"></i> <%= t('admin:npm.stop') %>
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" id="restartBtn" <%= !npm.enabled ? 'disabled' : '' %>>
+                            <i class="bi bi-arrow-clockwise"></i> <%= t('admin:npm.restart') %>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="testConnectionBtn" <%= !npm.enabled ? 'disabled' : '' %>>
+                        <i class="bi bi-plug"></i> <%= t('admin:npm.testConnection') %>
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="stopBtn" <%= !npm.enabled ? 'disabled' : '' %>>
-                        <i class="bi bi-stop-fill"></i> <%= t('admin:npm.stop') %>
-                    </button>
-                    <button type="button" class="btn btn-outline-warning btn-sm" id="restartBtn" <%= !npm.enabled ? 'disabled' : '' %>>
-                        <i class="bi bi-arrow-clockwise"></i> <%= t('admin:npm.restart') %>
+                    <a href="http://<%= setupMarker.serverIp || 'localhost' %>:<%= npm.adminPort %>" target="_blank" class="btn btn-outline-info btn-sm" id="openPanelBtn" style="display: none;">
+                        <i class="bi bi-box-arrow-up-right"></i> <%= t('admin:npm.openPanel') %>
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="recreateBtn" <%= !npm.enabled ? 'disabled' : '' %> title="<%= t('admin:npm.recreateHelp') %>">
+                        <i class="bi bi-arrow-repeat"></i> <%= t('admin:npm.recreate') %>
                     </button>
                 </div>
-                <button type="button" class="btn btn-outline-primary btn-sm" id="testConnectionBtn" <%= !npm.enabled ? 'disabled' : '' %>>
-                    <i class="bi bi-plug"></i> <%= t('admin:npm.testConnection') %>
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="initializeBtn" <%= !npm.enabled ? 'disabled' : '' %> title="<%= t('admin:npm.initializeHelp') %>">
-                    <i class="bi bi-key"></i> <%= t('admin:npm.initialize') %>
-                </button>
-                <button type="button" class="btn btn-outline-danger btn-sm" id="recreateBtn" <%= !npm.enabled ? 'disabled' : '' %> title="<%= t('admin:npm.recreateHelp') %>">
-                    <i class="bi bi-arrow-repeat"></i> <%= t('admin:npm.recreate') %>
-                </button>
-                <a href="http://<%= setupMarker.serverIp || 'localhost' %>:<%= npm.adminPort %>" target="_blank" class="btn btn-outline-info btn-sm" id="openPanelBtn" style="display: none;">
-                    <i class="bi bi-box-arrow-up-right"></i> <%= t('admin:npm.openPanel') %>
-                </a>
             </div>
         </div>
     </div>
@@ -133,7 +134,7 @@
                 <h5 class="mb-3"><i class="bi bi-globe2"></i> <%= t('admin:npm.dashboardDomain') %></h5>
 
                 <% if (npm.dashboardDomain) { %>
-                <!-- Domain is configured -->
+                <!-- Domain is configured (automatically during setup or manually) -->
                 <div class="alert alert-success d-flex justify-content-between align-items-center">
                     <div>
                         <i class="bi bi-check-circle"></i>
@@ -147,31 +148,35 @@
                         <i class="bi bi-trash"></i> <%= t('admin:npm.dashboardDomainRemove') %>
                     </button>
                 </div>
+                <p class="text-muted small">
+                    <i class="bi bi-info-circle"></i> <%= t('admin:npm.dashboardDomainAutomatic') %>
+                </p>
                 <% } else { %>
-                <!-- Domain not configured -->
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <label for="dashboard_domain" class="form-label"><%= t('admin:npm.dashboardDomain') %></label>
-                        <input type="text" class="form-control" id="dashboard_domain" placeholder="<%= t('admin:npm.dashboardDomainPlaceholder') %>">
-                        <small class="text-muted"><%= t('admin:npm.dashboardDomainHelp') %></small>
+                <!-- No domain configured - allow manual configuration -->
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-info-circle"></i> <%= t('admin:npm.dashboardDomainHelp') %>
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="dashboardDomainInput"
+                                   placeholder="<%= t('admin:npm.dashboardDomainPlaceholder') %>"
+                                   pattern="^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$">
+                            <button type="button" class="btn btn-primary" id="configureDashboardDomainBtn">
+                                <i class="bi bi-globe"></i> <%= t('admin:npm.dashboardDomainConfigure') %>
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-primary" id="configureDashboardDomainBtn">
-                            <i class="bi bi-globe2"></i> <%= t('admin:npm.dashboardDomainConfigure') %>
-                        </button>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="dashboardDomainSsl" checked>
+                            <label class="form-check-label" for="dashboardDomainSsl">
+                                <i class="bi bi-shield-lock"></i> <%= t('admin:npm.dashboardDomainSsl') %>
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="dashboard_domain_ssl" checked>
-                    <label class="form-check-label" for="dashboard_domain_ssl">
-                        <%= t('admin:npm.dashboardDomainSsl') %>
-                    </label>
                 </div>
                 <% } %>
-
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> <%= t('admin:npm.dashboardDomainNote') %>
-                </div>
             </div>
 
             <hr>
@@ -392,46 +397,6 @@ document.getElementById('testConnectionBtn').addEventListener('click', async fun
     }, 3000);
 });
 
-// Initialize NPM credentials button
-document.getElementById('initializeBtn').addEventListener('click', async function() {
-    const btn = this;
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("admin:npm.initializing") %>';
-    btn.disabled = true;
-
-    try {
-        const response = await fetch('/admin/settings/npm/initialize', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
-            }
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            btn.innerHTML = '<i class="bi bi-check-circle text-success"></i> ' + data.message;
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-outline-success');
-        } else {
-            btn.innerHTML = '<i class="bi bi-x-circle text-danger"></i> ' + data.error;
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-outline-danger');
-        }
-    } catch (error) {
-        btn.innerHTML = '<i class="bi bi-x-circle text-danger"></i> Error';
-        btn.classList.remove('btn-outline-secondary');
-        btn.classList.add('btn-outline-danger');
-    }
-
-    setTimeout(() => {
-        btn.innerHTML = originalHtml;
-        btn.disabled = false;
-        btn.classList.remove('btn-outline-success', 'btn-outline-danger');
-        btn.classList.add('btn-outline-secondary');
-    }, 5000);
-});
-
 // Recreate NPM container button
 document.getElementById('recreateBtn').addEventListener('click', async function() {
     if (!confirm('<%= t("admin:npm.recreateConfirm") %>')) {
@@ -565,15 +530,18 @@ if (npmEnabled) {
     document.getElementById('containerLogsBody').addEventListener('shown.bs.collapse', fetchLogs);
 }
 
-// Configure Dashboard Domain button
+// Configure Dashboard Domain button (for manual configuration)
 const configureDashboardDomainBtn = document.getElementById('configureDashboardDomainBtn');
 if (configureDashboardDomainBtn) {
     configureDashboardDomainBtn.addEventListener('click', async function() {
-        const domain = document.getElementById('dashboard_domain').value.trim();
-        const enableSsl = document.getElementById('dashboard_domain_ssl').checked;
+        const domainInput = document.getElementById('dashboardDomainInput');
+        const sslCheckbox = document.getElementById('dashboardDomainSsl');
+        const domain = domainInput.value.trim();
 
-        if (!domain) {
+        // Validate domain format
+        if (!domain || !/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(domain)) {
             alert('<%= t("admin:npm.dashboardDomainInvalid") %>');
+            domainInput.focus();
             return;
         }
 
@@ -581,6 +549,7 @@ if (configureDashboardDomainBtn) {
         const originalHtml = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("admin:npm.configuring") %>';
         btn.disabled = true;
+        domainInput.disabled = true;
 
         try {
             const response = await fetch('/admin/settings/npm/dashboard-domain', {
@@ -589,22 +558,27 @@ if (configureDashboardDomainBtn) {
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': csrfToken
                 },
-                body: JSON.stringify({ domain, enableSsl })
+                body: JSON.stringify({
+                    domain: domain,
+                    ssl: sslCheckbox.checked
+                })
             });
             const data = await response.json();
 
             if (data.success) {
-                // Reload page to show configured domain
+                // Reload page to show success state
                 window.location.reload();
             } else {
                 alert(data.error || '<%= t("admin:npm.dashboardDomainError") %>');
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
+                domainInput.disabled = false;
             }
         } catch (error) {
             alert('<%= t("admin:npm.dashboardDomainError") %>: ' + error.message);
             btn.innerHTML = originalHtml;
             btn.disabled = false;
+            domainInput.disabled = false;
         }
     });
 }

@@ -16,6 +16,7 @@ const { i18next, i18nMiddleware } = require('./config/i18n');
 const { initDatabase, getPool } = require('./config/database');
 const { setUserLocals } = require('./middleware/auth');
 const autoDeployService = require('./services/autodeploy');
+const proxyService = require('./services/proxy');
 const { logger, requestLogger } = require('./config/logger');
 
 // Import routes
@@ -69,12 +70,13 @@ const authLimiter = rateLimit({
     legacyHeaders: false
 });
 
-// Security: General rate limiting
+// Security: General rate limiting (skip for setup routes)
 const generalLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 100, // 100 requests per minute
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: (req) => req.path.startsWith('/setup')
 });
 
 // Security: Webhook rate limiting (more permissive for CI/CD)
@@ -369,6 +371,44 @@ function startAutoDeployPolling() {
     }, AUTO_DEPLOY_INTERVAL);
 }
 
+/**
+ * Initialize NPM default host
+ * Creates a catch-all proxy host that redirects unknown domains to the dashboard
+ * This prevents the default NPM "Congratulations" page from showing
+ */
+async function initializeNpmDefaultHost() {
+    if (!proxyService.isEnabled()) {
+        logger.debug('NPM integration disabled, skipping default host setup');
+        return;
+    }
+
+    // Wait a bit for NPM to be fully ready after startup
+    setTimeout(async () => {
+        try {
+            // Check if NPM API is reachable
+            const isReady = await proxyService.waitForApi(5, 2000);
+            if (!isReady) {
+                logger.warn('NPM API not ready, will retry default host setup later');
+                return;
+            }
+
+            // Create or verify default host exists
+            const result = await proxyService.ensureDefaultHost();
+            if (result.success) {
+                if (result.existed) {
+                    logger.info('NPM default host already configured');
+                } else {
+                    logger.info('NPM default host created - unknown domains will redirect to dashboard');
+                }
+            } else {
+                logger.warn('Failed to setup NPM default host', { error: result.error });
+            }
+        } catch (error) {
+            logger.warn('Error initializing NPM default host', { error: error.message });
+        }
+    }, 10000); // Wait 10 seconds after startup
+}
+
 // Start server
 async function start() {
     try {
@@ -382,6 +422,9 @@ async function start() {
 
             // Start Auto-Deploy polling
             startAutoDeployPolling();
+
+            // Initialize NPM default host (async, non-blocking)
+            initializeNpmDefaultHost();
         } else {
             logger.info('Setup not yet completed - setup wizard active');
         }

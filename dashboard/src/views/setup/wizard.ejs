@@ -60,22 +60,6 @@
                     <div class="form-text server-ip-desc"><%= t('setup:config.serverIp.description') %></div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="mysql_root_password" class="form-label">
-                        <span class="label-text"><%= t('setup:config.mysqlPassword.label') %></span>
-                        <%- include('../partials/help-icon', { text: t('setup:config.mysqlPassword.help') }) %>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-key"></i></span>
-                        <input type="password" class="form-control" id="mysql_root_password" name="mysql_root_password"
-                               required minlength="8" placeholder="<%= t('setup:config.mysqlPassword.placeholder') %>">
-                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="mysql_root_password">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                    <div class="form-text mysql-desc"><%= t('setup:config.mysqlPassword.description') %></div>
-                </div>
-
                 <div class="d-flex justify-content-between">
                     <button type="button" class="btn btn-outline-secondary go-to-step" data-step="1">
                         <i class="bi bi-arrow-left"></i> <span class="back-btn-text"><%= t('setup:buttons.back') %></span>
@@ -335,7 +319,7 @@
     document.getElementById('configForm').addEventListener('submit', function(e) {
         e.preventDefault();
         setupData.server_ip = document.getElementById('server_ip').value;
-        setupData.mysql_root_password = document.getElementById('mysql_root_password').value;
+        // MySQL root password is now read from environment variables on the server
         goToStep(3);
     });
 
@@ -398,21 +382,41 @@
     });
 
     async function runSetup() {
-        const steps = ['network', 'wait_db', 'dashboard_db', 'admin'];
+        // Determine which steps to show based on NPM config
+        const baseSteps = ['network', 'wait_db', 'dashboard_db', 'admin'];
+        let additionalSteps = [];
 
-        // Set all steps to pending
-        steps.forEach(step => {
-            updateStepStatus(step, 'pending');
+        if (setupData.npm_enabled) {
+            additionalSteps.push('npm');
+            // Check if it's a domain (not IP)
+            const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(setupData.server_ip) || setupData.server_ip === 'localhost';
+            if (!isIp && setupData.server_ip) {
+                additionalSteps.push('dashboard_domain');
+            } else if (setupData.server_ip) {
+                additionalSteps.push('dashboard_ip');
+            }
+        }
+
+        // Add NPM steps to UI if enabled
+        const progressStepsContainer = document.getElementById('progressSteps');
+        additionalSteps.forEach(step => {
+            const stepEl = document.createElement('div');
+            stepEl.className = 'progress-step pending';
+            stepEl.dataset.step = step;
+
+            let stepText = '';
+            if (step === 'npm') stepText = '<%= t("setup:install.steps.npm") %>';
+            else if (step === 'dashboard_domain') stepText = '<%= t("setup:install.steps.dashboardDomain") %>';
+            else if (step === 'dashboard_ip') stepText = '<%= t("setup:install.steps.dashboardIp") %>';
+
+            stepEl.innerHTML = `<i class="bi bi-circle me-2"></i><span>${stepText}</span>`;
+            progressStepsContainer.appendChild(stepEl);
         });
 
-        try {
-            // Animate steps progressively
-            for (let i = 0; i < steps.length; i++) {
-                updateStepStatus(steps[i], 'running');
-                await new Promise(r => setTimeout(r, 500));
-            }
+        const allSteps = [...baseSteps, ...additionalSteps];
 
-            // Make actual API call
+        try {
+            // Use fetch with SSE (Server-Sent Events) for real-time progress
             const response = await fetch('/setup/run', {
                 method: 'POST',
                 headers: {
@@ -421,25 +425,166 @@
                 body: JSON.stringify(setupData)
             });
 
-            const result = await response.json();
-
-            if (result.success) {
-                // Mark all steps as done
-                steps.forEach(step => updateStepStatus(step, 'done'));
-
-                document.getElementById('setupResult').classList.remove('d-none');
-                document.getElementById('successAlert').classList.remove('d-none');
-                document.getElementById('errorAlert').classList.add('d-none');
-                document.getElementById('completedActions').classList.remove('d-none');
+            // Check if response is SSE
+            if (response.headers.get('Content-Type')?.includes('text/event-stream')) {
+                await handleSSEResponse(response, allSteps);
             } else {
-                throw new Error(result.error);
+                // Fallback for non-SSE response (backwards compatibility)
+                const result = await response.json();
+                if (result.success) {
+                    allSteps.forEach(step => updateStepStatus(step, 'done'));
+                    showSetupSuccess(allSteps, result.dashboardUrl);
+                } else {
+                    throw new Error(result.error);
+                }
             }
         } catch (error) {
-            document.getElementById('setupResult').classList.remove('d-none');
-            document.getElementById('successAlert').classList.add('d-none');
-            document.getElementById('errorAlert').classList.remove('d-none');
-            document.getElementById('errorMessage').textContent = error.message;
+            // Network error (e.g. connection lost during NPM/SSL setup)
+            // Check if setup actually completed despite the error
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                await checkSetupStatusAfterError(allSteps);
+            } else {
+                showSetupError(error.message);
+            }
         }
+    }
+
+    async function handleSSEResponse(response, allSteps) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete events in buffer
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            let eventType = '';
+            let eventData = '';
+
+            for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                    eventType = line.slice(7).trim();
+                } else if (line.startsWith('data: ')) {
+                    eventData = line.slice(6).trim();
+                } else if (line === '' && eventType && eventData) {
+                    // Empty line = end of event
+                    try {
+                        const data = JSON.parse(eventData);
+                        handleSetupEvent(eventType, data, allSteps);
+                    } catch (e) {
+                        console.error('Failed to parse SSE data:', e);
+                    }
+                    eventType = '';
+                    eventData = '';
+                }
+            }
+        }
+    }
+
+    function handleSetupEvent(type, data, allSteps) {
+        if (type === 'step') {
+            updateStepStatus(data.step, data.status);
+        } else if (type === 'complete') {
+            showSetupSuccess(allSteps, data.dashboardUrl);
+        } else if (type === 'error') {
+            showSetupError(data.error);
+        }
+    }
+
+    /**
+     * Check if setup completed despite network error
+     * This handles the case where NPM takes over port 80/443 during setup
+     */
+    async function checkSetupStatusAfterError(steps) {
+        // Wait a moment for any redirects/SSL to settle
+        await new Promise(r => setTimeout(r, 2000));
+
+        try {
+            // Try to check setup status via port 3000 (always available)
+            const port3000Url = window.location.protocol + '//' + window.location.hostname + ':3000/setup/status';
+            const response = await fetch(port3000Url, { timeout: 5000 });
+            const status = await response.json();
+
+            if (status.setupComplete) {
+                // Setup was successful! Determine the dashboard URL
+                const serverIp = setupData.server_ip;
+                const npmEnabled = setupData.npm_enabled;
+                let dashboardUrl = '/login';
+
+                if (npmEnabled && serverIp) {
+                    // Check if it's a domain (not IP)
+                    const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(serverIp) || serverIp === 'localhost';
+                    if (!isIp) {
+                        dashboardUrl = `https://${serverIp}/login`;
+                    } else {
+                        dashboardUrl = `http://${serverIp}/login`;
+                    }
+                }
+
+                showSetupSuccess(steps, dashboardUrl);
+            } else {
+                showSetupError('Setup connection lost. Please refresh and try again.');
+            }
+        } catch (statusError) {
+            // Could not verify status - show error with manual redirect option
+            showSetupErrorWithManualLink();
+        }
+    }
+
+    function showSetupSuccess(steps, dashboardUrl) {
+        // Mark all steps as done
+        steps.forEach(step => updateStepStatus(step, 'done'));
+
+        document.getElementById('setupResult').classList.remove('d-none');
+        document.getElementById('successAlert').classList.remove('d-none');
+        document.getElementById('errorAlert').classList.add('d-none');
+        document.getElementById('completedActions').classList.remove('d-none');
+
+        // Update dashboard link with the correct URL
+        if (dashboardUrl) {
+            const dashboardLink = document.querySelector('#completedActions a.btn-success');
+            if (dashboardLink) {
+                dashboardLink.href = dashboardUrl;
+            }
+        }
+    }
+
+    function showSetupError(message) {
+        document.getElementById('setupResult').classList.remove('d-none');
+        document.getElementById('successAlert').classList.add('d-none');
+        document.getElementById('errorAlert').classList.remove('d-none');
+        document.getElementById('errorMessage').textContent = message;
+    }
+
+    function showSetupErrorWithManualLink() {
+        const serverIp = setupData.server_ip;
+        const npmEnabled = setupData.npm_enabled;
+
+        // Build possible dashboard URLs
+        let urls = [];
+        if (npmEnabled && serverIp) {
+            const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(serverIp) || serverIp === 'localhost';
+            if (!isIp) {
+                urls.push(`https://${serverIp}/login`);
+            } else {
+                urls.push(`http://${serverIp}/login`);
+            }
+        }
+        urls.push(window.location.protocol + '//' + window.location.hostname + ':3000/login');
+
+        document.getElementById('setupResult').classList.remove('d-none');
+        document.getElementById('successAlert').classList.add('d-none');
+        document.getElementById('errorAlert').classList.remove('d-none');
+        document.getElementById('errorMessage').innerHTML =
+            'Connection lost during setup (this can happen when SSL is configured). ' +
+            'Setup may have completed successfully. Try: ' +
+            urls.map(url => `<a href="${url}" class="alert-link">${url}</a>`).join(' or ');
     }
 
     function updateStepStatus(stepName, status) {
@@ -452,12 +597,15 @@
         if (status === 'pending') {
             icon.className = 'bi bi-circle me-2';
         } else if (status === 'running') {
-            icon.className = 'bi bi-arrow-repeat me-2';
-            icon.classList.add('spinner-border', 'spinner-border-sm');
+            // Use Bootstrap spinner (not bi-arrow-repeat which doesn't animate)
+            icon.className = 'spinner-border spinner-border-sm me-2';
+            icon.setAttribute('role', 'status');
         } else if (status === 'done') {
             icon.className = 'bi bi-check-circle-fill me-2';
+            icon.removeAttribute('role');
         } else if (status === 'error') {
             icon.className = 'bi bi-x-circle-fill me-2';
+            icon.removeAttribute('role');
         }
     }
 </script>

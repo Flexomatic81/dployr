@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const bcrypt = require('bcrypt');
 const Docker = require('dockerode');
 const { logger } = require('../config/logger');
+const proxyService = require('../services/proxy');
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
@@ -63,58 +64,109 @@ router.get('/', async (req, res) => {
     });
 });
 
-// Execute setup
+// Execute setup with Server-Sent Events for real-time progress
 router.post('/run', async (req, res) => {
     const {
         server_ip,
         admin_username,
         admin_password,
         system_username,
-        mysql_root_password,
         language,
         npm_enabled,
         npm_email,
         npm_password
     } = req.body;
 
-    try {
-        const steps = [];
+    // Read MySQL root password from environment variable (set in .env)
+    const mysqlRootPassword = process.env.MYSQL_ROOT_PASSWORD;
+    if (!mysqlRootPassword) {
+        return res.status(400).json({
+            success: false,
+            error: 'MYSQL_ROOT_PASSWORD not configured in .env file'
+        });
+    }
 
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.flushHeaders();
+
+    // Helper to send SSE events
+    const sendEvent = (type, data) => {
+        res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    // Helper to send step progress
+    const sendStep = (step, status, message) => {
+        sendEvent('step', { step, status, message });
+    };
+
+    try {
         // Step 1: Create Docker network
-        steps.push({ step: 'network', status: 'running', message: 'Creating Docker network...' });
+        sendStep('network', 'running');
         await createDockerNetwork();
-        steps[0].status = 'done';
+        sendStep('network', 'done');
 
         // Step 2: Wait for MariaDB (already running via docker-compose)
-        steps.push({ step: 'wait_db', status: 'running', message: 'Waiting for database...' });
-        await waitForMariaDB(mysql_root_password);
-        steps[1].status = 'done';
+        sendStep('wait_db', 'running');
+        await waitForMariaDB(mysqlRootPassword);
+        sendStep('wait_db', 'done');
 
         // Step 3: Create dashboard database
-        steps.push({ step: 'dashboard_db', status: 'running', message: 'Creating dashboard database...' });
-        await createDashboardDatabase(mysql_root_password);
-        steps[2].status = 'done';
+        sendStep('dashboard_db', 'running');
+        await createDashboardDatabase(mysqlRootPassword);
+        sendStep('dashboard_db', 'done');
 
         // Step 4: Create admin user with selected language
         const selectedLanguage = language || req.session.language || 'de';
-        steps.push({ step: 'admin', status: 'running', message: 'Creating admin user...' });
+        sendStep('admin', 'running');
         await createAdminUser(admin_username, admin_password, system_username, selectedLanguage);
-        steps[3].status = 'done';
+        sendStep('admin', 'done');
 
         // Step 5: Configure NPM if enabled
         if (npm_enabled && npm_email && npm_password) {
-            steps.push({ step: 'npm', status: 'running', message: 'Configuring Nginx Proxy Manager...' });
+            sendStep('npm', 'running');
             await configureNpm(npm_email, npm_password);
-            steps[4].status = 'done';
+            sendStep('npm', 'done');
+
+            // Step 6: Configure dashboard access via NPM
+            const isDomain = server_ip && !isIpAddress(server_ip);
+            if (isDomain) {
+                sendStep('dashboard_domain', 'running');
+                await configureDashboardDomain(server_ip);
+                sendStep('dashboard_domain', 'done');
+            } else if (server_ip) {
+                // Configure IP-based access (dashboard on port 80, no SSL)
+                sendStep('dashboard_ip', 'running');
+                await configureIpBasedAccess(server_ip);
+                sendStep('dashboard_ip', 'done');
+            }
         }
 
         // Final: Mark setup as complete (include selected language and NPM status)
         await markSetupComplete(server_ip, system_username, selectedLanguage, npm_enabled);
 
-        res.json({ success: true, steps });
+        // Determine the dashboard URL based on configuration
+        let dashboardUrl = '/login';
+        if (npm_enabled && server_ip) {
+            const isDomain = !isIpAddress(server_ip);
+            if (isDomain) {
+                // Domain with SSL
+                dashboardUrl = `https://${server_ip}/login`;
+            } else {
+                // IP with NPM (port 80)
+                dashboardUrl = `http://${server_ip}/login`;
+            }
+        }
+
+        sendEvent('complete', { success: true, dashboardUrl });
+        res.end();
     } catch (error) {
         logger.error('Setup error', { error: error.message });
-        res.status(500).json({ success: false, error: error.message });
+        sendEvent('error', { success: false, error: error.message });
+        res.end();
     }
 });
 
@@ -186,6 +238,11 @@ async function configureNpm(email, password) {
 
         await fs.writeFile(envPath, newEnvContent + '\n');
 
+        // Also update process.env so proxyService.isEnabled() works immediately
+        process.env.NPM_ENABLED = 'true';
+        process.env.NPM_API_EMAIL = email;
+        process.env.NPM_API_PASSWORD = password;
+
         logger.info('NPM configuration saved', { email });
 
         // Start NPM container
@@ -196,21 +253,247 @@ async function configureNpm(email, password) {
     }
 }
 
+/**
+ * Reset and start NPM container with fresh database
+ * NPM only reads INITIAL_ADMIN_* env vars on first database creation,
+ * so we need to remove the data volume to ensure new credentials are used
+ */
 async function startNpmContainer() {
     try {
         const container = docker.getContainer('dployr-npm');
-        await container.start();
-        logger.info('NPM container started during setup');
-    } catch (error) {
-        // Container might already be running (304) or not exist
-        if (error.statusCode === 304) {
-            logger.info('NPM container already running');
-        } else if (error.statusCode === 404) {
-            logger.warn('NPM container not found - may need to run docker compose up first');
-        } else {
-            logger.error('Failed to start NPM container', { error: error.message });
+
+        // Try to stop and remove NPM container first (to reset its database)
+        try {
+            await container.stop();
+            logger.info('NPM container stopped for reset');
+        } catch (stopErr) {
+            // Container might not be running - ignore
+        }
+
+        try {
+            await container.remove();
+            logger.info('NPM container removed for reset');
+        } catch (removeErr) {
+            // Container might not exist - ignore
+        }
+
+        // Remove NPM data volume to force fresh initialization with new credentials
+        // This is necessary because NPM stores credentials in SQLite on first start
+        try {
+            const npmDataVolume = docker.getVolume('dployr-npm-data');
+            await npmDataVolume.remove();
+            logger.info('NPM data volume removed for fresh initialization');
+        } catch (volErr) {
+            // Volume might not exist - ignore
+        }
+
+        // Create NPM container via Docker API
+        // We need to replicate the docker-compose.yml settings
+        const npmEmail = process.env.NPM_API_EMAIL || '';
+        const npmPassword = process.env.NPM_API_PASSWORD || '';
+        const npmHttpPort = process.env.NPM_HTTP_PORT || '80';
+        const npmHttpsPort = process.env.NPM_HTTPS_PORT || '443';
+        const npmAdminPort = process.env.NPM_ADMIN_PORT || '81';
+
+        try {
+            const newContainer = await docker.createContainer({
+                Image: 'jc21/nginx-proxy-manager:latest',
+                name: 'dployr-npm',
+                Env: [
+                    'DISABLE_IPV6=true',
+                    `INITIAL_ADMIN_EMAIL=${npmEmail}`,
+                    `INITIAL_ADMIN_PASSWORD=${npmPassword}`
+                ],
+                Labels: {
+                    // Add docker-compose labels so container is managed by docker compose
+                    'com.docker.compose.project': 'dployr',
+                    'com.docker.compose.service': 'npm',
+                    'com.docker.compose.container-number': '1',
+                    'com.docker.compose.project.working_dir': '/opt/dployr',
+                    'com.docker.compose.project.config_files': '/opt/dployr/docker-compose.yml'
+                },
+                HostConfig: {
+                    RestartPolicy: { Name: 'unless-stopped' },
+                    PortBindings: {
+                        '80/tcp': [{ HostPort: npmHttpPort }],
+                        '443/tcp': [{ HostPort: npmHttpsPort }],
+                        '81/tcp': [{ HostPort: npmAdminPort }]
+                    },
+                    Binds: [
+                        'dployr-npm-data:/data',
+                        'dployr-npm-letsencrypt:/etc/letsencrypt'
+                    ],
+                    NetworkMode: 'dployr-network'
+                },
+                NetworkingConfig: {
+                    EndpointsConfig: {
+                        'dployr-network': {}
+                    }
+                }
+            });
+
+            await newContainer.start();
+            logger.info('NPM container created and started via Docker API');
+        } catch (createErr) {
+            logger.error('Failed to create NPM container via Docker API', { error: createErr.message });
             // Don't throw - setup should succeed even if NPM doesn't start
         }
+    } catch (error) {
+        logger.error('Failed to start NPM container', { error: error.message });
+        // Don't throw - setup should succeed even if NPM doesn't start
+    }
+}
+
+/**
+ * Check if a string is an IP address (v4 or v6)
+ */
+function isIpAddress(str) {
+    // IPv4 pattern
+    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    // IPv6 pattern (simplified)
+    const ipv6Pattern = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
+    // localhost
+    if (str === 'localhost') return true;
+
+    return ipv4Pattern.test(str) || ipv6Pattern.test(str);
+}
+
+/**
+ * Wait for NPM API to be fully ready and accepting authentication
+ * This is more thorough than proxyService.waitForApi() because it actually
+ * tests authentication, not just API availability
+ */
+async function waitForNpmAuth(maxAttempts = 60, delayMs = 2000) {
+    const axios = require('axios');
+    const npmApiUrl = process.env.NPM_API_URL || 'http://dployr-npm:81/api';
+    const email = process.env.NPM_API_EMAIL;
+    const password = process.env.NPM_API_PASSWORD;
+
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            // Try to authenticate - this is the real test
+            const response = await axios.post(`${npmApiUrl}/tokens`, {
+                identity: email,
+                secret: password
+            }, { timeout: 5000 });
+
+            if (response.data && response.data.token) {
+                logger.info('NPM API ready and authentication successful', { attempt: i + 1 });
+                return true;
+            }
+        } catch (error) {
+            // 502 means NPM is starting but not ready yet
+            // Connection refused means container is starting
+            logger.debug('Waiting for NPM API authentication...', {
+                attempt: i + 1,
+                status: error.response?.status,
+                error: error.message
+            });
+        }
+        await new Promise(r => setTimeout(r, delayMs));
+    }
+    logger.warn('NPM API authentication not ready after maximum attempts');
+    return false;
+}
+
+/**
+ * Configure dashboard domain with SSL in NPM
+ * Called when a domain (not IP) is provided during setup
+ */
+async function configureDashboardDomain(domain) {
+    try {
+        // Wait for NPM API to be fully ready (including authentication)
+        // NPM needs time after container start to initialize its database
+        const isReady = await waitForNpmAuth(60, 2000);
+        if (!isReady) {
+            logger.warn('NPM API not ready for dashboard domain setup');
+            return;
+        }
+
+        // First ensure default host exists (as fallback)
+        await proxyService.ensureDefaultHost();
+
+        // Create dashboard proxy host with SSL
+        const result = await proxyService.createDashboardProxyHost(domain, true);
+
+        if (result.success) {
+            // Save domain to .env for future reference
+            await saveDashboardDomainToEnv(domain);
+            logger.info('Dashboard domain configured with SSL', { domain });
+        } else {
+            logger.warn('Failed to configure dashboard domain', { domain, error: result.error });
+        }
+    } catch (error) {
+        logger.error('Error configuring dashboard domain', { domain, error: error.message });
+        // Don't throw - setup should succeed even if domain config fails
+    }
+}
+
+/**
+ * Configure proxy host for IP-based access (no SSL)
+ * Makes dashboard accessible via http://IP (port 80)
+ * @param {string} serverIp - The server IP address
+ */
+async function configureIpBasedAccess(serverIp) {
+    try {
+        // Wait for NPM API to be fully ready (including authentication)
+        const isReady = await waitForNpmAuth(60, 2000);
+        if (!isReady) {
+            logger.warn('NPM API not ready for IP-based access setup');
+            return;
+        }
+
+        // Create default host as fallback
+        await proxyService.ensureDefaultHost();
+
+        // Create IP-based proxy host for dashboard
+        const result = await proxyService.createDashboardIpProxyHost(serverIp);
+        if (result.success) {
+            logger.info('IP-based dashboard access configured', { serverIp });
+        } else {
+            logger.warn('Failed to configure IP-based dashboard access', { serverIp, error: result.error });
+        }
+    } catch (error) {
+        logger.error('Error configuring IP-based access', { error: error.message });
+        // Don't throw - setup should succeed
+    }
+}
+
+/**
+ * Save dashboard domain to .env file
+ */
+async function saveDashboardDomainToEnv(domain) {
+    const envPath = '/app/.env';
+
+    try {
+        let envContent = '';
+        try {
+            envContent = await fs.readFile(envPath, 'utf-8');
+        } catch {
+            // File doesn't exist
+        }
+
+        // Parse existing env vars
+        const envLines = envContent.split('\n');
+        const envVars = {};
+        envLines.forEach(line => {
+            const match = line.match(/^([^#=]+)=(.*)$/);
+            if (match) {
+                envVars[match[1].trim()] = match[2].trim();
+            }
+        });
+
+        // Add dashboard domain
+        envVars['NPM_DASHBOARD_DOMAIN'] = domain;
+
+        // Rebuild .env content
+        const newEnvContent = Object.entries(envVars)
+            .map(([key, value]) => `${key}=${value}`)
+            .join('\n');
+
+        await fs.writeFile(envPath, newEnvContent + '\n');
+    } catch (error) {
+        logger.error('Failed to save dashboard domain to .env', { error: error.message });
     }
 }
 
