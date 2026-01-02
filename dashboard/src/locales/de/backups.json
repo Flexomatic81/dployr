@@ -37,7 +37,11 @@
     "lastBackup": "Letztes Backup",
     "never": "Noch kein Backup",
     "viewAll": "Alle Backups anzeigen",
-    "creating": "Backup wird erstellt..."
+    "creating": "Backup wird erstellt...",
+    "backupProject": "Projekt sichern",
+    "backupDatabase": "Datenbank sichern",
+    "selectDatabase": "Datenbank auswählen",
+    "noDatabase": "Keine Datenbank vorhanden"
   },
   "detail": {
     "title": "Backup-Details",

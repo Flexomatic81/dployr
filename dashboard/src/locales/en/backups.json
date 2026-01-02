@@ -37,7 +37,11 @@
     "lastBackup": "Last Backup",
     "never": "No backup yet",
     "viewAll": "View all backups",
-    "creating": "Creating backup..."
+    "creating": "Creating backup...",
+    "backupProject": "Backup Project",
+    "backupDatabase": "Backup Database",
+    "selectDatabase": "Select Database",
+    "noDatabase": "No database available"
   },
   "detail": {
     "title": "Backup Details",
