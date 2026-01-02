@@ -146,14 +146,19 @@ do_deploy() {
         echo "Restarting services..."
     fi
 
-    # Restart all services (will use new images if pulled)
-    docker compose up -d
+    # Restart all services EXCEPT dashboard first (to avoid container name conflicts)
+    docker compose up -d mariadb postgresql pgadmin phpmyadmin npm 2>/dev/null || true
 
     if [ "$JSON_OUTPUT" = true ]; then
         echo "{\"status\":\"complete\",\"success\":true,\"version\":\"$GIT_HASH\",\"date\":\"$GIT_DATE\"}"
     else
         echo "=== Done ==="
     fi
+
+    # Restart dashboard LAST (this will terminate the current process)
+    # Small delay to ensure the JSON response is sent
+    sleep 1
+    docker compose up -d dashboard
 }
 
 # Execute requested action
