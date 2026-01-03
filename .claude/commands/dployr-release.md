@@ -20,7 +20,20 @@ git status --porcelain
 # Must be up to date with remote
 git fetch origin main
 git log HEAD..origin/main --oneline
+
+# Check for draft releases (should be published before new release)
+gh release list | grep -i draft
 ```
+
+### Draft Release Check
+
+If there are draft releases, they should be published first:
+```bash
+# Publish a draft release
+gh release edit vX.X.X --draft=false
+```
+
+**Why?** When a draft is published after newer releases, GitHub may incorrectly mark it as "Latest".
 
 ## Release Process
 
@@ -89,14 +102,19 @@ git push origin vX.X.X
 
 ### 6. Create GitHub Release
 
+**IMPORTANT**: Always use `--latest` to explicitly mark the new release as latest!
+
 ```bash
 gh release create vX.X.X \
   --title "vX.X.X" \
+  --latest \
   --notes "$(cat <<'EOF'
 <changelog content for this version>
 EOF
 )"
 ```
+
+This ensures the new release is marked as "Latest" even if older releases were recently modified.
 
 ### 7. Verify Release
 
