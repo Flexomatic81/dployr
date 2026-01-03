@@ -1,36 +1,137 @@
-# Dployr
-
-**Docker-based multi-user hosting platform for web projects.**
-
-Deploy and manage isolated web projects on a shared Linux server through an intuitive web dashboard. Supports automatic project type detection, Git integration, and database provisioning.
-
 <p align="center">
   <img src="docs/images/banner_v2.png" alt="Dployr Banner" width="800">
 </p>
 
-## Features
+<h1 align="center">Dployr</h1>
 
-- **Web Dashboard** - Browser-based project management
-- **Multiple Deployment Methods** - Git repository, ZIP upload, or empty template
-- **Auto-Deploy** - Automatic updates on Git commits (configurable interval)
-- **Project Type Detection** - Automatically detects Static, PHP, Node.js, Laravel, Next.js
-- **Database Support** - MariaDB and PostgreSQL with phpMyAdmin & pgAdmin
-- **Multi-User** - User registration with admin approval workflow
-- **Project Sharing** - Share projects with other users (read/manage/full access)
-- **Environment Editor** - Edit .env files directly in the browser
-- **Custom Domains & SSL** - Connect domains with free Let's Encrypt certificates (optional)
-- **Dark/Light Theme** - Switchable with preference storage
+<p align="center">
+  <strong>Docker-based multi-user hosting platform for web projects</strong>
+</p>
 
-## Requirements
+<p align="center">
+  <a href="https://github.com/Flexomatic81/dployr/releases/latest"><img src="https://img.shields.io/github/v/release/Flexomatic81/dployr?style=flat-square&color=blue" alt="Latest Release"></a>
+  <a href="https://github.com/Flexomatic81/dployr/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Flexomatic81/dployr?style=flat-square" alt="License"></a>
+  <a href="https://github.com/Flexomatic81/dployr/issues"><img src="https://img.shields.io/github/issues/Flexomatic81/dployr?style=flat-square" alt="Issues"></a>
+  <a href="https://github.com/Flexomatic81/dployr/stargazers"><img src="https://img.shields.io/github/stars/Flexomatic81/dployr?style=flat-square" alt="Stars"></a>
+</p>
+
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-documentation">Documentation</a> •
+  <a href="CHANGELOG.md">Changelog</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
+
+---
+
+Deploy and manage isolated web projects on a shared Linux server through an intuitive web dashboard. Supports automatic project type detection, Git integration with webhooks, database provisioning, backups, and more.
+
+## Table of Contents
+
+- [Features](#-features)
+- [Screenshots](#-screenshots)
+- [Quick Start](#-quick-start)
+- [Services](#-services)
+- [Documentation](#-documentation)
+  - [Creating Projects](#creating-projects)
+  - [Managing Projects](#managing-projects)
+  - [Databases](#databases)
+  - [Auto-Deploy & Webhooks](#auto-deploy--webhooks)
+  - [Project Sharing](#project-sharing)
+  - [Domains & SSL](#domains--ssl)
+  - [Backup & Restore](#backup--restore)
+  - [System Updates](#system-updates)
+  - [Email Notifications](#email-notifications)
+- [Configuration](#-configuration)
+- [Project Type Detection](#-project-type-detection)
+- [CLI Scripts](#-cli-scripts)
+- [Directory Structure](#-directory-structure)
+- [Security](#-security)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+## ✨ Features
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| 🖥️ **Web Dashboard** | Browser-based project management with dark/light theme |
+| 🚀 **Multiple Deployment Methods** | Git repository, ZIP upload, or empty template |
+| 🔄 **Auto-Deploy** | Automatic updates via polling or webhooks |
+| 🔍 **Smart Detection** | Automatically detects Static, PHP, Node.js, Laravel, Next.js, Nuxt.js, Python |
+| 🗄️ **Database Support** | MariaDB and PostgreSQL with phpMyAdmin & pgAdmin |
+| 👥 **Multi-User** | User registration with admin approval workflow |
+| 🔗 **Project Sharing** | Share projects with other users (read/manage/full access) |
+
+### Advanced Features
+
+| Feature | Description |
+|---------|-------------|
+| 📝 **Environment Editor** | Edit .env files directly in the browser |
+| 🌐 **Custom Domains & SSL** | Connect domains with free Let's Encrypt certificates |
+| 💾 **Backup & Restore** | Manual backups for projects and databases |
+| 📧 **Email Notifications** | Deployment success/failure notifications |
+| 🔔 **Webhooks** | Instant deployments from GitHub, GitLab, Bitbucket |
+| ⬆️ **System Updates** | One-click updates from the dashboard |
+
+## 📸 Screenshots
+
+<details>
+<summary><b>Dashboard</b> - Main overview with project and database status</summary>
+<p align="center">
+  <img src="docs/images/dashboard.png" alt="Dashboard" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Project Details</b> - Manage containers, environment, sharing, and backups</summary>
+<p align="center">
+  <img src="docs/images/project-detail.png" alt="Project Details" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Git Deployment</b> - Create projects from Git repositories with auto-detection</summary>
+<p align="center">
+  <img src="docs/images/git-deploy.png" alt="Git Deployment" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Databases</b> - MariaDB and PostgreSQL management with credentials</summary>
+<p align="center">
+  <img src="docs/images/databases.png" alt="Databases" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Domains & SSL</b> - Nginx Proxy Manager integration</summary>
+<p align="center">
+  <img src="docs/images/domain-ssl.png" alt="Domains & SSL" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Admin Panel</b> - User management, logs, and system settings</summary>
+<p align="center">
+  <img src="docs/images/admin-panel.png" alt="Admin Panel" width="800">
+</p>
+</details>
+
+## 🚀 Quick Start
+
+### Requirements
 
 | Component | Minimum Version |
 |-----------|-----------------|
 | **Linux** | Any distribution |
 | **Docker** | 20.10+ |
 | **Docker Compose** | v2.0+ |
-| **Git** | 2.0+ (optional) |
+| **Git** | 2.0+ |
 
-## Quick Start
+### Installation
 
 ```bash
 # 1. Clone repository
@@ -50,7 +151,7 @@ docker compose up -d
 
 The setup wizard guides you through creating the first admin user.
 
-## Services
+## 📦 Services
 
 After startup, the following services are available:
 
@@ -63,36 +164,38 @@ After startup, the following services are available:
 | **pgAdmin** | 5050 | PostgreSQL management |
 | **NPM** | 80, 443, 81 | Domain proxy & SSL (optional) |
 
-## Using the Dashboard
+## 📖 Documentation
 
 ### Creating Projects
 
 The dashboard offers three ways to create a project:
 
-**Git Repository** (recommended for version control)
+#### Git Repository (recommended)
 - Enter repository URL (HTTPS)
 - For private repos: Add a personal access token
 - Project type is automatically detected
-- Use "Pull" button or Auto-Deploy for updates
+- Use "Pull" button, Auto-Deploy, or Webhooks for updates
 
-**ZIP Upload** (quick deployment)
+#### ZIP Upload
 - Upload a ZIP file (max 100 MB)
 - Automatic extraction and type detection
 - Nested folders are automatically flattened
 
-**Empty Template**
-- Choose a project type (Static, PHP, Node.js)
+#### Empty Template
+- Choose a project type (Static, PHP, Node.js, Python)
 - Start with a blank project structure
 
 ### Managing Projects
 
 From the project detail page you can:
+
 - **Start/Stop/Restart** containers
 - **View logs** in real-time
 - **Pull** latest changes from Git
 - **Edit .env** environment variables
 - **Configure database** credentials with one click
 - **Share** with other users
+- **Create backups** of project files
 
 ### Databases
 
@@ -101,16 +204,17 @@ From the project detail page you can:
 3. Enter a name
 4. Credentials are automatically generated
 
-To connect a database to a project:
+**To connect a database to a project:**
+
 1. Open the project detail page
 2. Scroll to "Environment Variables"
 3. Click **Configure DB** and select your database
 4. Credentials are intelligently merged into .env
 5. Restart the container
 
-### Auto-Deploy
+### Auto-Deploy & Webhooks
 
-For Git projects, enable automatic deployment:
+#### Polling (simple)
 
 1. Open project detail page
 2. Find "Git Connection" section
@@ -118,6 +222,17 @@ For Git projects, enable automatic deployment:
 4. Choose interval (5, 10, 15, 30, or 60 minutes)
 
 Dployr will poll for new commits and automatically pull + restart.
+
+#### Webhooks (instant)
+
+For instant deployments when you push code:
+
+1. Enable webhooks in project settings
+2. Copy the webhook URL
+3. Add it to your Git provider (GitHub, GitLab, Bitbucket)
+4. Configure the secret token
+
+Webhooks provide immediate deployments without polling delays.
 
 ### Project Sharing
 
@@ -148,7 +263,52 @@ Connect custom domains to your projects (requires admin to enable NPM):
 
 SSL certificates are automatically issued via Let's Encrypt and renewed before expiration.
 
-## Configuration
+### Backup & Restore
+
+Create manual backups of your projects and databases:
+
+#### Project Backups
+- Creates a tar.gz archive of project files
+- Excludes node_modules, vendor, .git, and other build artifacts
+- Restore overwrites the current project files
+
+#### Database Backups
+- Creates SQL dump (mysqldump for MariaDB, pg_dump for PostgreSQL)
+- Restore executes the SQL dump against the database
+
+**To create a backup:**
+
+1. Go to **Backups** page
+2. Click **Backup Project** or **Backup Database**
+3. Select the project/database
+4. Download or restore from the backup list
+
+### System Updates
+
+Admins can update Dployr directly from the dashboard:
+
+1. Go to **Admin** → **Updates**
+2. Check for available updates
+3. Review the changelog
+4. Click **Install Update**
+
+The dashboard shows real-time progress during the update process. User projects are not affected.
+
+**Update Channels:**
+- **Stable** (main branch) - Tested releases
+- **Beta** (dev branch) - Latest features, may be unstable
+
+### Email Notifications
+
+Configure email notifications for:
+
+- **Deployment success/failure** - Get notified when deployments complete
+- **Account approval** - Users receive email when approved
+- **Password reset** - Self-service password recovery
+
+Configure SMTP settings in **Admin** → **Email Settings**.
+
+## ⚙️ Configuration
 
 ### Environment Variables (.env)
 
@@ -173,6 +333,17 @@ NPM_API_PASSWORD=changeme123
 NPM_HTTP_PORT=80
 NPM_HTTPS_PORT=443
 NPM_ADMIN_PORT=81
+
+# Email (optional)
+EMAIL_ENABLED=false
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_USER=noreply@example.com
+EMAIL_PASSWORD=your-password
+EMAIL_FROM=Dployr <noreply@example.com>
+
+# Updates
+UPDATE_CHANNEL=stable  # stable or beta
 ```
 
 ### Custom Installation Path
@@ -181,24 +352,28 @@ If not using `/opt/dployr`, set the host path in `.env`:
 
 ```bash
 HOST_USERS_PATH=/path/to/your/dployr/users
+HOST_DPLOYR_PATH=/path/to/your/dployr
 ```
 
-## Project Type Detection
+## 🔍 Project Type Detection
 
 Projects are automatically detected based on files:
 
 | File | Detected Type |
 |------|---------------|
 | `next.config.js` / `next.config.mjs` | Next.js |
-| `package.json` with build script | React/Vue (Static Build) |
+| `nuxt.config.js` / `nuxt.config.ts` | Nuxt.js |
+| `package.json` with build script | React/Vue/Svelte (Static Build) |
 | `package.json` | Node.js |
 | `artisan` / `symfony.lock` | Laravel/Symfony |
 | `composer.json` / `*.php` | PHP |
+| `requirements.txt` / `app.py` | Python Flask |
+| `manage.py` | Python Django |
 | `index.html` | Static |
 
 If detection is wrong, you can change the type in project settings.
 
-## CLI Scripts (Advanced)
+## 🛠️ CLI Scripts
 
 For automation or direct server access:
 
@@ -214,6 +389,9 @@ For automation or direct server access:
 
 # List all projects
 ./scripts/list-projects.sh
+
+# Update Dployr
+./deploy.sh
 ```
 
 ### Docker Commands
@@ -230,16 +408,24 @@ docker compose logs -f dashboard
 docker compose restart dashboard
 ```
 
-## Directory Structure
+## 📁 Directory Structure
 
 ```
 dployr/
 ├── docker-compose.yml      # Main infrastructure
 ├── .env                    # Configuration
+├── CHANGELOG.md            # Version history
 ├── dashboard/              # Web dashboard (Node.js)
+│   ├── src/
+│   │   ├── routes/         # Express routes
+│   │   ├── services/       # Business logic
+│   │   ├── middleware/     # Auth, validation
+│   │   └── views/          # EJS templates
+│   └── tests/              # Unit tests
 ├── users/                  # User projects
 │   └── <username>/
 │       ├── .db-credentials
+│       ├── .backups/       # User backups
 │       └── <project>/
 │           ├── docker-compose.yml
 │           ├── .env
@@ -249,15 +435,34 @@ dployr/
 └── infrastructure/         # Database configuration
 ```
 
-## Security
+## 🔒 Security
 
-- Each user only has access to their own databases
-- Database names are prefixed with username
-- Containers are network-isolated
-- New users require admin approval
-- Secure password generation for DB credentials
-- Session-based authentication with MySQL store
+- **User Isolation** - Each user only has access to their own databases and projects
+- **Database Prefixing** - Database names are prefixed with username
+- **Network Isolation** - Containers are network-isolated
+- **Admin Approval** - New users require admin approval
+- **Secure Credentials** - Cryptographically secure password generation
+- **Session Security** - Session-based authentication with MySQL store
+- **CSRF Protection** - All forms protected against CSRF attacks
+- **Input Validation** - Joi-based validation on all inputs
+- **Rate Limiting** - Auth routes are rate-limited
 
-## License
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Report Bugs** - Open an [issue](https://github.com/Flexomatic81/dployr/issues) with details
+2. **Suggest Features** - Describe your idea in an issue
+3. **Submit PRs** - Fork, create a branch, and submit a pull request
+
+Please ensure your code follows the existing style and includes tests where applicable.
+
+## 📄 License
 
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/Flexomatic81">Flexomatic81</a>
+</p>
