@@ -44,6 +44,5 @@ Thumbs.db
 CODE_REVIEW.md
 gitignore/
 
-# Claude Code configuration (internal)
-CLAUDE.md
-.claude/
+# Claude Code configuration
+.claude/settings.local.json
