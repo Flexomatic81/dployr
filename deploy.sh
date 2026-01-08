@@ -17,6 +17,9 @@ ACTION="deploy"
 JSON_OUTPUT=false
 BRANCH="main"
 
+# Save original arguments for re-exec
+ORIGINAL_ARGS="$@"
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --check)
@@ -122,7 +125,7 @@ do_deploy() {
     # This ensures new build steps (like workspace image) are executed
     if [ "$DEPLOY_REEXEC" != "1" ]; then
         export DEPLOY_REEXEC=1
-        exec bash "$0" "$@"
+        exec bash "$0" $ORIGINAL_ARGS
     fi
 
     # Get version information for build args
