@@ -405,10 +405,11 @@ app.use('/workspace-proxy', requireAuth, async (req, res, next) => {
             proxyTimeout: 30000,
             followRedirects: false,
             pathRewrite: (path) => {
-                const rewritten = path.startsWith(basePath)
-                    ? path.replace(basePath, '') || '/'
-                    : path.replace(/^\/workspace-proxy/, '') || '/';
-                logger.info('Workspace proxy pathRewrite', { original: path, rewritten });
+                // path here is req.path which is relative to the mount point (/workspace-proxy)
+                // So for /workspace-proxy/tetris/, path = /tetris/
+                // We need to strip the project name prefix to get the code-server path
+                const rewritten = path.replace(new RegExp(`^/${projectName}`), '') || '/';
+                logger.info('Workspace proxy pathRewrite', { original: path, rewritten, projectName });
                 return rewritten;
             },
             onProxyReq: (proxyReq, req) => {
