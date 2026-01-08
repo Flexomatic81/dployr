@@ -392,9 +392,8 @@ async function startWorkspace(userId, projectName, systemUsername) {
                 },
                 SecurityOpt: ['no-new-privileges:true'],
                 CapDrop: ['ALL'],
-                // Only add CHOWN for file ownership changes
-                // SETUID and SETGID removed for security (container escape risk)
-                CapAdd: ['CHOWN'],
+                // code-server needs CHOWN, SETUID, SETGID to function properly
+                CapAdd: ['CHOWN', 'SETUID', 'SETGID'],
                 ReadonlyRootfs: false
             },
             NetworkingConfig: {
