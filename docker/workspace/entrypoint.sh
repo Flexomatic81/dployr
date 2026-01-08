@@ -4,16 +4,20 @@
 set -e
 
 # ============================================================
-# Environment Setup
+# Fix Permissions (running as root)
 # ============================================================
 
-# Create workspace directory if not exists
+# Ensure workspace directory exists and is owned by coder
 mkdir -p /workspace
+chown -R coder:coder /workspace
+
+# ============================================================
+# Environment Setup
+# ============================================================
 
 # Setup Claude Code if API key provided
 if [ -n "$ANTHROPIC_API_KEY" ]; then
     echo "Claude Code: API Key configured"
-    # Claude Code will read from environment
 fi
 
 # Database connection info (if provided)
@@ -26,25 +30,21 @@ fi
 # ============================================================
 
 if [ -n "$GIT_USER_NAME" ]; then
-    git config --global user.name "$GIT_USER_NAME"
+    gosu coder git config --global user.name "$GIT_USER_NAME"
 fi
 
 if [ -n "$GIT_USER_EMAIL" ]; then
-    git config --global user.email "$GIT_USER_EMAIL"
+    gosu coder git config --global user.email "$GIT_USER_EMAIL"
 fi
 
 # ============================================================
-# Start code-server
+# Start code-server as coder user
 # ============================================================
 
 # No authentication - access is controlled by the dashboard proxy
 # The workspace container is only accessible via internal Docker network
 
-# PROXY_BASE_PATH is set by the dashboard when starting the container
-# e.g., /workspace-proxy/tetris
-PROXY_BASE_PATH="${PROXY_BASE_PATH:-}"
-
-exec code-server \
+exec gosu coder code-server \
     --bind-addr 0.0.0.0:8080 \
     --auth none \
     --disable-telemetry \

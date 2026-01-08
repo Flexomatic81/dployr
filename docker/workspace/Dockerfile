@@ -107,8 +107,12 @@ RUN chown -R coder:coder /home/coder
 # Runtime Configuration
 # ============================================================
 
-# Switch back to coder user
-USER coder
+# Install gosu for dropping privileges in entrypoint
+RUN apt-get update && apt-get install -y --no-install-recommends gosu \
+    && rm -rf /var/lib/apt/lists/*
+
+# Start as root - entrypoint will fix permissions and switch to coder
+USER root
 
 # Working directory (will be mounted)
 WORKDIR /workspace
