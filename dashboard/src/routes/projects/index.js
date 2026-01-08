@@ -16,6 +16,7 @@ const autoDeployService = require('../../services/autodeploy');
 const sharingService = require('../../services/sharing');
 const proxyService = require('../../services/proxy');
 const backupService = require('../../services/backup');
+const workspaceService = require('../../services/workspace');
 const upload = require('../../middleware/upload');
 const { validateZipMiddleware } = require('../../middleware/upload');
 const { logger } = require('../../config/logger');
@@ -309,6 +310,9 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
             }
         }
 
+        // Load workspace for this project (if exists)
+        const workspace = await workspaceService.getWorkspace(req.session.user.id, req.params.name);
+
         res.render('projects/show', {
             title: project.name,
             project,
@@ -339,7 +343,9 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
             projectBackups,
             databaseBackups,
             linkedDatabase,
-            formatFileSize: backupService.formatFileSize
+            formatFileSize: backupService.formatFileSize,
+            // Workspace data
+            workspace
         });
     } catch (error) {
         logger.error('Error loading project', { error: error.message });
