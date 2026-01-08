@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Deployment Rules
 
-- **Commits and pushes** may be performed without explicit confirmation
 - **Server deployments** (ssh hetzner, deploy.sh) **always require explicit user confirmation** before execution
+- Commits and pushes follow the standard git rules below (only when requested by the user)
 
 ## Code Style
 
