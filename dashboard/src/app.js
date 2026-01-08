@@ -702,8 +702,10 @@ async function start() {
                     });
                 }
 
-                // Log outgoing proxy request
+                // Log outgoing proxy request and remove Origin header
                 wsProxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+                    // Remove origin header - code-server rejects requests with external origin
+                    proxyReq.removeHeader('origin');
                     logger.info('WebSocket proxy request sent', {
                         projectName,
                         target: options.target.href,
