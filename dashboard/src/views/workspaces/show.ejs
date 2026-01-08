@@ -84,7 +84,7 @@
                         </button>
                     <% } else if (workspace.status === 'running') { %>
                         <a href="/workspaces/<%= workspace.project_name %>/ide"
-                           class="btn btn-primary" >
+                           class="btn btn-primary" target="_blank" >
                             <i class="bi bi-code-square"></i>
                             <%= t('workspaces:actions.openIDE') %>
                         </a>
