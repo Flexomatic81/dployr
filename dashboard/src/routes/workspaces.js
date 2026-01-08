@@ -18,18 +18,6 @@ const { requirePermission } = require('../middleware/projectAccess');
 const { logger } = require('../config/logger');
 const { pool } = require('../config/database');
 
-// Feature flag check
-function requireWorkspacesEnabled(req, res, next) {
-    if (process.env.WORKSPACES_ENABLED !== 'true') {
-        req.flash('error', req.t('workspaces:errors.featureDisabled'));
-        return res.redirect('/dashboard');
-    }
-    next();
-}
-
-// Apply feature flag to all routes
-router.use(requireWorkspacesEnabled);
-
 // ============================================================
 // LIST & OVERVIEW
 // ============================================================
