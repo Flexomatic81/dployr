@@ -6,7 +6,8 @@
     "admin": "Admin",
     "help": "Help",
     "logout": "Logout",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "apiKeys": "API Keys"
   },
   "buttons": {
     "save": "Save",
