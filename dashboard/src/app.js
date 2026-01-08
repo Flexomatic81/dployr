@@ -401,15 +401,20 @@ app.use('/workspace-proxy', requireAuth, async (req, res, next) => {
         const proxy = createProxyMiddleware({
             target: `http://${containerIp}:8080`,
             changeOrigin: true,
-            ws: true,
+            ws: false, // WebSocket upgrades handled by our own server.on('upgrade') handler
             timeout: 30000,
             proxyTimeout: 30000,
             followRedirects: false,
             pathRewrite: (path) => {
-                // path here is req.path which is relative to the mount point (/workspace-proxy)
-                // So for /workspace-proxy/tetris/, path = /tetris/
-                // We need to strip the project name prefix to get the code-server path
-                const rewritten = path.replace(new RegExp(`^/${projectName}`), '') || '/';
+                // path can be the full originalUrl or just the relative path
+                // Strip both /workspace-proxy/ and the project name to get the code-server path
+                let rewritten = path;
+                // First, strip /workspace-proxy/ if present
+                if (rewritten.startsWith('/workspace-proxy/')) {
+                    rewritten = rewritten.replace('/workspace-proxy/', '/');
+                }
+                // Then strip the project name
+                rewritten = rewritten.replace(new RegExp(`^/${projectName}`), '') || '/';
                 logger.info('Workspace proxy pathRewrite', { original: path, rewritten, projectName });
                 return rewritten;
             },
