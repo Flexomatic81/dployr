@@ -118,6 +118,13 @@ do_deploy() {
     git fetch --tags origin "$BRANCH"
     git pull origin "$BRANCH"
 
+    # Re-exec with updated deploy.sh after git pull (to use newest version)
+    # This ensures new build steps (like workspace image) are executed
+    if [ "$DEPLOY_REEXEC" != "1" ]; then
+        export DEPLOY_REEXEC=1
+        exec bash "$0" "$@"
+    fi
+
     # Get version information for build args
     export GIT_HASH=$(git rev-parse --short HEAD)
     export GIT_DATE=$(git log -1 --format=%cd --date=format:'%d.%m.%Y')

@@ -138,6 +138,7 @@
             <li><%= t('admin:updates.step3') %></li>
             <li><%= t('admin:updates.step4') %></li>
             <li><%= t('admin:updates.step5') %></li>
+            <li><%= t('admin:updates.step6') %></li>
         </ol>
         <div class="alert alert-info mt-3 mb-0">
             <i class="bi bi-lightbulb"></i>
@@ -168,13 +169,17 @@
                         <span class="step-icon me-2"><i class="bi bi-hourglass text-muted"></i></span>
                         <span class="step-text">3. <%= t('admin:updates.stepBuild') %></span>
                     </div>
+                    <div class="d-flex align-items-center mb-2" id="step-workspace">
+                        <span class="step-icon me-2"><i class="bi bi-hourglass text-muted"></i></span>
+                        <span class="step-text">4. <%= t('admin:updates.stepWorkspace') %></span>
+                    </div>
                     <div class="d-flex align-items-center mb-2" id="step-restart">
                         <span class="step-icon me-2"><i class="bi bi-hourglass text-muted"></i></span>
-                        <span class="step-text">4. <%= t('admin:updates.stepRestart') %></span>
+                        <span class="step-text">5. <%= t('admin:updates.stepRestart') %></span>
                     </div>
                     <div class="d-flex align-items-center" id="step-ready">
                         <span class="step-icon me-2"><i class="bi bi-hourglass text-muted"></i></span>
-                        <span class="step-text">5. <%= t('admin:updates.stepReady') %></span>
+                        <span class="step-text">6. <%= t('admin:updates.stepReady') %></span>
                     </div>
                 </div>
 
@@ -249,7 +254,7 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
     modal.show();
 
     // Reset all steps to pending
-    ['step-pull', 'step-images', 'step-build', 'step-restart', 'step-ready'].forEach(id => {
+    ['step-pull', 'step-images', 'step-build', 'step-workspace', 'step-restart', 'step-ready'].forEach(id => {
         setStepStatus(id, 'pending');
     });
 
@@ -269,8 +274,12 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
             } else if (data.step === 'build') {
                 setStepStatus('step-images', 'done');
                 setStepStatus('step-build', 'active');
+            } else if (data.step === 'workspace-image') {
+                setStepStatus('step-build', 'done');
+                setStepStatus('step-workspace', 'active');
             } else if (data.step === 'restart') {
                 setStepStatus('step-build', 'done');
+                setStepStatus('step-workspace', 'done');
                 setStepStatus('step-restart', 'active');
             } else if (data.status === 'complete') {
                 setStepStatus('step-restart', 'done');
