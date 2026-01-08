@@ -384,8 +384,7 @@ app.use('/workspace-proxy', requireAuth, async (req, res, next) => {
             method: req.method
         });
 
-        // Simple proxy without URL rewriting - let code-server handle its own paths
-        // code-server 4.x works better with a consistent base path
+        // Proxy to workspace container with proper redirect handling
         const basePath = `/workspace-proxy/${projectName}`;
         const proxy = createProxyMiddleware({
             target: `http://${containerIp}:8080`,
@@ -393,16 +392,32 @@ app.use('/workspace-proxy', requireAuth, async (req, res, next) => {
             ws: true,
             timeout: 30000,
             proxyTimeout: 30000,
+            followRedirects: false,
             pathRewrite: (path) => {
                 if (path.startsWith(basePath)) {
                     return path.replace(basePath, '') || '/';
                 }
-                // For paths like /_static/ that don't include project name
                 return path.replace(/^\/workspace-proxy/, '') || '/';
             },
             onProxyReq: (proxyReq, req) => {
-                // Remove problematic headers
                 proxyReq.removeHeader('origin');
+            },
+            onProxyRes: (proxyRes, req, res) => {
+                // Rewrite Location header for redirects
+                const location = proxyRes.headers['location'];
+                if (location) {
+                    // Handle relative redirects (like "./?folder=/workspace")
+                    if (location.startsWith('./') || location.startsWith('?')) {
+                        proxyRes.headers['location'] = `${basePath}/${location.replace('./', '')}`;
+                    } else if (location.startsWith('/') && !location.startsWith(basePath)) {
+                        // Handle absolute paths
+                        proxyRes.headers['location'] = `${basePath}${location}`;
+                    }
+                    logger.debug('Workspace proxy redirect', {
+                        original: location,
+                        rewritten: proxyRes.headers['location']
+                    });
+                }
             },
             onError: (err, req, res) => {
                 logger.error('Workspace proxy error', {
