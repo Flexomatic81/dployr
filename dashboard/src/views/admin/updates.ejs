@@ -303,6 +303,11 @@ document.getElementById('installUpdateBtn')?.addEventListener('click', async fun
     eventSource.onerror = function() {
         // Connection lost - dashboard probably restarting
         eventSource.close();
+        // Mark all previous steps as done (connection lost means deploy script finished)
+        setStepStatus('step-pull', 'done');
+        setStepStatus('step-images', 'done');
+        setStepStatus('step-build', 'done');
+        setStepStatus('step-workspace', 'done');
         setStepStatus('step-restart', 'done');
         setStepStatus('step-ready', 'active');
         document.getElementById('updateStatus').textContent = '<%= t("admin:updates.restartingDashboard") %>';
