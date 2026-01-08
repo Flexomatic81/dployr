@@ -114,10 +114,10 @@
                     <dd class="col-6"><code><%= workspace.cpu_limit %></code></dd>
 
                     <dt class="col-6"><%= t('workspaces:settings.ram') %></dt>
-                    <dd class="col-6"><code><%= workspace.ram_limit %></code></dd>
+                    <dd class="col-6"><code><%= workspace.ram_limit.replace(/(\d+)g/i, '$1 GB').replace(/(\d+)m/i, '$1 MB') %></code></dd>
 
                     <dt class="col-6"><%= t('workspaces:settings.disk') %></dt>
-                    <dd class="col-6"><code><%= workspace.disk_limit %></code></dd>
+                    <dd class="col-6"><code><%= workspace.disk_limit.replace(/(\d+)g/i, '$1 GB').replace(/(\d+)m/i, '$1 MB') %></code></dd>
 
                     <dt class="col-6"><%= t('workspaces:settings.idleTimeout') %></dt>
                     <dd class="col-6"><%= workspace.idle_timeout_minutes %> min</dd>

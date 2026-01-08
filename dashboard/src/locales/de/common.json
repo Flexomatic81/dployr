@@ -52,6 +52,8 @@
     "port": "Port",
     "status": "Status",
     "actions": "Aktionen",
+    "project": "Projekt",
+    "dangerZone": "Gefahrenzone",
     "user": "Benutzer",
     "username": "Benutzername",
     "password": "Passwort",
