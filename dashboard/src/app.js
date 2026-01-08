@@ -14,6 +14,7 @@ const { csrfSynchronisedProtection, csrfTokenMiddleware, csrfErrorHandler } = re
 const { i18next, i18nMiddleware } = require('./config/i18n');
 
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const httpProxy = require('http-proxy');
 const { initDatabase, getPool } = require('./config/database');
 const { setUserLocals, requireAuth } = require('./middleware/auth');
 const autoDeployService = require('./services/autodeploy');
@@ -630,7 +631,7 @@ async function start() {
         // Handle WebSocket upgrades for workspace proxy
         server.on('upgrade', async (req, socket, head) => {
             const url = req.url || '';
-            logger.info('WebSocket upgrade request', { url });
+            logger.info('WebSocket upgrade request', { url, headers: req.headers });
 
             const match = url.match(/^\/workspace-proxy\/([^/?]+)/);
             if (!match) {
@@ -651,7 +652,6 @@ async function start() {
             }
 
             try {
-                const { getPool } = require('./config/database');
                 const pool = getPool();
                 const [rows] = await pool.query(
                     'SELECT container_id, status FROM workspaces WHERE project_name = ?',
@@ -682,23 +682,64 @@ async function start() {
                     rewrittenUrl: rewrittenPath
                 });
 
-                // Use http-proxy directly for WebSocket
-                const httpProxy = require('http-proxy');
-                const proxy = httpProxy.createProxyServer({
+                // Create proxy for this WebSocket connection
+                const wsProxy = httpProxy.createProxyServer({
                     target: `http://${containerIp}:8080`,
                     ws: true,
-                    changeOrigin: true
+                    changeOrigin: true,
+                    xfwd: true
                 });
 
-                proxy.on('error', (err) => {
-                    logger.error('WebSocket proxy error', { error: err.message, projectName });
-                    socket.destroy();
+                // Preserve WebSocket headers and add forwarding info
+                if (req.headers['sec-websocket-protocol']) {
+                    logger.info('WebSocket protocols requested', {
+                        protocols: req.headers['sec-websocket-protocol']
+                    });
+                }
+
+                // Log outgoing proxy request
+                wsProxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+                    logger.info('WebSocket proxy request sent', {
+                        projectName,
+                        target: options.target.href,
+                        path: proxyReq.path
+                    });
                 });
 
-                proxy.ws(req, socket, head);
+                // Handle proxy errors
+                wsProxy.on('error', (err, req, res) => {
+                    logger.error('WebSocket proxy error', {
+                        error: err.message,
+                        code: err.code,
+                        projectName
+                    });
+                    if (socket && !socket.destroyed) {
+                        socket.destroy();
+                    }
+                });
+
+                // Handle proxy open
+                wsProxy.on('open', (proxySocket) => {
+                    logger.info('WebSocket proxy connection opened', { projectName });
+                });
+
+                // Handle proxy close
+                wsProxy.on('close', (res, socket, head) => {
+                    logger.info('WebSocket proxy connection closed', { projectName });
+                });
+
+                // Keep socket alive
+                socket.setTimeout(0);
+                socket.setNoDelay(true);
+                socket.setKeepAlive(true, 10000);
+
+                // Proxy the WebSocket request
+                wsProxy.ws(req, socket, head);
             } catch (error) {
                 logger.error('WebSocket proxy setup error', { error: error.message, projectName });
-                socket.destroy();
+                if (socket && !socket.destroyed) {
+                    socket.destroy();
+                }
             }
         });
     } catch (error) {
