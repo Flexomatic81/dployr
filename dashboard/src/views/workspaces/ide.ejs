@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="<%= currentLanguage %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDE - <%= workspace.project_name %> | dployr</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        #header {
+            height: 50px;
+            background: #1e1e1e;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid #333;
+        }
+        #header h1 {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+        }
+        #header .actions {
+            display: flex;
+            gap: 10px;
+        }
+        #header button {
+            background: #0e639c;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        #header button:hover {
+            background: #1177bb;
+        }
+        #header .close-btn {
+            background: #d13438;
+        }
+        #header .close-btn:hover {
+            background: #e13438;
+        }
+        #workspace-frame {
+            width: 100%;
+            height: calc(100% - 50px);
+            border: none;
+            display: block;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0e639c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>
+            <span style="color: #0e639c;">●</span>
+            <%= workspace.project_name %> - Cloud IDE
+        </h1>
+        <div class="actions">
+            <button onclick="syncToProject()">
+                ↑ <%= t('workspaces:actions.syncToProject') %>
+            </button>
+            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>'">
+                ⚙ <%= t('workspaces:actions.settings') %>
+            </button>
+            <button class="close-btn" onclick="closeIDE()">
+                × <%= t('common:actions.close') %>
+            </button>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading IDE...</p>
+    </div>
+
+    <iframe
+        id="workspace-frame"
+        src="http://localhost:<%= workspace.assigned_port %>"
+        style="display: none;"
+        onload="hideLoading()"
+    ></iframe>
+
+    <script>
+        let activityInterval;
+
+        // Hide loading spinner when iframe loads
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('workspace-frame').style.display = 'block';
+        }
+
+        // Send activity heartbeat every 30 seconds
+        async function sendActivity() {
+            try {
+                await fetch('/workspaces/<%= workspace.project_name %>/activity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': '<%= csrfToken %>'
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to send activity:', error);
+            }
+        }
+
+        // Start activity tracking
+        activityInterval = setInterval(sendActivity, 30000);
+
+        // Send activity on load
+        sendActivity();
+
+        // Sync to project
+        async function syncToProject() {
+            if (!confirm('<%= t("common:confirm.action") %>')) return;
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⟳ Syncing...';
+
+            try {
+                const response = await fetch('/workspaces/<%= workspace.project_name %>/sync/to-project', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': '<%= csrfToken %>'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message || 'Sync complete');
+                } else {
+                    alert(data.error || 'Sync failed');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '↑ <%= t("workspaces:actions.syncToProject") %>';
+            }
+        }
+
+        // Close IDE
+        function closeIDE() {
+            window.close();
+            // If window.close() fails (opened by user, not script)
+            setTimeout(() => {
+                window.location.href = '/workspaces/<%= workspace.project_name %>';
+            }, 100);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            clearInterval(activityInterval);
+        });
+    </script>
+</body>
+</html>

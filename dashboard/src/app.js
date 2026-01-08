@@ -14,10 +14,12 @@ const { csrfSynchronisedProtection, csrfTokenMiddleware, csrfErrorHandler } = re
 const { i18next, i18nMiddleware } = require('./config/i18n');
 
 const { initDatabase, getPool } = require('./config/database');
-const { setUserLocals } = require('./middleware/auth');
+const { setUserLocals, requireAuth } = require('./middleware/auth');
 const autoDeployService = require('./services/autodeploy');
 const proxyService = require('./services/proxy');
 const updateService = require('./services/update');
+const workspaceService = require('./services/workspace');
+const previewService = require('./services/preview');
 const { logger, requestLogger } = require('./config/logger');
 
 // Import routes
@@ -33,6 +35,8 @@ const proxyRoutes = require('./routes/proxy');
 const webhookRoutes = require('./routes/webhooks');
 const profileRoutes = require('./routes/profile');
 const backupRoutes = require('./routes/backups');
+const workspaceRoutes = require('./routes/workspaces');
+const apiKeyRoutes = require('./routes/api-keys');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,7 +54,8 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
+            connectSrc: ["'self'", "ws:", "wss:", "https://cdn.jsdelivr.net"],
+            frameSrc: ["'self'", "http://localhost:*", "https://localhost:*"],
             formAction: ["'self'"],
             frameAncestors: ["'self'"],
             objectSrc: ["'none'"],
@@ -86,6 +91,15 @@ const webhookLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 30, // 30 requests per minute per IP
     message: { error: 'Too many webhook requests. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Security: Workspace operations rate limiting
+const workspaceLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 10, // 10 operations per minute
+    message: { error: 'Too many workspace operations. Please try again later.' },
     standardHeaders: true,
     legacyHeaders: false
 });
@@ -310,6 +324,15 @@ app.use('/proxy', proxyRoutes);
 app.use('/profile', profileRoutes);
 app.use('/backups', backupRoutes);
 
+// Workspace routes
+app.use('/workspaces', requireAuth, workspaceRoutes);
+app.use('/settings/api-keys', requireAuth, apiKeyRoutes);
+
+// Apply rate limiting to workspace actions
+app.use('/workspaces/:projectName/start', workspaceLimiter);
+app.use('/workspaces/:projectName/stop', workspaceLimiter);
+app.use('/workspaces/:projectName/sync/:direction', workspaceLimiter);
+
 // Home Route
 app.get('/', async (req, res) => {
     try {
@@ -438,6 +461,34 @@ async function start() {
 
             // Initialize update checker (daily auto-check)
             updateService.initUpdateChecker();
+
+            // Workspace: Cleanup orphaned containers on startup
+            try {
+                await workspaceService.cleanupOrphanedWorkspaces();
+                logger.info('Workspace orphan cleanup completed');
+            } catch (error) {
+                logger.warn('Workspace orphan cleanup failed', { error: error.message });
+            }
+
+            // Workspace: Start idle timeout cron (every 5 minutes)
+            setInterval(async () => {
+                try {
+                    await workspaceService.checkIdleWorkspaces();
+                } catch (error) {
+                    logger.warn('Workspace idle check failed', { error: error.message });
+                }
+            }, 5 * 60 * 1000);
+            logger.info('Workspace idle timeout cron started');
+
+            // Preview: Start cleanup cron (every 5 minutes)
+            setInterval(async () => {
+                try {
+                    await previewService.cleanupExpiredPreviews();
+                } catch (error) {
+                    logger.warn('Preview cleanup failed', { error: error.message });
+                }
+            }, 5 * 60 * 1000);
+            logger.info('Preview cleanup cron started');
         } else {
             logger.info('Setup not yet completed - setup wizard active');
         }

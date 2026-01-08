@@ -1,0 +1,159 @@
+<%- include('../partials/pageHeader', {
+    title: t('workspaces:settings.apiKey'),
+    titleIcon: 'bi-key',
+    breadcrumbs: [
+        { label: t('common:nav.settings'), href: '/settings' },
+        { label: t('workspaces:settings.apiKey') }
+    ]
+}) %>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <!-- Anthropic API Key -->
+        <div class="card d-elevated mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-robot"></i>
+                    Anthropic API Key
+                </h5>
+                <% if (hasAnthropicKey) { %>
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle"></i>
+                        Configured
+                    </span>
+                <% } else { %>
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-x-circle"></i>
+                        Not configured
+                    </span>
+                <% } %>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <%= t('workspaces:settings.apiKeyHint') %>
+                </p>
+
+                <form action="/settings/api-keys/anthropic" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                    <div class="mb-3">
+                        <label for="anthropic_api_key" class="form-label">
+                            API Key
+                        </label>
+                        <input
+                            type="password"
+                            class="form-control font-monospace"
+                            id="anthropic_api_key"
+                            name="api_key"
+                            placeholder="sk-ant-..."
+                            <% if (hasAnthropicKey) { %>value="************************"<% } %>
+                        >
+                        <div class="form-text">
+                            Get your API key from <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i>
+                            <%= t('common:actions.save') %>
+                        </button>
+
+                        <% if (hasAnthropicKey) { %>
+                            <button type="button" class="btn btn-outline-primary" onclick="testAnthropicKey()">
+                                <i class="bi bi-check-circle"></i>
+                                Test Key
+                            </button>
+
+                            <button type="button" class="btn btn-outline-danger ms-auto" onclick="deleteAnthropicKey()">
+                                <i class="bi bi-trash"></i>
+                                <%= t('common:actions.delete') %>
+                            </button>
+                        <% } %>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- OpenAI API Key (Future) -->
+        <div class="card d-elevated mb-4 opacity-50">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-robot"></i>
+                    OpenAI API Key
+                </h5>
+                <span class="badge bg-secondary">
+                    Coming Soon
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-0">
+                    OpenAI integration will be available in a future update.
+                </p>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Security Note:</strong>
+            Your API keys are encrypted using AES-256-GCM before being stored in the database.
+            They are only decrypted in memory when starting a workspace and are never written to disk inside the workspace container.
+        </div>
+    </div>
+</div>
+
+<script>
+async function testAnthropicKey() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
+
+    try {
+        const response = await fetch('/settings/api-keys/anthropic/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('✓ ' + (data.message || 'API key is valid'));
+        } else {
+            alert('✗ ' + (data.error || 'API key test failed'));
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Test Key';
+    }
+}
+
+async function deleteAnthropicKey() {
+    if (!confirm('<%= t("common:confirm.delete") %>')) return;
+
+    try {
+        const response = await fetch('/settings/api-keys/anthropic', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to delete API key');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+</script>

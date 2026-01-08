@@ -12,7 +12,7 @@ i18next
         supportedLngs: ['de', 'en'],
         preload: ['de', 'en'],
         defaultNS: 'common',
-        ns: ['common', 'projects', 'databases', 'admin', 'auth', 'help', 'errors', 'setup', 'proxy', 'profile', 'backups'],
+        ns: ['common', 'projects', 'databases', 'admin', 'auth', 'help', 'errors', 'setup', 'proxy', 'profile', 'backups', 'workspaces'],
         backend: {
             loadPath: path.join(__dirname, '../locales/{{lng}}/{{ns}}.json')
         },

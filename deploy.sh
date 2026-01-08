@@ -142,6 +142,16 @@ do_deploy() {
     # Build dashboard with version info (env vars are read by docker-compose.yml)
     docker compose build --no-cache dashboard
 
+    # Build workspace image if Dockerfile exists (for Workspaces feature)
+    if [ -f "docker/workspace/Dockerfile" ]; then
+        if [ "$JSON_OUTPUT" = true ]; then
+            echo "{\"status\":\"building\",\"step\":\"workspace-image\",\"version\":\"$GIT_HASH\"}"
+        else
+            echo "Building workspace image..."
+        fi
+        docker build -t dployr-workspace:latest ./docker/workspace
+    fi
+
     if [ "$JSON_OUTPUT" = true ]; then
         echo "{\"status\":\"restarting\",\"step\":\"restart\"}"
     else

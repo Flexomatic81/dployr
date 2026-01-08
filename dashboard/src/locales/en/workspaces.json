@@ -1,0 +1,116 @@
+{
+    "nav": "Workspaces",
+    "title": "Development Environments",
+    "subtitle": "Cloud IDE for your projects",
+    "create": {
+        "title": "Create Workspace",
+        "button": "Create Workspace",
+        "description": "Create a development environment with VS Code in your browser"
+    },
+    "status": {
+        "stopped": "Stopped",
+        "starting": "Starting...",
+        "running": "Running",
+        "stopping": "Stopping...",
+        "error": "Error"
+    },
+    "actions": {
+        "start": "Start",
+        "stop": "Stop",
+        "openIDE": "Open IDE",
+        "syncToProject": "Sync to Project",
+        "syncFromProject": "Sync from Project",
+        "delete": "Delete",
+        "settings": "Settings"
+    },
+    "preview": {
+        "title": "Preview Environments",
+        "subtitle": "Temporary deployments for testing",
+        "create": "Create Preview",
+        "created": "Preview created successfully",
+        "deleted": "Preview deleted",
+        "extended": "Preview lifetime extended",
+        "expires": "Expires",
+        "extend": "Extend",
+        "copyUrl": "Copy URL",
+        "delete": "Delete",
+        "noPreviews": "No preview environments yet",
+        "createFirst": "Create a temporary deployment environment",
+        "lifetime": "Lifetime",
+        "password": "Password (optional)",
+        "passwordHint": "Protect your preview with a password",
+        "createFailed": "Failed to create preview",
+        "deleteFailed": "Failed to delete preview",
+        "extendFailed": "Failed to extend lifetime",
+        "loadFailed": "Failed to load previews"
+    },
+    "settings": {
+        "apiKey": "Claude API Key",
+        "apiKeyHint": "Your Anthropic API key for Claude Code",
+        "resourceLimits": "Resource Limits",
+        "cpu": "CPU",
+        "ram": "RAM",
+        "disk": "Disk",
+        "idleTimeout": "Idle Timeout (minutes)"
+    },
+    "info": {
+        "noWorkspaces": "You don't have any workspaces yet",
+        "createFirst": "Create a workspace for one of your projects",
+        "runningFor": "Running since",
+        "lastActivity": "Last activity",
+        "port": "Port"
+    },
+    "warnings": {
+        "concurrentAccess": "Warning: Someone else might be using this workspace right now",
+        "sharedVolume": "Workspace and project share the same files"
+    },
+    "errors": {
+        "notFound": "Workspace not found",
+        "alreadyExists": "Workspace already exists for this project",
+        "maxReached": "Maximum number of workspaces reached",
+        "noApiKey": "No API key configured",
+        "loadError": "Failed to load workspaces",
+        "createFailed": "Failed to create workspace",
+        "startFailed": "Failed to start workspace",
+        "stopFailed": "Failed to stop workspace",
+        "deleteFailed": "Failed to delete workspace",
+        "syncFailed": "Synchronization failed",
+        "notRunning": "Workspace is not running",
+        "ideFailed": "Failed to open IDE",
+        "updateFailed": "Failed to update settings",
+        "noPermission": "No permission for this workspace",
+        "featureDisabled": "Workspaces feature is disabled",
+        "apiKeyRequired": "API key required",
+        "invalidApiKey": "Invalid API key",
+        "apiKeySaveFailed": "Failed to save API key",
+        "apiKeyDeleteFailed": "Failed to delete API key",
+        "apiKeyTestFailed": "API key test failed",
+        "apiKeyInvalid": "API key is invalid or expired"
+    },
+    "messages": {
+        "created": "Workspace created successfully",
+        "started": "Workspace started",
+        "stopped": "Workspace stopped",
+        "deleted": "Workspace deleted",
+        "synced": "Synchronization complete",
+        "settingsUpdated": "Settings saved",
+        "apiKeySaved": "API key saved",
+        "apiKeyDeleted": "API key deleted",
+        "apiKeyValid": "API key is valid"
+    },
+    "help": "A cloud development environment with VS Code and Claude Code in the browser",
+    "noWorkspace": "No workspace for this project yet",
+    "runningSince": "Running since",
+    "resources": {
+        "cpu": "CPU",
+        "ram": "RAM",
+        "port": "Port"
+    },
+    "delete": {
+        "confirmTitle": "Delete workspace?",
+        "confirmText": "Do you really want to delete the workspace for <strong>{{project}}</strong>?",
+        "warning1": "The container will be stopped and deleted",
+        "warning2": "All unsynchronized changes in the workspace will be lost",
+        "warning3": "Project files remain unchanged"
+    }
+}

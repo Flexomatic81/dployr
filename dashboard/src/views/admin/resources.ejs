@@ -1,0 +1,376 @@
+<!-- Page Header -->
+<div class="d-page-header">
+    <div class="d-page-header-left">
+        <a href="/admin" class="btn btn-sm btn-subtle mb-2">
+            <i class="bi bi-arrow-left"></i> <%= t('common:nav.admin') %>
+        </a>
+        <h1 class="d-page-title">
+            <i class="bi bi-cpu"></i>
+            <%= t('admin:resources.title') %>
+        </h1>
+        <p class="text-muted"><%= t('admin:resources.subtitle') %></p>
+    </div>
+    <div class="d-page-header-actions">
+        <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.refresh') %>
+        </button>
+    </div>
+</div>
+
+<!-- Resource Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card d-elevated h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-primary mb-2">
+                    <i class="bi bi-code-square"></i>
+                </div>
+                <h3 class="mb-1"><%= stats.totalWorkspaces %></h3>
+                <p class="text-muted mb-0"><%= t('admin:resources.totalWorkspaces') %></p>
+                <small class="text-success">
+                    <i class="bi bi-circle-fill"></i> <%= stats.runningWorkspaces %> <%= t('common:status.active') %>
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card d-elevated h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-info mb-2">
+                    <i class="bi bi-eye"></i>
+                </div>
+                <h3 class="mb-1"><%= stats.totalPreviews %></h3>
+                <p class="text-muted mb-0"><%= t('admin:resources.totalPreviews') %></p>
+                <small class="text-warning">
+                    <i class="bi bi-clock"></i> <%= stats.expiringPreviews %> <%= t('admin:resources.expiringSoon') %>
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card d-elevated h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-success mb-2">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h3 class="mb-1"><%= stats.activeUsers %></h3>
+                <p class="text-muted mb-0"><%= t('admin:resources.activeUsers') %></p>
+                <small class="text-muted">
+                    <%= t('admin:resources.withWorkspaces') %>
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card d-elevated h-100">
+            <div class="card-body text-center">
+                <div class="fs-1 text-danger mb-2">
+                    <i class="bi bi-hdd"></i>
+                </div>
+                <h3 class="mb-1"><%= stats.allocatedPorts %></h3>
+                <p class="text-muted mb-0"><%= t('admin:resources.allocatedPorts') %></p>
+                <small class="text-muted">
+                    <%= portRange.start %> - <%= portRange.end %>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Global Resource Limits -->
+<div class="card d-elevated mb-4">
+    <div class="card-header d-collapsible-header collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#collapseLimits" aria-expanded="false">
+        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-sliders"></i> <%= t('admin:resources.globalLimits') %></span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </h5>
+    </div>
+    <div class="collapse" id="collapseLimits">
+        <div class="card-body">
+            <form action="/admin/resources/limits" method="POST">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label"><%= t('admin:resources.maxWorkspacesPerUser') %></label>
+                        <input type="number" class="form-control" name="max_workspaces"
+                               value="<%= globalLimits.max_workspaces %>" min="1" max="10">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><%= t('admin:resources.defaultCpu') %></label>
+                        <select class="form-select" name="default_cpu">
+                            <option value="0.5" <%= globalLimits.default_cpu === '0.5' ? 'selected' : '' %>>0.5</option>
+                            <option value="1" <%= globalLimits.default_cpu === '1' ? 'selected' : '' %>>1</option>
+                            <option value="2" <%= globalLimits.default_cpu === '2' ? 'selected' : '' %>>2</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><%= t('admin:resources.defaultRam') %></label>
+                        <select class="form-select" name="default_ram">
+                            <option value="512m" <%= globalLimits.default_ram === '512m' ? 'selected' : '' %>>512 MB</option>
+                            <option value="1g" <%= globalLimits.default_ram === '1g' ? 'selected' : '' %>>1 GB</option>
+                            <option value="2g" <%= globalLimits.default_ram === '2g' ? 'selected' : '' %>>2 GB</option>
+                            <option value="4g" <%= globalLimits.default_ram === '4g' ? 'selected' : '' %>>4 GB</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><%= t('admin:resources.defaultIdleTimeout') %></label>
+                        <input type="number" class="form-control" name="default_idle_timeout"
+                               value="<%= globalLimits.default_idle_timeout %>" min="5" max="480">
+                        <small class="text-muted"><%= t('admin:resources.minutes') %></small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><%= t('admin:resources.maxPreviewsPerWorkspace') %></label>
+                        <input type="number" class="form-control" name="max_previews_per_workspace"
+                               value="<%= globalLimits.max_previews_per_workspace %>" min="1" max="10">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><%= t('admin:resources.defaultPreviewLifetime') %></label>
+                        <input type="number" class="form-control" name="default_preview_lifetime_hours"
+                               value="<%= globalLimits.default_preview_lifetime_hours %>" min="1" max="168">
+                        <small class="text-muted"><%= t('admin:resources.hours') %></small>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> <%= t('common:buttons.save') %>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Active Workspaces -->
+<div class="card d-elevated mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-code-square"></i> <%= t('admin:resources.activeWorkspaces') %>
+            <span class="badge bg-success-subtle text-success ms-2"><%= workspaces.length %></span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (workspaces.length === 0) { %>
+            <%- include('../components/emptyState', {
+                icon: 'bi-code-square',
+                title: t('admin:resources.noActiveWorkspaces'),
+                description: t('admin:resources.noActiveWorkspacesHint'),
+                compact: true
+            }) %>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th><%= t('common:labels.user') %></th>
+                            <th><%= t('common:labels.project') %></th>
+                            <th><%= t('common:labels.status') %></th>
+                            <th><%= t('admin:resources.resources') %></th>
+                            <th><%= t('admin:resources.port') %></th>
+                            <th><%= t('admin:resources.started') %></th>
+                            <th><%= t('admin:resources.lastActivity') %></th>
+                            <th class="text-end"><%= t('common:labels.actions') %></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% workspaces.forEach(ws => { %>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-person"></i>
+                                    <strong><%= ws.username %></strong>
+                                </td>
+                                <td>
+                                    <a href="/projects/<%= ws.project_name %>" class="text-decoration-none">
+                                        <%= ws.project_name %>
+                                    </a>
+                                </td>
+                                <td>
+                                    <% if (ws.status === 'running') { %>
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-circle-fill"></i> <%= t('common:status.running') %>
+                                        </span>
+                                    <% } else if (ws.status === 'starting') { %>
+                                        <span class="badge bg-info-subtle text-info">
+                                            <i class="bi bi-hourglass-split"></i> <%= t('workspaces:status.starting') %>
+                                        </span>
+                                    <% } else if (ws.status === 'stopping') { %>
+                                        <span class="badge bg-warning-subtle text-warning">
+                                            <i class="bi bi-hourglass-split"></i> <%= t('workspaces:status.stopping') %>
+                                        </span>
+                                    <% } else if (ws.status === 'error') { %>
+                                        <span class="badge bg-danger-subtle text-danger">
+                                            <i class="bi bi-exclamation-triangle"></i> <%= t('workspaces:status.error') %>
+                                        </span>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary-subtle text-secondary">
+                                            <%= ws.status %>
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        CPU: <%= ws.cpu_limit %> | RAM: <%= ws.ram_limit %>
+                                    </small>
+                                </td>
+                                <td>
+                                    <% if (ws.assigned_port) { %>
+                                        <code><%= ws.assigned_port %></code>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (ws.started_at) { %>
+                                        <small><%= new Date(ws.started_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %></small>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (ws.last_activity) { %>
+                                        <small><%= new Date(ws.last_activity).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %></small>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td class="text-end">
+                                    <% if (ws.status === 'running') { %>
+                                        <form action="/admin/resources/workspaces/<%= ws.id %>/stop" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                    title="<%= t('common:buttons.stop') %>">
+                                                <i class="bi bi-stop-fill"></i>
+                                            </button>
+                                        </form>
+                                    <% } %>
+                                    <a href="/workspaces/<%= ws.project_name %>" class="btn btn-sm btn-outline-secondary"
+                                       title="<%= t('common:buttons.details') %>">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Active Previews -->
+<div class="card d-elevated mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-eye"></i> <%= t('admin:resources.activePreviews') %>
+            <span class="badge bg-info-subtle text-info ms-2"><%= previews.length %></span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (previews.length === 0) { %>
+            <%- include('../components/emptyState', {
+                icon: 'bi-eye',
+                title: t('admin:resources.noActivePreviews'),
+                description: t('admin:resources.noActivePreviewsHint'),
+                compact: true
+            }) %>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th><%= t('common:labels.user') %></th>
+                            <th><%= t('common:labels.project') %></th>
+                            <th><%= t('admin:resources.previewUrl') %></th>
+                            <th><%= t('admin:resources.created') %></th>
+                            <th><%= t('admin:resources.expires') %></th>
+                            <th><%= t('common:labels.status') %></th>
+                            <th class="text-end"><%= t('common:labels.actions') %></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% previews.forEach(preview => { %>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-person"></i>
+                                    <strong><%= preview.username %></strong>
+                                </td>
+                                <td><%= preview.project_name %></td>
+                                <td>
+                                    <% if (preview.preview_url) { %>
+                                        <a href="<%= preview.preview_url %>" target="_blank" class="text-decoration-none">
+                                            <small><%= preview.preview_hash.substring(0, 8) %>...</small>
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <small><%= new Date(preview.created_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %></small>
+                                </td>
+                                <td>
+                                    <% const expiresIn = Math.floor((new Date(preview.expires_at) - new Date()) / (1000 * 60 * 60)); %>
+                                    <% if (expiresIn < 0) { %>
+                                        <span class="badge bg-danger-subtle text-danger">
+                                            <%= t('admin:resources.expired') %>
+                                        </span>
+                                    <% } else if (expiresIn < 2) { %>
+                                        <span class="badge bg-warning-subtle text-warning">
+                                            <%= expiresIn %> <%= t('admin:resources.hoursLeft') %>
+                                        </span>
+                                    <% } else { %>
+                                        <small><%= expiresIn %> <%= t('admin:resources.hoursLeft') %></small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (preview.status === 'running') { %>
+                                        <span class="badge bg-success-subtle text-success">
+                                            <%= t('common:status.running') %>
+                                        </span>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary-subtle text-secondary">
+                                            <%= preview.status %>
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td class="text-end">
+                                    <form action="/admin/resources/previews/<%= preview.id %>/delete" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                title="<%= t('common:buttons.delete') %>"
+                                                data-confirm="<%= t('admin:resources.confirmDeletePreview') %>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirm dialogs
+    document.querySelectorAll('[data-confirm]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            if (!confirm(this.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Collapsible headers
+    document.querySelectorAll('.collapse').forEach(function(collapseEl) {
+        const card = collapseEl.closest('.card');
+        const header = card ? card.querySelector('.d-collapsible-header') : null;
+        if (header) {
+            collapseEl.addEventListener('show.bs.collapse', function() {
+                header.classList.remove('collapsed');
+            });
+            collapseEl.addEventListener('hide.bs.collapse', function() {
+                header.classList.add('collapsed');
+            });
+        }
+    });
+});
+</script>

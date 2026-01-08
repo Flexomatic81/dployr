@@ -1,0 +1,232 @@
+<%- include('../partials/pageHeader', {
+    title: workspace.project_name,
+    titleIcon: 'bi-code-square',
+    breadcrumbs: [
+        { label: t('workspaces:title'), href: '/workspaces' },
+        { label: workspace.project_name }
+    ]
+}) %>
+
+<div class="row">
+    <!-- Workspace Info -->
+    <div class="col-md-8">
+        <div class="card d-elevated mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    <%= t('common:labels.status') %>
+                </h5>
+                <% let statusBadge = 'secondary'; %>
+                <% if (workspace.status === 'running') statusBadge = 'success'; %>
+                <% if (workspace.status === 'starting') statusBadge = 'info'; %>
+                <% if (workspace.status === 'error') statusBadge = 'danger'; %>
+                <span class="badge bg-<%= statusBadge %> fs-6">
+                    <%= t('workspaces:status.' + workspace.status) %>
+                </span>
+            </div>
+            <div class="card-body">
+                <% if (workspace.error_message) { %>
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <%= workspace.error_message %>
+                    </div>
+                <% } %>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4"><%= t('common:labels.project') %></dt>
+                    <dd class="col-sm-8">
+                        <a href="/projects/<%= workspace.project_name %>">
+                            <%= workspace.project_name %>
+                        </a>
+                    </dd>
+
+                    <% if (workspace.assigned_port) { %>
+                    <dt class="col-sm-4"><%= t('workspaces:info.port') %></dt>
+                    <dd class="col-sm-8"><code><%= workspace.assigned_port %></code></dd>
+                    <% } %>
+
+                    <% if (workspace.started_at) { %>
+                    <dt class="col-sm-4"><%= t('workspaces:info.runningFor') %></dt>
+                    <dd class="col-sm-8">
+                        <%= new Date(workspace.started_at).toLocaleString(currentLanguage) %>
+                    </dd>
+                    <% } %>
+
+                    <% if (workspace.last_activity) { %>
+                    <dt class="col-sm-4"><%= t('workspaces:info.lastActivity') %></dt>
+                    <dd class="col-sm-8">
+                        <%= new Date(workspace.last_activity).toLocaleString(currentLanguage) %>
+                    </dd>
+                    <% } %>
+
+                    <dt class="col-sm-4"><%= t('common:labels.created') %></dt>
+                    <dd class="col-sm-8">
+                        <%= new Date(workspace.created_at).toLocaleString(currentLanguage) %>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card d-elevated">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning"></i>
+                    <%= t('common:labels.actions') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <% if (workspace.status === 'stopped') { %>
+                        <button class="btn btn-success" onclick="startWorkspace()">
+                            <i class="bi bi-play-fill"></i>
+                            <%= t('workspaces:actions.start') %>
+                        </button>
+                    <% } else if (workspace.status === 'running') { %>
+                        <a href="/workspaces/<%= workspace.project_name %>/ide"
+                           class="btn btn-primary" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            <%= t('workspaces:actions.openIDE') %>
+                        </a>
+                        <button class="btn btn-warning" onclick="stopWorkspace()">
+                            <i class="bi bi-stop-fill"></i>
+                            <%= t('workspaces:actions.stop') %>
+                        </button>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Resource Limits -->
+        <div class="card d-elevated mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-speedometer"></i>
+                    <%= t('workspaces:settings.resourceLimits') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-6"><%= t('workspaces:settings.cpu') %></dt>
+                    <dd class="col-6"><code><%= workspace.cpu_limit %></code></dd>
+
+                    <dt class="col-6"><%= t('workspaces:settings.ram') %></dt>
+                    <dd class="col-6"><code><%= workspace.ram_limit %></code></dd>
+
+                    <dt class="col-6"><%= t('workspaces:settings.disk') %></dt>
+                    <dd class="col-6"><code><%= workspace.disk_limit %></code></dd>
+
+                    <dt class="col-6"><%= t('workspaces:settings.idleTimeout') %></dt>
+                    <dd class="col-6"><%= workspace.idle_timeout_minutes %> min</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card d-elevated border-danger">
+            <div class="card-header bg-danger-subtle">
+                <h5 class="mb-0 text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <%= t('common:labels.dangerZone') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-danger w-100" onclick="deleteWorkspace()">
+                    <i class="bi bi-trash"></i>
+                    <%= t('workspaces:actions.delete') %>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function startWorkspace() {
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
+
+    try {
+        const response = await fetch('/workspaces/<%= workspace.project_name %>/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to start workspace');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-play-fill"></i> <%= t("workspaces:actions.start") %>';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-play-fill"></i> <%= t("workspaces:actions.start") %>';
+    }
+}
+
+async function stopWorkspace() {
+    if (!confirm('<%= t("common:confirm.action") %>')) return;
+
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Stopping...';
+
+    try {
+        const response = await fetch('/workspaces/<%= workspace.project_name %>/stop', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to stop workspace');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-stop-fill"></i> <%= t("workspaces:actions.stop") %>';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stop-fill"></i> <%= t("workspaces:actions.stop") %>';
+    }
+}
+
+async function deleteWorkspace() {
+    if (!confirm('<%= t("common:confirm.delete") %>')) return;
+
+    try {
+        const response = await fetch('/workspaces/<%= workspace.project_name %>', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = '/workspaces';
+        } else {
+            alert(data.error || 'Failed to delete workspace');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+</script>

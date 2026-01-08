@@ -187,6 +187,176 @@
     </div>
 </div>
 
+<!-- Development Workspace (only for manage permission or higher) -->
+<% if (canManage) { %>
+<div class="card d-elevated mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-code-square"></i> <%= t('workspaces:title') %>
+            <%- include('../partials/help-icon', { text: t('workspaces:help') }) %>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (workspace) { %>
+            <!-- Workspace exists -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <% if (workspace.status === 'running') { %>
+                        <span class="badge bg-success-subtle text-success">
+                            <i class="bi bi-circle-fill"></i> <%= t('workspaces:status.running') %>
+                        </span>
+                        <small class="text-muted ms-2">
+                            <%= t('workspaces:runningSince') %>: <%= new Date(workspace.started_at).toLocaleString(currentLanguage === 'de' ? 'de-DE' : 'en-US') %>
+                        </small>
+                    <% } else if (workspace.status === 'starting') { %>
+                        <span class="badge bg-info-subtle text-info">
+                            <i class="bi bi-hourglass-split"></i> <%= t('workspaces:status.starting') %>
+                        </span>
+                    <% } else if (workspace.status === 'stopping') { %>
+                        <span class="badge bg-warning-subtle text-warning">
+                            <i class="bi bi-hourglass-split"></i> <%= t('workspaces:status.stopping') %>
+                        </span>
+                    <% } else if (workspace.status === 'error') { %>
+                        <span class="badge bg-danger-subtle text-danger">
+                            <i class="bi bi-exclamation-triangle"></i> <%= t('workspaces:status.error') %>
+                        </span>
+                        <% if (workspace.error_message) { %>
+                            <small class="text-danger ms-2"><%= workspace.error_message %></small>
+                        <% } %>
+                    <% } else { %>
+                        <span class="badge bg-secondary-subtle text-secondary">
+                            <i class="bi bi-stop-circle"></i> <%= t('workspaces:status.stopped') %>
+                        </span>
+                    <% } %>
+                </div>
+                <div class="btn-group">
+                    <% if (workspace.status === 'running') { %>
+                        <a href="/workspaces/<%= project.name %>/ide" class="btn btn-primary" target="_blank" title="<%= t('workspaces:actions.openIDE') %>">
+                            <i class="bi bi-box-arrow-up-right"></i> <%= t('workspaces:actions.openIDE') %>
+                        </a>
+                        <form action="/workspaces/<%= project.name %>/stop" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-warning" title="<%= t('workspaces:actions.stop') %>">
+                                <i class="bi bi-stop-fill"></i> <%= t('workspaces:actions.stop') %>
+                            </button>
+                        </form>
+                    <% } else if (workspace.status === 'stopped' || workspace.status === 'error') { %>
+                        <form action="/workspaces/<%= project.name %>/start" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-success" title="<%= t('workspaces:actions.start') %>">
+                                <i class="bi bi-play-fill"></i> <%= t('workspaces:actions.start') %>
+                            </button>
+                        </form>
+                    <% } %>
+                    <% if (workspace.status !== 'starting' && workspace.status !== 'stopping') { %>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="/workspaces/<%= project.name %>">
+                                        <i class="bi bi-gear me-2"></i> <%= t('workspaces:actions.settings') %>
+                                    </a>
+                                </li>
+                                <% if (workspace.status === 'running') { %>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="/workspaces/<%= project.name %>/sync/to-project" method="POST">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-arrow-down-circle me-2"></i> <%= t('workspaces:actions.syncToProject') %>
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form action="/workspaces/<%= project.name %>/sync/from-project" method="POST">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-arrow-up-circle me-2"></i> <%= t('workspaces:actions.syncFromProject') %>
+                                        </button>
+                                    </form>
+                                </li>
+                                <% } %>
+                                <% if (projectAccess.isOwner) { %>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteWorkspaceModal">
+                                        <i class="bi bi-trash me-2"></i> <%= t('workspaces:actions.delete') %>
+                                    </button>
+                                </li>
+                                <% } %>
+                            </ul>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Resource info -->
+            <% if (workspace.status === 'running') { %>
+            <div class="row text-center">
+                <div class="col-4">
+                    <small class="text-muted"><%= t('workspaces:resources.cpu') %></small>
+                    <div><strong><%= workspace.cpu_limit %></strong></div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted"><%= t('workspaces:resources.ram') %></small>
+                    <div><strong><%= workspace.ram_limit %></strong></div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted"><%= t('workspaces:resources.port') %></small>
+                    <div><strong><%= workspace.assigned_port %></strong></div>
+                </div>
+            </div>
+            <% } %>
+        <% } else { %>
+            <!-- No workspace -->
+            <div class="text-center py-3">
+                <i class="bi bi-code-square fs-1 text-muted"></i>
+                <p class="text-muted mt-2 mb-3"><%= t('workspaces:noWorkspace') %></p>
+                <form action="/workspaces/<%= project.name %>" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> <%= t('workspaces:create.button') %>
+                    </button>
+                </form>
+            </div>
+        <% } %>
+    </div>
+</div>
+<% } %>
+
+<!-- Delete Workspace Modal (only for owner with workspace) -->
+<% if (projectAccess.isOwner && workspace) { %>
+<div class="modal fade" id="deleteWorkspaceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> <%= t('workspaces:delete.confirmTitle') %>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><%- t('workspaces:delete.confirmText', { project: project.name }) %></p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong><%= t('common:confirm.deleteWarning') %></strong>
+                </div>
+                <ul>
+                    <li><%= t('workspaces:delete.warning1') %></li>
+                    <li><%= t('workspaces:delete.warning2') %></li>
+                    <li><strong><%= t('workspaces:delete.warning3') %></strong></li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common:buttons.cancel') %></button>
+                <form action="/workspaces/<%= project.name %>?_method=DELETE" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> <%= t('common:buttons.delete') %>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<% } %>
+
 <% if (gitStatus && gitStatus.connected) { %>
 <!-- Git - combined Git integration and Auto-Deploy -->
 <div class="card d-elevated mb-4">

@@ -1,0 +1,88 @@
+<%- include('../partials/pageHeader', {
+    title: t('workspaces:title'),
+    titleIcon: 'bi-code-square',
+    subtitle: t('workspaces:subtitle')
+}) %>
+
+<div class="d-table-shell">
+    <%- include('../components/tableShell', {
+        title: t('workspaces:title'),
+        titleIcon: 'bi-code-square'
+    }) %>
+    <div class="d-table-shell-body">
+        <% if (workspaces.length === 0) { %>
+            <%- include('../components/emptyState', {
+                title: t('workspaces:info.noWorkspaces'),
+                description: t('workspaces:info.createFirst'),
+                icon: 'bi-code-square',
+                primaryAction: { href: '/projects', label: t('common:nav.projects'), icon: 'bi-folder' }
+            }) %>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th><%= t('common:labels.project') %></th>
+                            <th><%= t('common:labels.status') %></th>
+                            <th><%= t('workspaces:info.runningFor') %></th>
+                            <th><%= t('workspaces:info.lastActivity') %></th>
+                            <th class="text-end"><%= t('common:labels.actions') %></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% workspaces.forEach(workspace => { %>
+                            <tr>
+                                <td>
+                                    <a href="/workspaces/<%= workspace.project_name %>" class="text-decoration-none">
+                                        <i class="bi bi-code-square text-primary"></i>
+                                        <strong><%= workspace.project_name %></strong>
+                                    </a>
+                                </td>
+                                <td>
+                                    <% let statusBadge = 'secondary'; %>
+                                    <% if (workspace.status === 'running') statusBadge = 'success'; %>
+                                    <% if (workspace.status === 'starting') statusBadge = 'info'; %>
+                                    <% if (workspace.status === 'error') statusBadge = 'danger'; %>
+                                    <span class="badge bg-<%= statusBadge %>-subtle text-<%= statusBadge %>">
+                                        <%= t('workspaces:status.' + workspace.status) %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (workspace.started_at) { %>
+                                        <small class="text-muted">
+                                            <%= new Date(workspace.started_at).toLocaleString(currentLanguage) %>
+                                        </small>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (workspace.last_activity) { %>
+                                        <small class="text-muted">
+                                            <%= new Date(workspace.last_activity).toLocaleString(currentLanguage) %>
+                                        </small>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td class="text-end">
+                                    <% if (workspace.status === 'running') { %>
+                                        <a href="/workspaces/<%= workspace.project_name %>/ide"
+                                           class="btn btn-sm btn-primary" target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                            <%= t('workspaces:actions.openIDE') %>
+                                        </a>
+                                    <% } %>
+                                    <a href="/workspaces/<%= workspace.project_name %>"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-gear"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>

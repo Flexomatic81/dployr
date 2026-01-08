@@ -1,0 +1,116 @@
+{
+    "nav": "Workspaces",
+    "title": "Entwicklungsumgebungen",
+    "subtitle": "Cloud IDE für deine Projekte",
+    "create": {
+        "title": "Workspace erstellen",
+        "button": "Workspace erstellen",
+        "description": "Erstelle eine Entwicklungsumgebung mit VS Code im Browser"
+    },
+    "status": {
+        "stopped": "Gestoppt",
+        "starting": "Startet...",
+        "running": "Läuft",
+        "stopping": "Stoppt...",
+        "error": "Fehler"
+    },
+    "actions": {
+        "start": "Starten",
+        "stop": "Stoppen",
+        "openIDE": "IDE öffnen",
+        "syncToProject": "Zum Projekt synchronisieren",
+        "syncFromProject": "Vom Projekt aktualisieren",
+        "delete": "Löschen",
+        "settings": "Einstellungen"
+    },
+    "preview": {
+        "title": "Preview Environments",
+        "subtitle": "Temporäre Deployments für Tests",
+        "create": "Preview erstellen",
+        "created": "Preview erfolgreich erstellt",
+        "deleted": "Preview gelöscht",
+        "extended": "Preview-Laufzeit verlängert",
+        "expires": "Läuft ab",
+        "extend": "Verlängern",
+        "copyUrl": "URL kopieren",
+        "delete": "Löschen",
+        "noPreviews": "Noch keine Preview Environments vorhanden",
+        "createFirst": "Erstelle eine temporäre Deployment-Umgebung",
+        "lifetime": "Lebensdauer",
+        "password": "Passwort (optional)",
+        "passwordHint": "Schütze dein Preview mit einem Passwort",
+        "createFailed": "Preview konnte nicht erstellt werden",
+        "deleteFailed": "Preview konnte nicht gelöscht werden",
+        "extendFailed": "Laufzeit konnte nicht verlängert werden",
+        "loadFailed": "Previews konnten nicht geladen werden"
+    },
+    "settings": {
+        "apiKey": "Claude API Key",
+        "apiKeyHint": "Dein Anthropic API Key für Claude Code",
+        "resourceLimits": "Ressourcen-Limits",
+        "cpu": "CPU",
+        "ram": "RAM",
+        "disk": "Festplatte",
+        "idleTimeout": "Idle Timeout (Minuten)"
+    },
+    "info": {
+        "noWorkspaces": "Du hast noch keine Workspaces",
+        "createFirst": "Erstelle einen Workspace für eines deiner Projekte",
+        "runningFor": "Läuft seit",
+        "lastActivity": "Letzte Aktivität",
+        "port": "Port"
+    },
+    "warnings": {
+        "concurrentAccess": "Achtung: Eine andere Person könnte diesen Workspace gerade nutzen",
+        "sharedVolume": "Workspace und Projekt teilen sich die gleichen Dateien"
+    },
+    "errors": {
+        "notFound": "Workspace nicht gefunden",
+        "alreadyExists": "Workspace existiert bereits für dieses Projekt",
+        "maxReached": "Maximale Anzahl Workspaces erreicht",
+        "noApiKey": "Kein API Key konfiguriert",
+        "loadError": "Fehler beim Laden der Workspaces",
+        "createFailed": "Workspace konnte nicht erstellt werden",
+        "startFailed": "Workspace konnte nicht gestartet werden",
+        "stopFailed": "Workspace konnte nicht gestoppt werden",
+        "deleteFailed": "Workspace konnte nicht gelöscht werden",
+        "syncFailed": "Synchronisierung fehlgeschlagen",
+        "notRunning": "Workspace läuft nicht",
+        "ideFailed": "IDE konnte nicht geöffnet werden",
+        "updateFailed": "Einstellungen konnten nicht gespeichert werden",
+        "noPermission": "Keine Berechtigung für diesen Workspace",
+        "featureDisabled": "Workspaces-Feature ist deaktiviert",
+        "apiKeyRequired": "API Key erforderlich",
+        "invalidApiKey": "Ungültiger API Key",
+        "apiKeySaveFailed": "API Key konnte nicht gespeichert werden",
+        "apiKeyDeleteFailed": "API Key konnte nicht gelöscht werden",
+        "apiKeyTestFailed": "API Key Test fehlgeschlagen",
+        "apiKeyInvalid": "API Key ist ungültig oder abgelaufen"
+    },
+    "messages": {
+        "created": "Workspace erfolgreich erstellt",
+        "started": "Workspace gestartet",
+        "stopped": "Workspace gestoppt",
+        "deleted": "Workspace gelöscht",
+        "synced": "Synchronisierung abgeschlossen",
+        "settingsUpdated": "Einstellungen gespeichert",
+        "apiKeySaved": "API Key gespeichert",
+        "apiKeyDeleted": "API Key gelöscht",
+        "apiKeyValid": "API Key ist gültig"
+    },
+    "help": "Eine Cloud-Entwicklungsumgebung mit VS Code und Claude Code im Browser",
+    "noWorkspace": "Noch kein Workspace für dieses Projekt vorhanden",
+    "runningSince": "Läuft seit",
+    "resources": {
+        "cpu": "CPU",
+        "ram": "RAM",
+        "port": "Port"
+    },
+    "delete": {
+        "confirmTitle": "Workspace löschen?",
+        "confirmText": "Möchtest du den Workspace für <strong>{{project}}</strong> wirklich löschen?",
+        "warning1": "Der Container wird gestoppt und gelöscht",
+        "warning2": "Alle nicht synchronisierten Änderungen im Workspace gehen verloren",
+        "warning3": "Die Projekt-Dateien bleiben unverändert"
+    }
+}

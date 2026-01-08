@@ -283,8 +283,205 @@ async function initDatabase() {
             )
         `);
 
+        // ============================================================
+        // WORKSPACES FEATURE TABLES
+        // ============================================================
+
+        // Workspaces table - stores workspace configuration and status
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS workspaces (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+
+                -- Relationships
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+
+                -- Container info
+                container_id VARCHAR(64) NULL,
+                container_name VARCHAR(100) NULL,
+
+                -- Status
+                status ENUM('stopped', 'starting', 'running', 'stopping', 'error')
+                    DEFAULT 'stopped',
+                error_message TEXT NULL,
+
+                -- Network
+                internal_port INT DEFAULT 8080,
+                assigned_port INT NULL,
+
+                -- Resource limits
+                cpu_limit VARCHAR(20) DEFAULT '1',
+                ram_limit VARCHAR(20) DEFAULT '2g',
+                disk_limit VARCHAR(20) DEFAULT '10g',
+
+                -- Timeouts
+                idle_timeout_minutes INT DEFAULT 30,
+                max_lifetime_hours INT DEFAULT 24,
+
+                -- Activity tracking
+                last_activity TIMESTAMP NULL,
+                last_accessed_by INT NULL,
+                started_at TIMESTAMP NULL,
+
+                -- Timestamps
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                -- Constraints
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                FOREIGN KEY (last_accessed_by) REFERENCES dashboard_users(id) ON DELETE SET NULL,
+                UNIQUE KEY unique_workspace (user_id, project_name),
+                INDEX idx_status (status),
+                INDEX idx_last_activity (last_activity)
+            )
+        `);
+
+        // Migration: Add code-server password columns to workspaces
+        try {
+            await connection.execute(`
+                ALTER TABLE workspaces
+                ADD COLUMN code_server_password_encrypted VARBINARY(512) NULL,
+                ADD COLUMN code_server_password_iv VARBINARY(16) NULL
+            `);
+            logger.info('Migration: Added code-server password columns to workspaces');
+        } catch (e) {
+            // Columns already exist - ignore
+            if (!e.message.includes('Duplicate column name')) {
+                logger.debug('Workspace password columns migration skipped or error:', e.message);
+            }
+        }
+
+        // User API keys table - encrypted storage of API keys
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS user_api_keys (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL UNIQUE,
+
+                -- Anthropic API key (encrypted)
+                anthropic_key_encrypted VARBINARY(512) NULL,
+                anthropic_key_iv VARBINARY(16) NULL,
+
+                -- Future providers
+                openai_key_encrypted VARBINARY(512) NULL,
+                openai_key_iv VARBINARY(16) NULL,
+
+                -- Timestamps
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE
+            )
+        `);
+
+        // Preview environments table - temporary deployment environments
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS preview_environments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+
+                -- Relationships
+                workspace_id INT NOT NULL,
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+
+                -- Identification
+                preview_hash VARCHAR(32) NOT NULL UNIQUE,
+                preview_url VARCHAR(255) NULL,
+
+                -- Container info
+                container_id VARCHAR(64) NULL,
+                container_name VARCHAR(100) NULL,
+                assigned_port INT NULL,
+
+                -- Status
+                status ENUM('creating', 'running', 'stopping', 'stopped', 'expired', 'error')
+                    DEFAULT 'creating',
+                error_message TEXT NULL,
+
+                -- Lifecycle
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                -- Optional password protection
+                password_hash VARCHAR(255) NULL,
+
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                INDEX idx_expires (expires_at),
+                INDEX idx_status (status)
+            )
+        `);
+
+        // Workspace activity log - audit trail for workspace actions
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS workspace_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+
+                -- Relationships
+                workspace_id INT NULL,
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+
+                -- Action
+                action ENUM(
+                    'create', 'start', 'stop', 'delete',
+                    'sync_to_project', 'sync_from_project',
+                    'preview_create', 'preview_delete',
+                    'timeout', 'error'
+                ) NOT NULL,
+
+                -- Details
+                details JSON NULL,
+
+                -- Timestamp
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE SET NULL,
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                INDEX idx_user_project (user_id, project_name),
+                INDEX idx_created (created_at)
+            )
+        `);
+
+        // Resource limits table - global and user-specific limits
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS resource_limits (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+
+                -- NULL = global defaults, otherwise user-specific
+                user_id INT NULL,
+
+                -- Workspace limits
+                max_workspaces INT DEFAULT 2,
+                default_cpu VARCHAR(20) DEFAULT '1',
+                default_ram VARCHAR(20) DEFAULT '2g',
+                default_disk VARCHAR(20) DEFAULT '10g',
+                default_idle_timeout INT DEFAULT 30,
+
+                -- Preview limits
+                max_previews_per_workspace INT DEFAULT 3,
+                default_preview_lifetime_hours INT DEFAULT 24,
+
+                -- Timestamps
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_user_limits (user_id)
+            )
+        `);
+
+        // Insert global defaults if not exists
+        try {
+            await connection.execute(`
+                INSERT INTO resource_limits (user_id) VALUES (NULL)
+            `);
+            logger.info('Migration: Created global resource limits');
+        } catch (e) {
+            // Global defaults already exist - ignore
+        }
+
         connection.release();
-        logger.info('Database schema initialized');
+        logger.info('Database schema initialized (including workspaces)');
     } catch (error) {
         logger.error('Database initialization failed', { error: error.message });
         throw error;

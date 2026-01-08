@@ -15,6 +15,7 @@ const usersRouter = require('./users');
 const logsRouter = require('./logs');
 const settingsRouter = require('./settings');
 const updatesRouter = require('./updates');
+const resourcesRouter = require('./resources');
 
 // All admin routes require admin privileges
 router.use(requireAuth);
@@ -86,5 +87,6 @@ router.use('/users', usersRouter);
 router.use('/logs', logsRouter);
 router.use('/settings', settingsRouter);
 router.use('/updates', updatesRouter);
+router.use('/resources', resourcesRouter);
 
 module.exports = router;
