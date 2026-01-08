@@ -316,11 +316,17 @@ router.get('/:projectName/ide',
                 req.flash('warning', req.t('workspaces:warnings.concurrentAccess'));
             }
 
+            // Build IDE URL using request host (handles both localhost and production)
+            const protocol = req.protocol;
+            const hostname = req.hostname;
+            const ideUrl = `${protocol}://${hostname}:${req.workspace.assigned_port}`;
+
             res.render('workspaces/ide', {
                 title: `IDE - ${req.params.projectName}`,
                 workspace: req.workspace,
                 project: req.projectAccess.project,
-                user: req.session.user
+                user: req.session.user,
+                ideUrl
             });
         } catch (error) {
             logger.error('Failed to access IDE', { error: error.message });
