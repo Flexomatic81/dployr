@@ -77,7 +77,7 @@
         "syncFailed": "Synchronisierung fehlgeschlagen",
         "notRunning": "Workspace läuft nicht",
         "ideFailed": "IDE konnte nicht geöffnet werden",
-        "noWorkspaceHost": "WORKSPACE_HOST nicht konfiguriert. Bitte Server-IP in der Umgebung setzen.",
+        "noServerHost": "SERVER_IP nicht konfiguriert. Bitte Server-Adresse im dployr Setup konfigurieren.",
         "updateFailed": "Einstellungen konnten nicht gespeichert werden",
         "noPermission": "Keine Berechtigung für diesen Workspace",
         "featureDisabled": "Workspaces-Feature ist deaktiviert",
