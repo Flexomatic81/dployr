@@ -152,12 +152,14 @@
             terminal = new Terminal({
                 cursorBlink: true,
                 cursorStyle: 'block',
+                cursorInactiveStyle: 'outline',
                 fontSize: 14,
                 fontFamily: '"Cascadia Code", "Fira Code", Menlo, Monaco, "Courier New", monospace',
+                scrollback: 10000,
                 theme: {
                     background: '#1e1e1e',
                     foreground: '#d4d4d4',
-                    cursor: '#d4d4d4',
+                    cursor: '#ffffff',
                     cursorAccent: '#1e1e1e',
                     selectionBackground: '#264f78',
                     black: '#1e1e1e',
@@ -208,6 +210,11 @@
                 }
             });
 
+            // Ensure focus on click
+            document.getElementById('terminal-container').addEventListener('click', () => {
+                terminal.focus();
+            });
+
             // Connect to WebSocket
             connectWebSocket();
         }
@@ -233,9 +240,12 @@
                     switch (msg.type) {
                         case 'ready':
                             setStatus('connected');
-                            terminal.focus();
-                            // Send initial resize
-                            sendResize();
+                            // Ensure terminal is focused and cursor is visible
+                            setTimeout(() => {
+                                terminal.focus();
+                                fitAddon.fit();
+                                sendResize();
+                            }, 100);
                             break;
 
                         case 'output':
