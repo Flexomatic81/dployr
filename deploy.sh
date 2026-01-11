@@ -118,8 +118,10 @@ do_deploy() {
     fi
 
     # Git Pull from specified branch (including tags for version detection)
-    git fetch --tags origin "$BRANCH"
-    git pull origin "$BRANCH"
+    git fetch --tags origin "$BRANCH" 2>/dev/null || true
+
+    # Reset to remote branch to handle diverged histories
+    git reset --hard "origin/$BRANCH"
 
     # Re-exec with updated deploy.sh after git pull (to use newest version)
     # This ensures new build steps (like workspace image) are executed
