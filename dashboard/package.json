@@ -28,6 +28,8 @@
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.17.3",
     "helmet": "^8.1.0",
+    "http-proxy": "^1.18.1",
+    "http-proxy-middleware": "^3.0.3",
     "i18next": "^25.7.3",
     "i18next-fs-backend": "^2.6.1",
     "i18next-http-middleware": "^3.9.1",
@@ -37,10 +39,9 @@
     "mysql2": "^3.6.5",
     "nodemailer": "^7.0.12",
     "pg": "^8.11.3",
-    "http-proxy": "^1.18.1",
-    "http-proxy-middleware": "^3.0.3",
     "simple-git": "^3.30.0",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "jest": "^30.2.0"

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal - <%= workspace.project_name %> | dployr</title>
+    <!-- xterm.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
     <style>
         * {
             margin: 0;
@@ -32,6 +37,31 @@
             font-weight: 500;
             margin: 0;
         }
+        #header .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #header .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+        }
+        #header .status-dot.connected {
+            background: #4ec9b0;
+        }
+        #header .status-dot.connecting {
+            background: #dcdcaa;
+            animation: pulse 1s infinite;
+        }
+        #header .status-dot.error {
+            background: #f44747;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         #header .actions {
             display: flex;
             gap: 10px;
@@ -54,23 +84,47 @@
         #header .close-btn:hover {
             background: #e13438;
         }
-        #terminal-frame {
+        #terminal-container {
             width: 100%;
             height: calc(100% - 50px);
-            border: none;
-            display: block;
+            padding: 10px;
+            background: #1e1e1e;
+        }
+        #terminal {
+            width: 100%;
+            height: 100%;
+        }
+        .xterm {
+            height: 100%;
+        }
+        /* Custom xterm styles */
+        .xterm-viewport::-webkit-scrollbar {
+            width: 10px;
+        }
+        .xterm-viewport::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        .xterm-viewport::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 5px;
+        }
+        .xterm-viewport::-webkit-scrollbar-thumb:hover {
+            background: #4f4f4f;
         }
     </style>
 </head>
 <body>
     <div id="header">
-        <h1>
-            <span style="color: #4ec9b0;">$</span>
-            <%= workspace.project_name %> - Terminal
-        </h1>
+        <div class="status">
+            <span class="status-dot" id="statusDot"></span>
+            <h1>
+                <span style="color: #4ec9b0;">$</span>
+                <%= workspace.project_name %> - Terminal
+            </h1>
+        </div>
         <div class="actions">
             <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>/ide'">
-                <i class="bi bi-code-square"></i> <%= t('workspaces:actions.openIDE') %>
+                IDE
             </button>
             <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>'">
                 <%= t('workspaces:actions.settings') %>
@@ -81,15 +135,166 @@
         </div>
     </div>
 
-    <iframe
-        id="terminal-frame"
-        src="<%= terminalUrl %>"
-    ></iframe>
+    <div id="terminal-container">
+        <div id="terminal"></div>
+    </div>
 
     <script>
-        let activityInterval;
+        let socket = null;
+        let terminal = null;
+        let fitAddon = null;
+        let activityInterval = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
 
-        // Send activity heartbeat every 30 seconds
+        // Initialize terminal
+        function initTerminal() {
+            terminal = new Terminal({
+                cursorBlink: true,
+                cursorStyle: 'block',
+                fontSize: 14,
+                fontFamily: '"Cascadia Code", "Fira Code", Menlo, Monaco, "Courier New", monospace',
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    cursor: '#d4d4d4',
+                    cursorAccent: '#1e1e1e',
+                    selectionBackground: '#264f78',
+                    black: '#1e1e1e',
+                    red: '#f44747',
+                    green: '#4ec9b0',
+                    yellow: '#dcdcaa',
+                    blue: '#569cd6',
+                    magenta: '#c586c0',
+                    cyan: '#9cdcfe',
+                    white: '#d4d4d4',
+                    brightBlack: '#808080',
+                    brightRed: '#f44747',
+                    brightGreen: '#4ec9b0',
+                    brightYellow: '#dcdcaa',
+                    brightBlue: '#569cd6',
+                    brightMagenta: '#c586c0',
+                    brightCyan: '#9cdcfe',
+                    brightWhite: '#ffffff'
+                },
+                allowProposedApi: true
+            });
+
+            // Add fit addon for auto-sizing
+            fitAddon = new FitAddon.FitAddon();
+            terminal.loadAddon(fitAddon);
+
+            // Add web links addon for clickable URLs
+            const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+            terminal.loadAddon(webLinksAddon);
+
+            // Open terminal in container
+            const terminalContainer = document.getElementById('terminal');
+            terminal.open(terminalContainer);
+
+            // Fit to container
+            fitAddon.fit();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                fitAddon.fit();
+                sendResize();
+            });
+
+            // Handle terminal input
+            terminal.onData((data) => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'input', data: data }));
+                }
+            });
+
+            // Connect to WebSocket
+            connectWebSocket();
+        }
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            setStatus('connecting');
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/terminal-ws/<%= workspace.project_name %>`;
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log('Terminal WebSocket connected');
+                reconnectAttempts = 0;
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+
+                    switch (msg.type) {
+                        case 'ready':
+                            setStatus('connected');
+                            terminal.focus();
+                            // Send initial resize
+                            sendResize();
+                            break;
+
+                        case 'output':
+                            terminal.write(msg.data);
+                            break;
+
+                        case 'exit':
+                            setStatus('error');
+                            terminal.write('\r\n\x1b[31mTerminal session ended.\x1b[0m\r\n');
+                            break;
+
+                        case 'error':
+                            setStatus('error');
+                            terminal.write(`\r\n\x1b[31mError: ${msg.message}\x1b[0m\r\n`);
+                            break;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse message:', e);
+                }
+            };
+
+            socket.onclose = () => {
+                console.log('Terminal WebSocket closed');
+                setStatus('error');
+
+                // Try to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    terminal.write(`\r\n\x1b[33mConnection lost. Reconnecting (${reconnectAttempts}/${maxReconnectAttempts})...\x1b[0m\r\n`);
+                    setTimeout(connectWebSocket, 2000);
+                } else {
+                    terminal.write('\r\n\x1b[31mConnection lost. Please refresh the page.\x1b[0m\r\n');
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error('Terminal WebSocket error:', error);
+                setStatus('error');
+            };
+        }
+
+        // Send resize event
+        function sendResize() {
+            if (socket && socket.readyState === WebSocket.OPEN && terminal) {
+                socket.send(JSON.stringify({
+                    type: 'resize',
+                    cols: terminal.cols,
+                    rows: terminal.rows
+                }));
+            }
+        }
+
+        // Set connection status
+        function setStatus(status) {
+            const dot = document.getElementById('statusDot');
+            dot.className = 'status-dot ' + status;
+        }
+
+        // Send activity heartbeat
         async function sendActivity() {
             try {
                 await fetch('/workspaces/<%= workspace.project_name %>/activity', {
@@ -104,41 +309,35 @@
             }
         }
 
-        // Start activity tracking
-        activityInterval = setInterval(sendActivity, 30000);
-
-        // Send activity on load
-        sendActivity();
-
         // Close terminal
         function closeTerminal() {
+            if (socket) {
+                socket.close();
+            }
             window.close();
-            // If window.close() fails (opened by user, not script)
+            // If window.close() fails
             setTimeout(() => {
                 window.location.href = '/workspaces/<%= workspace.project_name %>';
             }, 100);
         }
 
-        // Auto-open terminal in VS Code when iframe loads
-        const frame = document.getElementById('terminal-frame');
-        frame.addEventListener('load', () => {
-            // After iframe loads, send keyboard shortcut to open terminal
-            // This uses postMessage to communicate with code-server
-            setTimeout(() => {
-                try {
-                    // Try to focus the iframe and send Ctrl+` to open terminal
-                    frame.focus();
-                    frame.contentWindow.focus();
-                } catch (e) {
-                    // Cross-origin restrictions may prevent this
-                    console.log('Could not auto-focus terminal');
-                }
-            }, 2000);
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initTerminal();
+
+            // Start activity tracking
+            activityInterval = setInterval(sendActivity, 30000);
+            sendActivity();
         });
 
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
-            clearInterval(activityInterval);
+            if (activityInterval) {
+                clearInterval(activityInterval);
+            }
+            if (socket) {
+                socket.close();
+            }
         });
     </script>
 </body>

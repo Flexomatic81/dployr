@@ -380,7 +380,7 @@ router.get('/:projectName/ide',
 );
 
 /**
- * GET /workspaces/:projectName/terminal - Terminal view
+ * GET /workspaces/:projectName/terminal - Terminal view (xterm.js + WebSocket)
  */
 router.get('/:projectName/terminal',
     getWorkspaceAccess(),
@@ -394,16 +394,12 @@ router.get('/:projectName/terminal',
             // Update last accessed
             await workspaceService.updateActivity(req.workspace.id, userId);
 
-            // Build Terminal URL - opens code-server with terminal focused
-            const terminalUrl = `/workspace-proxy/${req.params.projectName}/?folder=/workspace`;
-
             res.render('workspaces/terminal', {
                 layout: false,
                 title: `Terminal - ${req.params.projectName}`,
                 workspace: req.workspace,
                 project: req.projectAccess.project,
-                user: req.session.user,
-                terminalUrl
+                user: req.session.user
             });
         } catch (error) {
             logger.error('Failed to access Terminal', { error: error.message });

@@ -23,6 +23,8 @@ const updateService = require('./services/update');
 const workspaceService = require('./services/workspace');
 const previewService = require('./services/preview');
 const { logger, requestLogger } = require('./config/logger');
+const terminalService = require('./services/terminal');
+const WebSocket = require('ws');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -609,10 +611,140 @@ async function start() {
             }
         });
 
-        // Handle WebSocket upgrades for workspace proxy
+        // Create WebSocket server for terminal connections
+        const terminalWss = new WebSocket.Server({ noServer: true });
+
+        // Handle terminal WebSocket connections
+        terminalWss.on('connection', async (ws, req, containerId) => {
+            let session = null;
+
+            try {
+                // Create terminal session
+                const result = await terminalService.createTerminalSession(containerId, {
+                    cols: 80,
+                    rows: 24
+                });
+                session = result;
+
+                // Send data from container to client
+                session.stream.on('data', (data) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'output', data: data.toString('utf8') }));
+                    }
+                });
+
+                // Handle stream end
+                session.stream.on('end', () => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'exit' }));
+                        ws.close();
+                    }
+                });
+
+                // Handle stream errors
+                session.stream.on('error', (err) => {
+                    logger.error('Terminal stream error', { error: err.message });
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'error', message: err.message }));
+                        ws.close();
+                    }
+                });
+
+                // Send ready message
+                ws.send(JSON.stringify({ type: 'ready', sessionId: session.sessionId }));
+
+            } catch (error) {
+                logger.error('Failed to create terminal session', { error: error.message });
+                ws.send(JSON.stringify({ type: 'error', message: 'Failed to create terminal session' }));
+                ws.close();
+                return;
+            }
+
+            // Handle messages from client
+            ws.on('message', async (message) => {
+                try {
+                    const msg = JSON.parse(message.toString());
+
+                    switch (msg.type) {
+                        case 'input':
+                            // Send input to container
+                            if (session && session.stream && session.stream.writable) {
+                                session.stream.write(msg.data);
+                            }
+                            break;
+
+                        case 'resize':
+                            // Resize terminal
+                            if (session && msg.cols && msg.rows) {
+                                await terminalService.resizeTerminal(session.sessionId, msg.cols, msg.rows);
+                            }
+                            break;
+                    }
+                } catch (error) {
+                    logger.debug('Invalid terminal message', { error: error.message });
+                }
+            });
+
+            // Handle WebSocket close
+            ws.on('close', () => {
+                if (session) {
+                    terminalService.closeSession(session.sessionId);
+                }
+            });
+
+            // Handle WebSocket errors
+            ws.on('error', (err) => {
+                logger.debug('Terminal WebSocket error', { error: err.message });
+                if (session) {
+                    terminalService.closeSession(session.sessionId);
+                }
+            });
+        });
+
+        // Handle WebSocket upgrades for workspace proxy and terminal
         server.on('upgrade', async (req, socket, head) => {
             const url = req.url || '';
 
+            // Check for terminal WebSocket
+            const terminalMatch = url.match(/^\/terminal-ws\/([^/?]+)/);
+            if (terminalMatch) {
+                const projectName = terminalMatch[1];
+
+                // Require session cookie for authentication
+                const cookies = req.headers.cookie || '';
+                if (!cookies.includes('connect.sid')) {
+                    logger.warn('Terminal WebSocket rejected: no session', { projectName });
+                    socket.destroy();
+                    return;
+                }
+
+                try {
+                    const pool = getPool();
+                    const [rows] = await pool.query(
+                        'SELECT container_id, status FROM workspaces WHERE project_name = ?',
+                        [projectName]
+                    );
+
+                    if (!rows.length || rows[0].status !== 'running' || !rows[0].container_id) {
+                        logger.warn('Terminal WebSocket rejected: workspace not running', { projectName });
+                        socket.destroy();
+                        return;
+                    }
+
+                    const containerId = rows[0].container_id;
+
+                    // Upgrade to WebSocket and pass container ID
+                    terminalWss.handleUpgrade(req, socket, head, (ws) => {
+                        terminalWss.emit('connection', ws, req, containerId);
+                    });
+                } catch (error) {
+                    logger.error('Terminal WebSocket setup error', { error: error.message });
+                    socket.destroy();
+                }
+                return;
+            }
+
+            // Check for workspace proxy WebSocket
             const match = url.match(/^\/workspace-proxy\/([^/?]+)/);
             if (!match) {
                 socket.destroy();
