@@ -71,6 +71,7 @@ Deploy and manage isolated web projects on a shared Linux server through an intu
 | Feature | Description |
 |---------|-------------|
 | 💻 **Cloud IDE (Workspaces)** | VS Code in the browser with Claude Code AI integration |
+| 🖥️ **Terminal Access** | Real-time WebSocket terminal for workspace containers |
 | 📝 **Environment Editor** | Edit .env files directly in the browser |
 | 🌐 **Custom Domains & SSL** | Connect domains with free Let's Encrypt certificates |
 | 💾 **Backup & Restore** | Manual backups for projects and databases |
