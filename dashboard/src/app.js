@@ -796,9 +796,33 @@ async function start() {
                     return;
                 }
 
-                const containerIp = await workspaceService.getContainerIp(rows[0].container_id);
+                // Get container IP with retry (container may still be starting)
+                let containerIp = null;
+                const maxRetries = 3;
+                const retryDelay = 500;
+
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        containerIp = await workspaceService.getContainerIp(rows[0].container_id);
+                        if (containerIp) break;
+                    } catch (ipError) {
+                        logger.warn('Failed to get container IP', {
+                            projectName,
+                            attempt,
+                            error: ipError.message
+                        });
+                    }
+
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    }
+                }
+
                 if (!containerIp) {
-                    logger.error('WebSocket upgrade failed: no container IP', { projectName });
+                    logger.error('WebSocket upgrade failed: no container IP after retries', {
+                        projectName,
+                        containerId: rows[0].container_id
+                    });
                     socket.destroy();
                     return;
                 }

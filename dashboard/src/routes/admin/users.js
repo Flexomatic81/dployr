@@ -72,13 +72,13 @@ router.get('/', async (req, res) => {
     try {
         const users = await userService.getAllUsers();
 
-        // Count projects per user in parallel
+        // Count projects per user in parallel (using fast count function)
         const projectCounts = await Promise.all(
-            users.map(user => projectService.getUserProjects(user.system_username))
+            users.map(user => projectService.getUserProjectCount(user.system_username))
         );
 
         users.forEach((user, index) => {
-            user.projectCount = projectCounts[index].length;
+            user.projectCount = projectCounts[index];
         });
 
         res.render('admin/users', {

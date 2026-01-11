@@ -905,3 +905,36 @@ Project-specific skills for development workflow (in `.claude/commands/`):
 | `/dployr-release` | Create a new release (changelog, tag, GitHub release) |
 
 Usage: Type the skill name (e.g., `/dployr-check`) in Claude Code to execute.
+
+## Technical Debt / Future Improvements
+
+Known issues and improvements identified during code reviews that require more extensive changes:
+
+### 1. Port Tracking in Database (portManager.js)
+**Issue:** Port allocation uses database locking but port tracking is implicit via workspace records.
+**Improvement:** Add explicit `allocated_ports` table for better tracking and debugging.
+**Complexity:** Requires database schema changes and migration.
+
+### 2. SQL Injection Risk in Database Providers
+**Location:** `services/providers/mariadb-provider.js`, `postgresql-provider.js`
+**Issue:** Database/user names are interpolated into SQL strings. While usernames are validated at input, explicit validation before SQL execution would add defense-in-depth.
+**Improvement:** Add explicit `isValidIdentifier()` check before all dynamic SQL.
+
+### 3. Git Credentials Security
+**Location:** `services/git.js`
+**Issue:** Git access tokens are stored in plain text in the database (`git_url` field).
+**Improvement:** Encrypt tokens at rest using the existing encryption service, or migrate to SSH key-based authentication.
+
+### 4. Docker Status Caching
+**Location:** `services/docker.js`
+**Issue:** Every status check queries Docker API directly, which can be slow with many containers.
+**Improvement:** Implement short-lived cache (5-10 seconds) for container status to reduce API calls.
+
+### 5. Batch Query for Workspace Previews
+**Location:** `services/preview.js`
+**Issue:** Loading previews for multiple workspaces results in N+1 queries.
+**Improvement:** Add `getPreviewsForWorkspaces(workspaceIds)` function for batch loading.
+
+### 6. Standardized Error Handling Class
+**Issue:** Error handling is inconsistent across services (some throw, some return null, some log silently).
+**Improvement:** Create `AppError` class hierarchy with error codes, HTTP status mapping, and consistent logging.

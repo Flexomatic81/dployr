@@ -221,7 +221,13 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
         // Cleanup on error
         try {
             fs.rmSync(tempDir, { recursive: true, force: true });
-        } catch {}
+        } catch (cleanupError) {
+            logger.warn('Failed to cleanup temporary directory after clone error', {
+                tempDir,
+                cleanupError: cleanupError.message,
+                originalError: err.message
+            });
+        }
 
         // Remove token from error message
         const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');

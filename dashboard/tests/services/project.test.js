@@ -935,9 +935,42 @@ DB_PASSWORD=secret`;
         });
     });
 
+    describe('getUserProjectCount', () => {
+        it('should return count of project directories', async () => {
+            mockFs.readdir.mockResolvedValueOnce([
+                { name: 'project1', isDirectory: () => true },
+                { name: 'project2', isDirectory: () => true },
+                { name: '.hidden', isDirectory: () => true },
+                { name: 'file.txt', isDirectory: () => false }
+            ]);
+
+            const result = await projectService.getUserProjectCount('testuser');
+
+            expect(result).toBe(2); // Excludes hidden and files
+        });
+
+        it('should return 0 when user directory does not exist', async () => {
+            const error = new Error('ENOENT');
+            error.code = 'ENOENT';
+            mockFs.readdir.mockRejectedValue(error);
+
+            const result = await projectService.getUserProjectCount('nonexistent');
+
+            expect(result).toBe(0);
+        });
+
+        it('should throw error for other fs errors', async () => {
+            mockFs.readdir.mockRejectedValue(new Error('Permission denied'));
+
+            await expect(projectService.getUserProjectCount('testuser'))
+                .rejects.toThrow('Permission denied');
+        });
+    });
+
     describe('Module exports', () => {
         it('should export all required functions', () => {
             expect(projectService.getUserProjects).toBeDefined();
+            expect(projectService.getUserProjectCount).toBeDefined();
             expect(projectService.getProjectInfo).toBeDefined();
             expect(projectService.getAvailableTemplates).toBeDefined();
             expect(projectService.getNextAvailablePort).toBeDefined();

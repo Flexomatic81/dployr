@@ -131,7 +131,13 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
         // Cleanup on error
         try {
             fs.rmSync(projectPath, { recursive: true, force: true });
-        } catch {}
+        } catch (cleanupError) {
+            logger.warn('Failed to cleanup project directory after error', {
+                projectPath,
+                cleanupError: cleanupError.message,
+                originalError: error.message
+            });
+        }
 
         cleanupZip(zipPath);
 

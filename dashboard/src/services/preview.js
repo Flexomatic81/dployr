@@ -10,6 +10,7 @@
 
 const Docker = require('dockerode');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
 const { logger } = require('../config/logger');
 const portManager = require('./portManager');
@@ -78,10 +79,9 @@ async function createPreview(workspaceId, userId, options = {}) {
         // 4. Expires berechnen
         const expiresAt = new Date(Date.now() + lifetimeHours * 60 * 60 * 1000);
 
-        // 5. Password hashen (wenn vorhanden)
+        // 5. Hash password if provided
         let passwordHash = null;
         if (password) {
-            const bcrypt = require('bcrypt');
             passwordHash = await bcrypt.hash(password, 10);
         }
 
@@ -425,9 +425,7 @@ async function validatePreviewAccess(previewHash, password = null) {
                 return false; // Password required
             }
 
-            const bcrypt = require('bcrypt');
             const passwordValid = await bcrypt.compare(password, preview.password_hash);
-
             return passwordValid;
         }
 

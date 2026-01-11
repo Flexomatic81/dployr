@@ -36,6 +36,23 @@ async function getUserProjects(systemUsername) {
     }
 }
 
+// Get project count for a user (fast, no project details)
+async function getUserProjectCount(systemUsername) {
+    const userPath = path.join(USERS_PATH, systemUsername);
+
+    try {
+        const entries = await fs.readdir(userPath, { withFileTypes: true });
+        return entries.filter(entry =>
+            entry.isDirectory() && !entry.name.startsWith('.')
+        ).length;
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            return 0;
+        }
+        throw error;
+    }
+}
+
 // Get project details
 async function getProjectInfo(systemUsername, projectName) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
@@ -190,13 +207,22 @@ async function getNextAvailablePort() {
             }
         }
     } catch (error) {
-        logger.error('Error determining ports', { error: error.message });
+        logger.error('Error determining ports', {
+            error: error.message,
+            stack: error.stack
+        });
+        // Continue with empty set - will start from 8001
     }
 
     // Start at port 8001 and find the next free one
+    // Limit to ephemeral port range (max 65535)
+    const MAX_PORT = 65535;
     let port = 8001;
     while (usedPorts.has(port)) {
         port++;
+        if (port > MAX_PORT) {
+            throw new Error('No available ports in valid range (8001-65535)');
+        }
     }
 
     return port;
@@ -1012,6 +1038,7 @@ async function getLinkedDatabase(systemUsername, projectName, userDatabases) {
 
 module.exports = {
     getUserProjects,
+    getUserProjectCount,
     getProjectInfo,
     getAvailableTemplates,
     getNextAvailablePort,

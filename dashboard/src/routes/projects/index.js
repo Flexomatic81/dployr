@@ -52,11 +52,9 @@ router.get('/', requireAuth, async (req, res) => {
             project.gitConnected = gitService.isGitRepository(project.path);
         }
 
-        // Load shared projects
+        // Load shared projects (parallel loading to avoid N+1)
         const sharedProjectInfos = await sharingService.getSharedProjects(userId);
-        const sharedProjects = [];
-
-        for (const share of sharedProjectInfos) {
+        const sharedProjectPromises = sharedProjectInfos.map(async (share) => {
             const project = await projectService.getProjectInfo(share.owner_system_username, share.project_name);
             if (project) {
                 project.gitConnected = gitService.isGitRepository(project.path);
@@ -67,9 +65,11 @@ router.get('/', requireAuth, async (req, res) => {
                     ownerUsername: share.owner_username,
                     ownerSystemUsername: share.owner_system_username
                 };
-                sharedProjects.push(project);
+                return project;
             }
-        }
+            return null;
+        });
+        const sharedProjects = (await Promise.all(sharedProjectPromises)).filter(p => p !== null);
 
         res.render('projects/index', {
             title: 'Projects',

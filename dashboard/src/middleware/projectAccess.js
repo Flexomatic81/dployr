@@ -58,7 +58,12 @@ function getProjectAccess(paramName = 'name') {
             req.flash('error', req.t('projects:errors.notFound'));
             return res.redirect('/projects');
         } catch (error) {
-            logger.error('Error checking project access', { error: error.message });
+            logger.error('Error checking project access', {
+                error: error.message,
+                stack: error.stack,
+                userId: req.session?.user?.id,
+                projectName: req.params.name
+            });
             req.flash('error', req.t('projects:errors.loadError'));
             return res.redirect('/projects');
         }
