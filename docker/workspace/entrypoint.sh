@@ -42,14 +42,39 @@ fi
 # ============================================================
 
 # Set VS Code display language based on VSCODE_LOCALE env var
-# Note: code-server uses locale.json (not argv.json like VS Code Desktop)
 if [ -n "$VSCODE_LOCALE" ]; then
-    LOCALE_DIR="/home/coder/.local/share/code-server/User"
-    LOCALE_JSON="$LOCALE_DIR/locale.json"
+    CODE_SERVER_DIR="/home/coder/.local/share/code-server"
+    USER_DIR="$CODE_SERVER_DIR/User"
 
-    # Ensure parent directories exist (running as root)
-    mkdir -p "$LOCALE_DIR"
-    echo "{\"locale\": \"$VSCODE_LOCALE\"}" > "$LOCALE_JSON"
+    # Ensure directories exist
+    mkdir -p "$USER_DIR"
+
+    # Create locale.json (tells VS Code which locale to use)
+    echo "{\"locale\": \"$VSCODE_LOCALE\"}" > "$USER_DIR/locale.json"
+
+    # Create languagepacks.json (required for CLI-installed language packs)
+    # This file is normally created by UI installation but missing for CLI installs
+    # Find the German language pack extension
+    DE_LANGPACK=$(find "$CODE_SERVER_DIR/extensions" -maxdepth 1 -type d -name "ms-ceintl.vscode-language-pack-de*" 2>/dev/null | head -1)
+
+    if [ -n "$DE_LANGPACK" ] && [ "$VSCODE_LOCALE" = "de" ]; then
+        cat > "$CODE_SERVER_DIR/languagepacks.json" << LPEOF
+{
+    "de": [
+        {
+            "extensionIdentifier": {
+                "id": "ms-ceintl.vscode-language-pack-de",
+                "uuid": "a1e72f2-5093-4875-9d7d-8d72d54a9bb4"
+            },
+            "version": "1.99.0",
+            "path": "$DE_LANGPACK/translations/main.i18n.json"
+        }
+    ]
+}
+LPEOF
+        echo "VS Code: German language pack configured"
+    fi
+
     chown -R coder:coder /home/coder/.local
 
     echo "VS Code: Language set to $VSCODE_LOCALE"
