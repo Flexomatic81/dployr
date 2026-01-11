@@ -83,7 +83,8 @@ RUN code-server --install-extension esbenp.prettier-vscode \
     && code-server --install-extension formulahendry.auto-rename-tag \
     && code-server --install-extension christian-kohler.path-intellisense \
     && code-server --install-extension eamodio.gitlens \
-    && code-server --install-extension pkief.material-icon-theme
+    && code-server --install-extension pkief.material-icon-theme \
+    && code-server --install-extension Anthropic.claude-code
 
 # ============================================================
 # Configuration
