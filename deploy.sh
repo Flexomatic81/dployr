@@ -117,10 +117,21 @@ do_deploy() {
         echo "Updating from branch: $BRANCH"
     fi
 
-    # Git Pull from specified branch (including tags for version detection)
-    git fetch --tags origin "$BRANCH" 2>/dev/null || true
+    # Fetch latest code from remote (including tags for version detection)
+    if ! git fetch --tags origin "$BRANCH" 2>&1; then
+        if [ "$JSON_OUTPUT" = true ]; then
+            echo "{\"status\":\"error\",\"error\":\"Failed to fetch from remote\"}"
+        else
+            echo "Error: Failed to fetch from remote. Check network connection."
+        fi
+        exit 1
+    fi
 
-    # Reset to remote branch to handle diverged histories
+    # Reset to remote branch - this handles diverged histories gracefully
+    # Using reset instead of pull ensures updates always work regardless of local state
+    if [ "$JSON_OUTPUT" != true ]; then
+        echo "Updating to $(git rev-parse --short origin/$BRANCH)..."
+    fi
     git reset --hard "origin/$BRANCH"
 
     # Re-exec with updated deploy.sh after git pull (to use newest version)
