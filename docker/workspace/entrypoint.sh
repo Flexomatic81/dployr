@@ -58,16 +58,16 @@ if [ -n "$VSCODE_LOCALE" ]; then
     DE_LANGPACK=$(find "$CODE_SERVER_DIR/extensions" -maxdepth 1 -type d -name "ms-ceintl.vscode-language-pack-de*" 2>/dev/null | head -1)
 
     if [ -n "$DE_LANGPACK" ] && [ "$VSCODE_LOCALE" = "de" ]; then
+        # The path should be the extension folder, not the .json file directly
         cat > "$CODE_SERVER_DIR/languagepacks.json" << LPEOF
 {
     "de": [
         {
             "extensionIdentifier": {
                 "id": "ms-ceintl.vscode-language-pack-de",
-                "uuid": "a1e72f2-5093-4875-9d7d-8d72d54a9bb4"
+                "uuid": null
             },
-            "version": "1.99.0",
-            "path": "$DE_LANGPACK/translations/main.i18n.json"
+            "path": "$DE_LANGPACK"
         }
     ]
 }
