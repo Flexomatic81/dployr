@@ -325,9 +325,16 @@ async function startWorkspace(userId, projectName, systemUsername) {
         // Generate container name
         const containerName = getContainerName(userId, projectName);
 
-        // Get project path
+        // Get project path - mount only html/ folder for security
+        // This prevents users from editing docker-compose.yml, system .env, or nginx configs
         const projectPath = path.join(USERS_PATH, systemUsername, projectName);
-        const hostProjectPath = toHostPath(projectPath);
+        const htmlPath = path.join(projectPath, 'html');
+        const hostHtmlPath = toHostPath(htmlPath);
+
+        // Ensure html directory exists
+        if (!fs.existsSync(htmlPath)) {
+            fs.mkdirSync(htmlPath, { recursive: true });
+        }
 
         // Get user's API key if configured
         let apiKey = null;
@@ -382,7 +389,7 @@ async function startWorkspace(userId, projectName, systemUsername) {
             },
             HostConfig: {
                 Binds: [
-                    `${hostProjectPath}:/workspace`
+                    `${hostHtmlPath}:/workspace`
                 ],
                 // No PortBindings - container only accessible via Docker network for security
                 Memory: parseMemoryLimit(workspace.ram_limit),
