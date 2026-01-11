@@ -42,13 +42,14 @@ fi
 # ============================================================
 
 # Set VS Code display language based on VSCODE_LOCALE env var
+# Note: code-server uses locale.json (not argv.json like VS Code Desktop)
 if [ -n "$VSCODE_LOCALE" ]; then
-    ARGV_JSON_DIR="/home/coder/.local/share/code-server/User"
-    ARGV_JSON="$ARGV_JSON_DIR/argv.json"
+    LOCALE_DIR="/home/coder/.local/share/code-server/User"
+    LOCALE_JSON="$LOCALE_DIR/locale.json"
 
     # Ensure parent directories exist (running as root)
-    mkdir -p /home/coder/.local/share/code-server/User
-    echo "{\"locale\": \"$VSCODE_LOCALE\"}" > "$ARGV_JSON"
+    mkdir -p "$LOCALE_DIR"
+    echo "{\"locale\": \"$VSCODE_LOCALE\"}" > "$LOCALE_JSON"
     chown -R coder:coder /home/coder/.local
 
     echo "VS Code: Language set to $VSCODE_LOCALE"
