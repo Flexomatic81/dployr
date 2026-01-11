@@ -82,6 +82,7 @@ dashboard/src/
 ├── middleware/
 │   ├── auth.js         # Authentication middleware (requireAuth, requireAdmin)
 │   ├── projectAccess.js # Project access control (getProjectAccess, requirePermission)
+│   ├── workspaceAccess.js # Workspace access control (getWorkspaceAccess, requireWorkspace)
 │   ├── csrf.js         # CSRF protection (csrf-sync)
 │   ├── validation.js   # Input validation with Joi
 │   └── upload.js       # Multer config for ZIP uploads
@@ -96,7 +97,8 @@ dashboard/src/
 │   ├── setup.js        # Initial configuration wizard
 │   ├── help.js         # Help/documentation page
 │   ├── profile.js      # User profile, notification preferences
-│   └── webhooks.js     # Git webhook endpoints (GitHub, GitLab, Bitbucket)
+│   ├── webhooks.js     # Git webhook endpoints (GitHub, GitLab, Bitbucket)
+│   └── workspaces.js   # Workspace CRUD, IDE, terminal, previews
 ├── services/           # Business logic layer
 │   ├── project.js      # Project lifecycle, type changes
 │   ├── docker.js       # Container orchestration via dockerode
@@ -108,6 +110,11 @@ dashboard/src/
 │   ├── autodeploy.js   # Auto-deploy polling, deployment execution
 │   ├── backup.js       # Project and database backup/restore
 │   ├── email.js        # Email service (SMTP, templates, notifications)
+│   ├── workspace.js    # Workspace lifecycle, container management, sync
+│   ├── terminal.js     # WebSocket terminal sessions via docker exec
+│   ├── preview.js      # Preview environment management
+│   ├── encryption.js   # AES-256-GCM encryption for API keys
+│   ├── portManager.js  # Dynamic port allocation for workspaces
 │   ├── providers/      # Database-specific implementations
 │   │   ├── mariadb-provider.js
 │   │   └── postgresql-provider.js
@@ -685,6 +692,96 @@ Users can configure which emails they receive via `/profile/notifications`:
 - `notify_deploy_failure` - Notification preference
 - `notify_autodeploy` - Notification preference
 
+## Workspaces (Cloud IDE)
+
+Browser-based development environments with code-server (VS Code) and Claude Code integration.
+
+**Features:**
+- code-server (VS Code in browser) with pre-installed extensions
+- Claude Code CLI with persistent login across restarts
+- Terminal access via WebSocket (xterm.js)
+- File sync between workspace and project
+- Preview environments for sharing work
+- Resource limits (CPU, RAM, idle timeout)
+- Concurrent access detection
+
+**Architecture:**
+```
+User Browser → Dashboard (Express)
+                  ↓
+              Workspace Proxy (/workspace-proxy/:name/*)
+                  ↓
+              Docker Container (dployr-ws-{username}-{project})
+                  ↓
+              code-server:8080
+```
+
+**Workspace Container:**
+- Image: `dployr-workspace:latest` (based on code-server:4.99.4)
+- Pre-installed: Node.js 20, PHP, Python 3, database clients
+- Claude Code CLI with persistent OAuth via volume mount
+- Auto-update Claude Code on container start (background)
+
+**Container Structure:**
+```
+/workspace/             # Mounted project files (html/ folder)
+/claude-config/         # Persistent Claude Code config (volume)
+/home/coder/.claude/    # Symlink → /claude-config
+/home/coder/.claude.json # Symlink → /claude-config/claude.json
+```
+
+**Database Tables:**
+- `workspaces` - Workspace configuration and state
+- `workspace_logs` - Activity and access logs
+- `workspace_previews` - Preview environments
+- `resource_limits` - Per-user workspace limits
+
+**Routes:**
+- `GET /workspaces` - List user's workspaces
+- `POST /workspaces/:name` - Create workspace
+- `GET /workspaces/:name` - Workspace details
+- `DELETE /workspaces/:name` - Delete workspace
+- `POST /workspaces/:name/start` - Start workspace
+- `POST /workspaces/:name/stop` - Stop workspace
+- `GET /workspaces/:name/ide` - Open IDE
+- `GET /workspaces/:name/terminal` - Open terminal
+- `GET /workspaces/:name/health` - Container health check
+- `POST /workspaces/:name/sync/to-project` - Sync workspace → project
+- `POST /workspaces/:name/sync/from-project` - Sync project → workspace
+- `POST /workspaces/:name/activity` - Heartbeat for activity tracking
+- `PUT /workspaces/:name/settings` - Update resource limits
+
+**Preview Environment Routes:**
+- `POST /workspaces/:name/previews` - Create preview
+- `GET /workspaces/:name/previews` - List previews
+- `DELETE /workspaces/:name/previews/:id` - Delete preview
+- `POST /workspaces/:name/previews/:id/extend` - Extend lifetime
+
+**WebSocket Endpoints:**
+- `/workspace-proxy/:name/*` - code-server WebSocket proxy
+- `/terminal-ws/:name` - xterm.js terminal connection
+
+**Services:**
+- `workspace.js` - Workspace lifecycle, container management, sync
+- `terminal.js` - WebSocket terminal sessions via docker exec
+- `preview.js` - Preview environment management
+- `encryption.js` - AES-256-GCM encryption for API keys
+- `portManager.js` - Dynamic port allocation
+
+**Middleware:**
+- `workspaceAccess.js` - `getWorkspaceAccess()`, `requireWorkspace`, `requireRunningWorkspace`, `requireWorkspacePermission`
+
+**Claude Code Integration:**
+- Persistent login via OAuth symlinks to mounted volume
+- Auto-update on container start (background, non-blocking)
+- Auto-generated CLAUDE.md per project (on workspace start)
+- API key option with AES-256-GCM encryption
+
+**Files:**
+- `docker/workspace/Dockerfile` - Workspace image definition
+- `docker/workspace/entrypoint.sh` - Container startup with permission fixes
+- `docker/workspace/workspace-settings.json` - VS Code default settings
+
 ## Backup & Restore
 
 Manual backup functionality for projects and databases.
@@ -751,6 +848,11 @@ The project detail page shows a "Backup Database" button only if the project has
 | `proxy.js` | NPM integration, domain management, SSL certificates |
 | `email.js` | SMTP email sending, template rendering, deployment notifications |
 | `update.js` | System updates, version checking, GitHub release integration |
+| `workspace.js` | Workspace lifecycle, container management, file sync, CLAUDE.md generation |
+| `terminal.js` | WebSocket terminal sessions via docker exec |
+| `preview.js` | Preview environment management for workspaces |
+| `encryption.js` | AES-256-GCM encryption for API keys |
+| `portManager.js` | Dynamic port allocation for workspace containers |
 
 ## Middleware
 
@@ -758,6 +860,7 @@ The project detail page shows a "Backup Database" button only if the project has
 |------------|---------|
 | `auth.js` | `requireAuth`, `requireAdmin` route protection |
 | `projectAccess.js` | `getProjectAccess()`, `requirePermission()` for project access control |
+| `workspaceAccess.js` | `getWorkspaceAccess()`, `requireWorkspace`, `requireRunningWorkspace`, `requireWorkspacePermission` |
 | `validation.js` | Joi-based input validation for forms |
 | `upload.js` | Multer config for ZIP uploads (100 MB limit, `/tmp/dployr-uploads`)
 
@@ -795,7 +898,7 @@ Project-specific skills for development workflow (in `.claude/commands/`):
 
 | Skill | Purpose |
 |-------|---------|
-| `/dployr-check` | Quick consistency check (German text, console.log, security, personal data) |
+| `/dployr-check` | Quick consistency check (German text, console.log, security, i18n translation consistency) |
 | `/dployr-review` | Deep code review (architecture, best practices, security, performance) |
 | `/dployr-test` | Run tests and analyze results with improvement suggestions |
 | `/dployr-changelog` | Generate changelog from Git commits for releases |
