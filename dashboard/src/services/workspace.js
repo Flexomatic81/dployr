@@ -992,8 +992,15 @@ async function hasApiKey(userId, provider) {
 
 /**
  * Syncs workspace changes to the production project
- * Since we use shared volumes, files are already synced
- * This function mainly restarts the project container
+ *
+ * Since we use shared volumes, files are already synced.
+ * This function rebuilds/restarts the project container to apply changes.
+ *
+ * For different project types:
+ * - nodejs-app, nextjs, nuxtjs: Rebuild to run npm install + build
+ * - laravel, php-website: Rebuild to run composer install
+ * - python-flask, python-django: Rebuild to run pip install
+ * - static-website, nodejs-static: Simple restart (no dependencies)
  */
 async function syncToProject(userId, projectName, systemUsername) {
     try {
@@ -1002,35 +1009,120 @@ async function syncToProject(userId, projectName, systemUsername) {
             throw new Error('Workspace not found');
         }
 
-        // Since workspace and project share the same volume,
-        // files are already synced. We just need to restart the project.
-
-        // Import project service to restart
         const projectService = require('./project');
+        const dockerService = require('./docker');
 
-        // Check if project container exists and is running
-        const containers = await docker.listContainers({ all: true });
-        const projectContainer = containers.find(c =>
-            c.Names[0] === `/${projectName}`
-        );
+        // Get project path and info
+        const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+        const projectInfo = await projectService.getProjectInfo(systemUsername, projectName);
 
-        if (projectContainer) {
-            logger.info('Restarting project after workspace sync', { projectName });
-            const container = docker.getContainer(projectContainer.Id);
-            await container.restart();
+        if (!projectInfo) {
+            throw new Error('Project not found');
         }
 
-        await logWorkspaceAction(workspace.id, userId, projectName, 'sync_to_project');
+        const projectType = projectInfo.templateType;
+        const actions = [];
 
-        logger.info('Workspace synced to project', { workspaceId: workspace.id, projectName });
+        // Determine if we need a full rebuild or just a restart
+        // Rebuild is needed for projects with dependencies (npm, composer, pip)
+        const needsRebuild = [
+            'nodejs-app',
+            'nextjs',
+            'nuxtjs',
+            'laravel',
+            'php-website',
+            'python-flask',
+            'python-django'
+        ].includes(projectType);
 
-        return { success: true, message: 'Changes synced to project' };
+        logger.info('Starting workspace sync to project', {
+            projectName,
+            projectType,
+            needsRebuild,
+            containerStatus: projectInfo.status
+        });
+
+        if (needsRebuild) {
+            // Full rebuild: down + up --build
+            // This ensures npm install, composer install, pip install etc. run
+            actions.push('rebuild');
+
+            try {
+                await rebuildProject(projectPath);
+                logger.info('Project rebuilt after workspace sync', { projectName, projectType });
+            } catch (error) {
+                logger.error('Rebuild failed, trying simple restart', {
+                    projectName,
+                    error: error.message
+                });
+                // Fallback to restart if rebuild fails
+                await dockerService.restartProject(projectPath);
+                actions.push('restart-fallback');
+            }
+        } else {
+            // Simple restart for static projects
+            actions.push('restart');
+
+            if (projectInfo.status === 'stopped') {
+                // Start if not running
+                await dockerService.startProject(projectPath);
+                actions.push('started');
+                logger.info('Project started after workspace sync', { projectName });
+            } else {
+                // Restart if already running
+                await dockerService.restartProject(projectPath);
+                logger.info('Project restarted after workspace sync', { projectName });
+            }
+        }
+
+        await logWorkspaceAction(workspace.id, userId, projectName, 'sync_to_project', {
+            projectType,
+            actions
+        });
+
+        logger.info('Workspace synced to project', {
+            workspaceId: workspace.id,
+            projectName,
+            projectType,
+            actions
+        });
+
+        return {
+            success: true,
+            message: needsRebuild
+                ? 'Project rebuilt with latest changes'
+                : 'Project restarted with latest changes',
+            projectType,
+            actions
+        };
     } catch (error) {
         logger.error('Failed to sync workspace to project', {
             userId, projectName, error: error.message
         });
         throw error;
     }
+}
+
+/**
+ * Rebuilds a project container (down + up --build)
+ * This runs dependency installation and build steps defined in docker-compose.yml
+ */
+async function rebuildProject(projectPath) {
+    const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
+
+    return new Promise((resolve, reject) => {
+        // First stop, then rebuild with --build flag
+        const command = `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d --build --force-recreate`;
+
+        exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+            if (error) {
+                reject(new Error(stderr || error.message));
+            } else {
+                resolve(stdout);
+            }
+        });
+    });
 }
 
 /**

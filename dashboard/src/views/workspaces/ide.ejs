@@ -145,11 +145,12 @@
 
         // Sync to project
         async function syncToProject() {
-            if (!confirm('<%= t("common:confirm.action") %>')) return;
+            if (!confirm('<%= t("workspaces:sync.confirm") %>')) return;
 
             const btn = event.target;
+            const originalText = btn.textContent;
             btn.disabled = true;
-            btn.textContent = '⟳ Syncing...';
+            btn.textContent = '⟳ <%= t("workspaces:sync.inProgress") %>';
 
             try {
                 const response = await fetch('/workspaces/<%= workspace.project_name %>/sync/to-project', {
@@ -163,15 +164,25 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    alert(data.message || 'Sync complete');
+                    // Show detailed message based on actions taken
+                    let message = data.message;
+                    if (data.actions && data.actions.includes('rebuild')) {
+                        message = '<%= t("workspaces:messages.syncedRebuilt") %>';
+                    } else if (data.actions && data.actions.includes('restart')) {
+                        message = '<%= t("workspaces:messages.syncedRestarted") %>';
+                    }
+                    if (data.projectType) {
+                        message += ' (' + data.projectType + ')';
+                    }
+                    alert(message);
                 } else {
-                    alert(data.error || 'Sync failed');
+                    alert(data.error || '<%= t("workspaces:errors.syncFailed") %>');
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                alert('<%= t("workspaces:errors.syncFailed") %>: ' + error.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '↑ <%= t("workspaces:actions.syncToProject") %>';
+                btn.textContent = originalText;
             }
         }
 

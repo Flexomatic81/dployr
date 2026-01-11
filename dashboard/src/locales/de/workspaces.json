@@ -94,10 +94,18 @@
         "stopped": "Workspace gestoppt",
         "deleted": "Workspace gelöscht",
         "synced": "Synchronisierung abgeschlossen",
+        "syncedRebuilt": "Projekt neu gebaut mit aktuellen Änderungen",
+        "syncedRestarted": "Projekt neu gestartet mit aktuellen Änderungen",
         "settingsUpdated": "Einstellungen gespeichert",
         "apiKeySaved": "API Key gespeichert",
         "apiKeyDeleted": "API Key gelöscht",
         "apiKeyValid": "API Key ist gültig"
+    },
+    "sync": {
+        "confirm": "Änderungen zum Projekt synchronisieren? Das Projekt wird neu gestartet/gebaut.",
+        "inProgress": "Synchronisiere...",
+        "rebuilding": "Baue Projekt neu...",
+        "restarting": "Starte Projekt neu..."
     },
     "help": "Eine Cloud-Entwicklungsumgebung mit VS Code und Claude Code im Browser",
     "noWorkspace": "Noch kein Workspace für dieses Projekt vorhanden",
