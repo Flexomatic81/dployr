@@ -106,65 +106,13 @@
         </div>
     </div>
 
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p id="loading-text"><%= t('common:messages.loading') %></p>
-    </div>
-
     <iframe
         id="workspace-frame"
-        style="display: none;"
-        onload="hideLoading()"
+        src="<%= ideUrl %>"
     ></iframe>
 
     <script>
         let activityInterval;
-        const ideUrl = '<%= ideUrl %>';
-        const projectName = '<%= workspace.project_name %>';
-
-        // Wait for container to be healthy before loading IDE
-        async function waitForHealthy() {
-            const loadingText = document.getElementById('loading-text');
-            const maxAttempts = 30; // 30 seconds max wait
-            let attempts = 0;
-
-            loadingText.textContent = '<%= t("workspaces:ide.waitingForContainer") || "Waiting for container..." %>';
-
-            while (attempts < maxAttempts) {
-                try {
-                    const response = await fetch(`/workspaces/${projectName}/health`);
-                    const data = await response.json();
-
-                    if (data.healthy) {
-                        loadingText.textContent = '<%= t("common:messages.loading") %>';
-                        // Container is healthy, load the IDE
-                        document.getElementById('workspace-frame').src = ideUrl;
-                        return true;
-                    }
-
-                    // Update loading text with status
-                    if (data.status === 'starting') {
-                        loadingText.textContent = '<%= t("workspaces:ide.containerStarting") || "Container starting..." %>';
-                    }
-                } catch (error) {
-                    console.error('Health check failed:', error);
-                }
-
-                attempts++;
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-            }
-
-            // Timeout - try loading anyway
-            loadingText.textContent = '<%= t("common:messages.loading") %>';
-            document.getElementById('workspace-frame').src = ideUrl;
-            return false;
-        }
-
-        // Hide loading spinner when iframe loads
-        function hideLoading() {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('workspace-frame').style.display = 'block';
-        }
 
         // Send activity heartbeat every 30 seconds
         async function sendActivity() {
@@ -186,9 +134,6 @@
 
         // Send activity on load
         sendActivity();
-
-        // Wait for container to be healthy, then load IDE
-        waitForHealthy();
 
         // Sync to project
         async function syncToProject() {

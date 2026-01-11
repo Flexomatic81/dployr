@@ -83,11 +83,10 @@
                             <%= t('workspaces:actions.start') %>
                         </button>
                     <% } else if (workspace.status === 'running') { %>
-                        <a href="/workspaces/<%= workspace.project_name %>/ide"
-                           class="btn btn-primary" target="_blank" >
+                        <button class="btn btn-primary" id="openIdeBtn" onclick="openIDE(this)">
                             <i class="bi bi-code-square"></i>
                             <%= t('workspaces:actions.openIDE') %>
-                        </a>
+                        </button>
                         <button class="btn btn-warning" onclick="stopWorkspace(this)">
                             <i class="bi bi-stop-fill"></i>
                             <%= t('workspaces:actions.stop') %>
@@ -226,5 +225,47 @@ async function deleteWorkspace() {
     } catch (error) {
         alert('Error: ' + error.message);
     }
+}
+
+async function openIDE(btn) {
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("workspaces:ide.waitingForContainer") %>';
+
+    // Wait for container to be healthy
+    const maxAttempts = 30;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+        try {
+            const response = await fetch('/workspaces/<%= workspace.project_name %>/health');
+            const data = await response.json();
+
+            if (data.healthy) {
+                // Container is ready, open IDE in new tab
+                btn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> <%= t("common:messages.loading") %>';
+                window.open('/workspaces/<%= workspace.project_name %>/ide', '_blank');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                return;
+            }
+
+            // Update button text based on status
+            if (data.status === 'starting') {
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("workspaces:ide.containerStarting") %>';
+            }
+        } catch (error) {
+            console.error('Health check failed:', error);
+        }
+
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Timeout - try opening anyway
+    btn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> <%= t("common:messages.loading") %>';
+    window.open('/workspaces/<%= workspace.project_name %>/ide', '_blank');
+    btn.disabled = false;
+    btn.innerHTML = originalContent;
 }
 </script>
