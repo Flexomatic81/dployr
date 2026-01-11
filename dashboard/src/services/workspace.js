@@ -351,7 +351,10 @@ async function startWorkspace(userId, projectName, systemUsername) {
         const codeServerPassword = crypto.randomBytes(32).toString('base64');
 
         // Build environment variables
-        const env = [];
+        const env = [
+            // Disable Claude Code auto-update to prevent startup errors in container
+            'CLAUDE_AUTO_UPDATE=false'
+        ];
 
         if (apiKey) {
             env.push(`ANTHROPIC_API_KEY=${apiKey}`);
