@@ -383,6 +383,13 @@ async function startWorkspace(userId, projectName, systemUsername) {
             throw new Error(`Workspace image ${WORKSPACE_IMAGE} not found. Please build it first.`);
         }
 
+        // Create directory for Claude Code config persistence (per user, shared across projects)
+        const claudeConfigPath = path.join(USERS_PATH, systemUsername, '.claude-config');
+        const hostClaudeConfigPath = toHostPath(claudeConfigPath);
+        if (!fs.existsSync(claudeConfigPath)) {
+            fs.mkdirSync(claudeConfigPath, { recursive: true });
+        }
+
         // Create container
         // Note: No external port binding - access only via internal Docker network
         // The dashboard proxy handles external access with authentication
@@ -395,7 +402,9 @@ async function startWorkspace(userId, projectName, systemUsername) {
             },
             HostConfig: {
                 Binds: [
-                    `${hostHtmlPath}:/workspace`
+                    `${hostHtmlPath}:/workspace`,
+                    // Persist Claude Code login across workspaces (per user)
+                    `${hostClaudeConfigPath}:/claude-config`
                 ],
                 // No PortBindings - container only accessible via Docker network for security
                 Memory: parseMemoryLimit(workspace.ram_limit),

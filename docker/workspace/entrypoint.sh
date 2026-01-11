@@ -11,6 +11,26 @@ set -e
 mkdir -p /workspace
 chown -R coder:coder /workspace
 
+# Ensure claude-config directory exists and is owned by coder
+if [ -d "/claude-config" ]; then
+    chown -R coder:coder /claude-config
+fi
+
+# ============================================================
+# Claude Code Persistence
+# ============================================================
+
+# If /claude-config is mounted, symlink ~/.claude to it
+# This persists Claude login across workspace restarts
+if [ -d "/claude-config" ]; then
+    # Remove existing .claude directory if it exists
+    rm -rf /home/coder/.claude
+    # Create symlink to persistent storage
+    ln -sf /claude-config /home/coder/.claude
+    chown -h coder:coder /home/coder/.claude
+    echo "Claude Code: Using persistent config from /claude-config"
+fi
+
 # ============================================================
 # Environment Setup
 # ============================================================
