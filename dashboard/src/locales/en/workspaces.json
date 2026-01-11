@@ -107,6 +107,10 @@
         "rebuilding": "Rebuilding project...",
         "restarting": "Restarting project..."
     },
+    "ide": {
+        "waitingForContainer": "Waiting for container...",
+        "containerStarting": "Container starting..."
+    },
     "help": "A cloud development environment with VS Code and Claude Code in the browser",
     "noWorkspace": "No workspace for this project yet",
     "runningSince": "Running since",

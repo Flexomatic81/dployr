@@ -297,6 +297,49 @@ router.post('/:projectName/activity',
 // ============================================================
 
 /**
+ * GET /workspaces/:projectName/health - Check if workspace container is healthy
+ */
+router.get('/:projectName/health',
+    getWorkspaceAccess(),
+    requireWorkspace,
+    requireWorkspacePermission,
+    async (req, res) => {
+        try {
+            const workspace = req.workspace;
+
+            if (workspace.status !== 'running' || !workspace.container_id) {
+                return res.json({ healthy: false, status: workspace.status });
+            }
+
+            // Check Docker container health status
+            const Docker = require('dockerode');
+            const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+
+            try {
+                const container = docker.getContainer(workspace.container_id);
+                const info = await container.inspect();
+
+                const health = info.State.Health;
+                const isHealthy = health && health.Status === 'healthy';
+                const isRunning = info.State.Running;
+
+                res.json({
+                    healthy: isHealthy && isRunning,
+                    status: isHealthy ? 'healthy' : (health ? health.Status : 'unknown'),
+                    running: isRunning
+                });
+            } catch (dockerError) {
+                // Container might not exist anymore
+                res.json({ healthy: false, status: 'error', error: dockerError.message });
+            }
+        } catch (error) {
+            logger.error('Health check failed', { error: error.message });
+            res.status(500).json({ healthy: false, error: error.message });
+        }
+    }
+);
+
+/**
  * GET /workspaces/:projectName/ide - IDE view
  */
 router.get('/:projectName/ide',
