@@ -36,6 +36,7 @@ Deploy and manage isolated web projects on a shared Linux server through an intu
 - [Documentation](#-documentation)
   - [Creating Projects](#creating-projects)
   - [Managing Projects](#managing-projects)
+  - [Workspaces (Cloud IDE)](#workspaces-cloud-ide)
   - [Databases](#databases)
   - [Auto-Deploy & Webhooks](#auto-deploy--webhooks)
   - [Project Sharing](#project-sharing)
@@ -69,6 +70,7 @@ Deploy and manage isolated web projects on a shared Linux server through an intu
 
 | Feature | Description |
 |---------|-------------|
+| 💻 **Cloud IDE (Workspaces)** | VS Code in the browser with Claude Code AI integration |
 | 📝 **Environment Editor** | Edit .env files directly in the browser |
 | 🌐 **Custom Domains & SSL** | Connect domains with free Let's Encrypt certificates |
 | 💾 **Backup & Restore** | Manual backups for projects and databases |
@@ -117,6 +119,20 @@ Deploy and manage isolated web projects on a shared Linux server through an intu
 <summary><b>Admin Panel</b> - User management, logs, and system settings</summary>
 <p align="center">
   <img src="docs/images/admin-panel.png" alt="Admin Panel" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Workspace IDE</b> - VS Code in the browser with Claude Code</summary>
+<p align="center">
+  <img src="docs/images/workspace-ide.png" alt="Workspace IDE" width="800">
+</p>
+</details>
+
+<details>
+<summary><b>Workspace Terminal</b> - Real-time terminal access</summary>
+<p align="center">
+  <img src="docs/images/workspace-terminal.png" alt="Workspace Terminal" width="800">
 </p>
 </details>
 
@@ -196,6 +212,62 @@ From the project detail page you can:
 - **Configure database** credentials with one click
 - **Share** with other users
 - **Create backups** of project files
+- **Open Workspace** for browser-based development
+
+### Workspaces (Cloud IDE)
+
+Workspaces provide a complete development environment in the browser using VS Code (code-server) with integrated Claude Code AI assistant.
+
+#### Features
+
+| Feature | Description |
+|---------|-------------|
+| **VS Code in Browser** | Full code-server with syntax highlighting, extensions, Git integration |
+| **Claude Code AI** | Integrated AI coding assistant with persistent login |
+| **Terminal Access** | Real-time terminal via WebSocket (xterm.js) |
+| **File Sync** | Bidirectional sync between workspace and project |
+| **Preview Environments** | Share your work with temporary preview links |
+| **Resource Limits** | Configurable CPU, RAM, and idle timeout |
+
+#### Getting Started
+
+1. Open a project's detail page
+2. Click **Create Workspace**
+3. Click **Start** to launch the container
+4. Click **Open IDE** to access VS Code in the browser
+
+#### Claude Code Authentication
+
+Claude Code requires authentication. You have two options:
+
+**Option 1: Claude Subscription (Recommended)**
+- Use your existing Claude Pro, Max, or Team subscription
+- No additional cost
+- Run `claude` in the terminal and follow the OAuth login
+
+**Option 2: API Key**
+- Enter your Anthropic API key in workspace settings
+- Pay-per-use billing applies
+- Key is stored with AES-256-GCM encryption
+
+#### Syncing Files
+
+- **Workspace → Project**: Copies changes from workspace to project files
+- **Project → Workspace**: Updates workspace with latest project files
+
+**Note:** Sync operations overwrite the destination. Commit important changes before syncing.
+
+#### Preview Environments
+
+Share your work temporarily with others:
+
+1. Start the workspace
+2. Click **Create Preview**
+3. Set lifetime (default: 24 hours)
+4. Optionally set a password
+5. Share the preview URL
+
+Previews are automatically deleted when they expire.
 
 ### Databases
 
@@ -422,10 +494,15 @@ dployr/
 │   │   ├── middleware/     # Auth, validation
 │   │   └── views/          # EJS templates
 │   └── tests/              # Unit tests
+├── docker/
+│   └── workspace/          # Workspace container image
+│       ├── Dockerfile
+│       └── entrypoint.sh
 ├── users/                  # User projects
 │   └── <username>/
 │       ├── .db-credentials
 │       ├── .backups/       # User backups
+│       ├── .claude-config/ # Claude Code persistent config
 │       └── <project>/
 │           ├── docker-compose.yml
 │           ├── .env
@@ -446,6 +523,7 @@ dployr/
 - **CSRF Protection** - All forms protected against CSRF attacks
 - **Input Validation** - Joi-based validation on all inputs
 - **Rate Limiting** - Auth routes are rate-limited
+- **API Key Encryption** - Workspace API keys encrypted with AES-256-GCM
 
 ## 🤝 Contributing
 
