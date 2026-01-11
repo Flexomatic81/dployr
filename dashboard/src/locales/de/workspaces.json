@@ -127,5 +127,34 @@
         "warning1": "Der Container wird gestoppt und gelöscht",
         "warning2": "Alle nicht synchronisierten Änderungen im Workspace gehen verloren",
         "warning3": "Die Projekt-Dateien bleiben unverändert"
+    },
+    "claudeCode": {
+        "title": "Claude Code Authentifizierung",
+        "description": "Claude Code benötigt eine Authentifizierung. Du hast zwei Möglichkeiten:",
+        "subscription": {
+            "title": "Option 1: Claude Abo (Empfohlen)",
+            "description": "Nutze Claude Code mit deinem bestehenden Claude Pro, Max oder Team Abo - keine zusätzlichen Kosten!",
+            "benefit1": "Keine zusätzlichen Kosten",
+            "benefit2": "Nutzt dein bestehendes Claude Abo",
+            "benefit3": "Einfache Einrichtung im Terminal",
+            "howTo": "So geht's:",
+            "instructions": "Öffne das Terminal im Workspace und führe folgenden Befehl aus:"
+        },
+        "apiKey": {
+            "title": "Option 2: API Key",
+            "description": "Alternativ kannst du einen Anthropic API Key verwenden.",
+            "costWarning": "Achtung: Kostenpflichtig!",
+            "costDetails": "Die API-Nutzung wird nach Verbrauch abgerechnet. Dies kann bei intensiver Nutzung von Claude Code schnell teuer werden.",
+            "optional": "Optional",
+            "hint": "Falls du keinen Claude Abo-Zugang hast, kannst du hier deinen API Key speichern. Der Key wird verschlüsselt gespeichert und beim Start des Workspaces automatisch als Umgebungsvariable gesetzt.",
+            "getKey": "API Key erhältlich bei"
+        },
+        "security": {
+            "title": "Sicherheitshinweis",
+            "description": "Dein API Key wird mit AES-256-GCM verschlüsselt und sicher in der Datenbank gespeichert. Er wird nur beim Start des Workspace-Containers als Umgebungsvariable gesetzt."
+        },
+        "configured": "Konfiguriert",
+        "notConfigured": "Nicht konfiguriert",
+        "testKey": "Key testen"
     }
 }

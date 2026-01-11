@@ -9,28 +9,90 @@
 
 <div class="row">
     <div class="col-md-8 mx-auto">
-        <!-- Anthropic API Key -->
+        <!-- Claude Code Authentication Options -->
+        <div class="card d-elevated mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-terminal"></i>
+                    <%= t('workspaces:claudeCode.title') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    <%= t('workspaces:claudeCode.description') %>
+                </p>
+
+                <!-- Option 1: Claude Subscription -->
+                <div class="card mb-3 border-success">
+                    <div class="card-header bg-success-subtle">
+                        <h6 class="mb-0 text-success">
+                            <i class="bi bi-star-fill"></i>
+                            <%= t('workspaces:claudeCode.subscription.title') %>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-2">
+                            <%= t('workspaces:claudeCode.subscription.description') %>
+                        </p>
+                        <ul class="small mb-3">
+                            <li><%= t('workspaces:claudeCode.subscription.benefit1') %></li>
+                            <li><%= t('workspaces:claudeCode.subscription.benefit2') %></li>
+                            <li><%= t('workspaces:claudeCode.subscription.benefit3') %></li>
+                        </ul>
+                        <div class="alert alert-light small mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            <strong><%= t('workspaces:claudeCode.subscription.howTo') %></strong><br>
+                            <%= t('workspaces:claudeCode.subscription.instructions') %>
+                            <code class="d-block mt-2 p-2 bg-dark text-light rounded">claude login</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: API Key -->
+                <div class="card border-warning">
+                    <div class="card-header bg-warning-subtle">
+                        <h6 class="mb-0 text-warning-emphasis">
+                            <i class="bi bi-key"></i>
+                            <%= t('workspaces:claudeCode.apiKey.title') %>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-2">
+                            <%= t('workspaces:claudeCode.apiKey.description') %>
+                        </p>
+                        <div class="alert alert-warning small mb-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong><%= t('workspaces:claudeCode.apiKey.costWarning') %></strong><br>
+                            <%= t('workspaces:claudeCode.apiKey.costDetails') %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anthropic API Key Configuration -->
         <div class="card d-elevated mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="bi bi-robot"></i>
+                    <i class="bi bi-key"></i>
                     Anthropic API Key
+                    <span class="badge bg-secondary ms-2"><%= t('workspaces:claudeCode.apiKey.optional') %></span>
                 </h5>
                 <% if (hasAnthropicKey) { %>
                     <span class="badge bg-success">
                         <i class="bi bi-check-circle"></i>
-                        Configured
+                        <%= t('workspaces:claudeCode.configured') %>
                     </span>
                 <% } else { %>
                     <span class="badge bg-secondary">
                         <i class="bi bi-x-circle"></i>
-                        Not configured
+                        <%= t('workspaces:claudeCode.notConfigured') %>
                     </span>
                 <% } %>
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">
-                    <%= t('workspaces:settings.apiKeyHint') %>
+                    <%= t('workspaces:claudeCode.apiKey.hint') %>
                 </p>
 
                 <form action="/settings/api-keys/anthropic" method="POST">
@@ -49,7 +111,7 @@
                             <% if (hasAnthropicKey) { %>value="************************"<% } %>
                         >
                         <div class="form-text">
-                            Get your API key from <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+                            <%= t('workspaces:claudeCode.apiKey.getKey') %> <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
                         </div>
                     </div>
 
@@ -62,7 +124,7 @@
                         <% if (hasAnthropicKey) { %>
                             <button type="button" class="btn btn-outline-primary" onclick="testAnthropicKey()">
                                 <i class="bi bi-check-circle"></i>
-                                Test Key
+                                <%= t('workspaces:claudeCode.testKey') %>
                             </button>
 
                             <button type="button" class="btn btn-outline-danger ms-auto" onclick="deleteAnthropicKey()">
@@ -93,12 +155,11 @@
             </div>
         </div>
 
-        <!-- Info Box -->
+        <!-- Security Info Box -->
         <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i>
-            <strong>Security Note:</strong>
-            Your API keys are encrypted using AES-256-GCM before being stored in the database.
-            They are only decrypted in memory when starting a workspace and are never written to disk inside the workspace container.
+            <i class="bi bi-shield-lock"></i>
+            <strong><%= t('workspaces:claudeCode.security.title') %></strong><br>
+            <%= t('workspaces:claudeCode.security.description') %>
         </div>
     </div>
 </div>
@@ -129,7 +190,7 @@ async function testAnthropicKey() {
         alert('Error: ' + error.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Test Key';
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> <%= t("workspaces:claudeCode.testKey") %>';
     }
 }
 

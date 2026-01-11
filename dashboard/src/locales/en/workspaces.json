@@ -127,5 +127,34 @@
         "warning1": "The container will be stopped and deleted",
         "warning2": "All unsynchronized changes in the workspace will be lost",
         "warning3": "Project files remain unchanged"
+    },
+    "claudeCode": {
+        "title": "Claude Code Authentication",
+        "description": "Claude Code requires authentication. You have two options:",
+        "subscription": {
+            "title": "Option 1: Claude Subscription (Recommended)",
+            "description": "Use Claude Code with your existing Claude Pro, Max or Team subscription - no extra cost!",
+            "benefit1": "No additional cost",
+            "benefit2": "Uses your existing Claude subscription",
+            "benefit3": "Easy setup in the terminal",
+            "howTo": "How to:",
+            "instructions": "Open the terminal in your workspace and run the following command:"
+        },
+        "apiKey": {
+            "title": "Option 2: API Key",
+            "description": "Alternatively, you can use an Anthropic API key.",
+            "costWarning": "Warning: Pay-per-use!",
+            "costDetails": "API usage is billed based on consumption. This can become expensive quickly with intensive Claude Code usage.",
+            "optional": "Optional",
+            "hint": "If you don't have a Claude subscription, you can save your API key here. The key is stored encrypted and automatically set as an environment variable when starting the workspace.",
+            "getKey": "Get API key at"
+        },
+        "security": {
+            "title": "Security Note",
+            "description": "Your API key is encrypted with AES-256-GCM and stored securely in the database. It is only set as an environment variable when starting the workspace container."
+        },
+        "configured": "Configured",
+        "notConfigured": "Not configured",
+        "testKey": "Test Key"
     }
 }
