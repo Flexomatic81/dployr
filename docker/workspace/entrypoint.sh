@@ -38,6 +38,22 @@ if [ -n "$GIT_USER_EMAIL" ]; then
 fi
 
 # ============================================================
+# VS Code Language Configuration
+# ============================================================
+
+# Set VS Code display language based on VSCODE_LOCALE env var
+if [ -n "$VSCODE_LOCALE" ]; then
+    ARGV_JSON_DIR="/home/coder/.local/share/code-server/User"
+    ARGV_JSON="$ARGV_JSON_DIR/argv.json"
+
+    mkdir -p "$ARGV_JSON_DIR"
+    echo "{\"locale\": \"$VSCODE_LOCALE\"}" > "$ARGV_JSON"
+    chown -R coder:coder "/home/coder/.local/share/code-server"
+
+    echo "VS Code: Language set to $VSCODE_LOCALE"
+fi
+
+# ============================================================
 # Start code-server as coder user
 # ============================================================
 

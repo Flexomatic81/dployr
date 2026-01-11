@@ -75,6 +75,9 @@ RUN npm install -g \
 # ============================================================
 USER coder
 
+# Language packs (German - English is default)
+RUN code-server --install-extension ms-ceintl.vscode-language-pack-de
+
 # Essential extensions
 RUN code-server --install-extension esbenp.prettier-vscode \
     && code-server --install-extension dbaeumer.vscode-eslint \
