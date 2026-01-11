@@ -408,8 +408,10 @@ async function startWorkspace(userId, projectName, systemUsername, options = {})
                 },
                 SecurityOpt: ['no-new-privileges:true'],
                 CapDrop: ['ALL'],
-                // code-server needs CHOWN, SETUID, SETGID to function properly
-                CapAdd: ['CHOWN', 'SETUID', 'SETGID'],
+                // code-server needs these capabilities to function properly:
+                // - CHOWN, SETUID, SETGID: for user switching (gosu)
+                // - DAC_OVERRIDE: for root to write to coder-owned directories in entrypoint
+                CapAdd: ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
                 ReadonlyRootfs: false
             },
             NetworkingConfig: {
