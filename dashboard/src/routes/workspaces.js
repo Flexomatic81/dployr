@@ -154,14 +154,10 @@ router.post('/:projectName/start',
             const projectName = req.params.projectName;
             const systemUsername = req.projectAccess.systemUsername;
 
-            // Pass user's language preference to workspace
-            const locale = req.language || req.session?.language || 'de';
-
             const workspace = await workspaceService.startWorkspace(
                 userId,
                 projectName,
-                systemUsername,
-                { locale }
+                systemUsername
             );
 
             res.json({

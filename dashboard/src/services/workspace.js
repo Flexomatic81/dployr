@@ -298,10 +298,8 @@ async function createWorkspace(userId, projectName, options = {}) {
  * @param {number} userId - User ID
  * @param {string} projectName - Project name
  * @param {string} systemUsername - System username for file paths
- * @param {object} options - Additional options
- * @param {string} options.locale - VS Code display language (de, en)
  */
-async function startWorkspace(userId, projectName, systemUsername, options = {}) {
+async function startWorkspace(userId, projectName, systemUsername) {
     let workspaceId = null;
 
     try {
@@ -374,10 +372,6 @@ async function startWorkspace(userId, projectName, systemUsername, options = {})
                 env.push(`GIT_USER_EMAIL=${userRows[0].email}`);
             }
         }
-
-        // Add VS Code locale setting (de, en)
-        const locale = options.locale || 'de';
-        env.push(`VSCODE_LOCALE=${locale}`);
 
         // Check if workspace image exists
         try {
