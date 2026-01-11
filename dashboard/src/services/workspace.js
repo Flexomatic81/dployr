@@ -174,6 +174,163 @@ async function logWorkspaceAction(workspaceId, userId, projectName, action, deta
     }
 }
 
+/**
+ * Generates CLAUDE.md file for a project if it doesn't exist
+ * Provides Claude Code with project-specific context
+ * @param {string} htmlPath - Path to project's html folder
+ * @param {string} projectName - Project name
+ * @param {string} systemUsername - User's system username
+ */
+async function generateClaudeMd(htmlPath, projectName, systemUsername) {
+    const claudeMdPath = path.join(htmlPath, 'CLAUDE.md');
+
+    // Don't overwrite existing CLAUDE.md
+    if (fs.existsSync(claudeMdPath)) {
+        logger.debug('CLAUDE.md already exists, skipping generation', { projectName });
+        return;
+    }
+
+    try {
+        // Detect project type from docker-compose.yml
+        const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+        let projectType = 'unknown';
+        try {
+            const composePath = path.join(projectPath, 'docker-compose.yml');
+            const content = fs.readFileSync(composePath, 'utf8');
+
+            if (content.includes('composer install') || content.includes('APACHE_DOCUMENT_ROOT')) {
+                projectType = 'laravel';
+            } else if (content.includes('next') || (content.includes('npm run build') && content.includes('npm start') && content.includes('3000'))) {
+                projectType = 'nextjs';
+            } else if (content.includes('nuxt')) {
+                projectType = 'nuxtjs';
+            } else if (content.includes('npm run build') && content.includes('FROM nginx:alpine')) {
+                projectType = 'nodejs-static';
+            } else if (content.includes('gunicorn') && content.includes('django')) {
+                projectType = 'python-django';
+            } else if (content.includes('gunicorn') || content.includes('flask')) {
+                projectType = 'python-flask';
+            } else if (content.includes('php-fpm') || content.includes('php:')) {
+                projectType = 'php-website';
+            } else if (content.includes('node:') || content.includes('npm')) {
+                projectType = 'nodejs-app';
+            } else {
+                projectType = 'static-website';
+            }
+        } catch (e) {
+            // Couldn't read docker-compose.yml
+        }
+
+        // Check for database credentials
+        let dbInfo = null;
+        const credentialsPath = path.join(USERS_PATH, systemUsername, '.db-credentials');
+        try {
+            const credContent = fs.readFileSync(credentialsPath, 'utf8');
+            // Look for any database entry
+            const dbMatch = credContent.match(/DB_TYPE=(\w+)/);
+            const hostMatch = credContent.match(/DB_HOST=([^\n]+)/);
+            if (dbMatch) {
+                dbInfo = {
+                    type: dbMatch[1],
+                    host: hostMatch ? hostMatch[1] : 'unknown'
+                };
+            }
+        } catch (e) {
+            // No credentials file
+        }
+
+        // Build project type specific info
+        let typeInfo = '';
+        switch (projectType) {
+            case 'nodejs-app':
+            case 'nextjs':
+            case 'nuxtjs':
+            case 'nodejs-static':
+                typeInfo = `
+## Project Type: ${projectType}
+
+- **Runtime:** Node.js 20 LTS
+- **Package Manager:** npm (also yarn and pnpm available)
+- **Start Command:** Check package.json scripts`;
+                break;
+            case 'php-website':
+            case 'laravel':
+                typeInfo = `
+## Project Type: ${projectType}
+
+- **Runtime:** PHP 8.2 with Apache
+- **Package Manager:** Composer
+- **Extensions:** PDO, MySQL, PostgreSQL, cURL, mbstring, XML`;
+                break;
+            case 'python-flask':
+            case 'python-django':
+                typeInfo = `
+## Project Type: ${projectType}
+
+- **Runtime:** Python 3.12
+- **Package Manager:** pip (venv available)
+- **Server:** Gunicorn`;
+                break;
+            default:
+                typeInfo = `
+## Project Type: ${projectType}
+
+- **Server:** Nginx (for static files)`;
+        }
+
+        // Build database info
+        let dbSection = '';
+        if (dbInfo) {
+            dbSection = `
+## Database
+
+- **Type:** ${dbInfo.type === 'mariadb' ? 'MariaDB' : 'PostgreSQL'}
+- **Host:** ${dbInfo.host}
+- **Credentials:** See \`.env\` file or \`~/.db-credentials\`
+- **Client:** ${dbInfo.type === 'mariadb' ? 'mysql' : 'psql'} command available`;
+        }
+
+        // Generate CLAUDE.md content
+        const claudeMdContent = `# CLAUDE.md
+
+This project runs in a dployr workspace container.
+
+## Environment
+
+- **Working Directory:** \`/workspace\` (project files)
+- **User:** coder (non-root)
+- **Shell:** bash
+${typeInfo}
+${dbSection}
+## Important Notes
+
+- All changes in \`/workspace\` are persisted and synced to the project
+- Don't modify files outside \`/workspace\` (system files)
+- Environment variables are in \`.env\` file
+- Use the integrated terminal or VS Code for development
+
+## Available Tools
+
+- Git (configured with user credentials)
+- Node.js 20, npm, yarn, pnpm
+- PHP 8.2, Composer
+- Python 3.12, pip
+- Database clients (mysql, psql)
+- Common utilities (curl, wget, jq, rsync, zip)
+
+---
+*Generated by dployr workspace. You can customize this file.*
+`;
+
+        fs.writeFileSync(claudeMdPath, claudeMdContent);
+        logger.info('Generated CLAUDE.md for project', { projectName, projectType });
+
+    } catch (error) {
+        logger.warn('Failed to generate CLAUDE.md', { projectName, error: error.message });
+        // Don't throw - this is not critical
+    }
+}
+
 // ============================================================
 // RESOURCE LIMITS
 // ============================================================
@@ -338,6 +495,9 @@ async function startWorkspace(userId, projectName, systemUsername) {
         if (!fs.existsSync(htmlPath)) {
             fs.mkdirSync(htmlPath, { recursive: true });
         }
+
+        // Generate CLAUDE.md if it doesn't exist
+        await generateClaudeMd(htmlPath, projectName, systemUsername);
 
         // Get user's API key if configured
         let apiKey = null;
