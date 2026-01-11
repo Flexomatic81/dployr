@@ -25,9 +25,25 @@ fi
 if [ -d "/claude-config" ]; then
     # Remove existing .claude directory if it exists
     rm -rf /home/coder/.claude
-    # Create symlink to persistent storage
+    # Create symlink to persistent storage (~/.claude -> /claude-config)
     ln -sf /claude-config /home/coder/.claude
     chown -h coder:coder /home/coder/.claude
+
+    # Also symlink ~/.claude.json for OAuth session persistence
+    # Claude Code stores OAuth tokens in ~/.claude.json (not in ~/.claude/)
+    if [ -f "/claude-config/claude.json" ]; then
+        rm -f /home/coder/.claude.json
+        ln -sf /claude-config/claude.json /home/coder/.claude.json
+        chown -h coder:coder /home/coder/.claude.json
+    else
+        # Create empty file so symlink works on first run
+        touch /claude-config/claude.json
+        chown coder:coder /claude-config/claude.json
+        rm -f /home/coder/.claude.json
+        ln -sf /claude-config/claude.json /home/coder/.claude.json
+        chown -h coder:coder /home/coder/.claude.json
+    fi
+
     echo "Claude Code: Using persistent config from /claude-config"
 fi
 
