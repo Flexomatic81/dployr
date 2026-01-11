@@ -379,6 +379,40 @@ router.get('/:projectName/ide',
     }
 );
 
+/**
+ * GET /workspaces/:projectName/terminal - Terminal view
+ */
+router.get('/:projectName/terminal',
+    getWorkspaceAccess(),
+    requireWorkspace,
+    requireRunningWorkspace,
+    requireWorkspacePermission,
+    async (req, res) => {
+        try {
+            const userId = req.session.user.id;
+
+            // Update last accessed
+            await workspaceService.updateActivity(req.workspace.id, userId);
+
+            // Build Terminal URL - opens code-server with terminal focused
+            const terminalUrl = `/workspace-proxy/${req.params.projectName}/?folder=/workspace`;
+
+            res.render('workspaces/terminal', {
+                layout: false,
+                title: `Terminal - ${req.params.projectName}`,
+                workspace: req.workspace,
+                project: req.projectAccess.project,
+                user: req.session.user,
+                terminalUrl
+            });
+        } catch (error) {
+            logger.error('Failed to access Terminal', { error: error.message });
+            req.flash('error', req.t('workspaces:errors.terminalFailed'));
+            res.redirect(`/workspaces/${req.params.projectName}`);
+        }
+    }
+);
+
 // ============================================================
 // SETTINGS
 // ============================================================

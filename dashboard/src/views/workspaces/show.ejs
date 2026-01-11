@@ -87,6 +87,10 @@
                             <i class="bi bi-code-square"></i>
                             <%= t('workspaces:actions.openIDE') %>
                         </button>
+                        <button class="btn btn-dark" id="openTerminalBtn" onclick="openTerminal(this)">
+                            <i class="bi bi-terminal"></i>
+                            <%= t('workspaces:actions.openTerminal') %>
+                        </button>
                         <button class="btn btn-warning" onclick="stopWorkspace(this)">
                             <i class="bi bi-stop-fill"></i>
                             <%= t('workspaces:actions.stop') %>
@@ -225,6 +229,103 @@ async function deleteWorkspace() {
     } catch (error) {
         alert('Error: ' + error.message);
     }
+}
+
+async function openTerminal(btn) {
+    const originalContent = btn.innerHTML;
+
+    // Open tab immediately to avoid popup blocker
+    const terminalWindow = window.open('about:blank', '_blank');
+
+    if (!terminalWindow) {
+        // Popup was blocked - fall back to direct navigation
+        window.location.href = '/workspaces/<%= workspace.project_name %>/terminal';
+        return;
+    }
+
+    // Show a loading message in the new tab
+    terminalWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Loading Terminal...</title>
+            <style>
+                body {
+                    background: #1e1e1e;
+                    color: #ccc;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                }
+                .loader {
+                    text-align: center;
+                }
+                .spinner {
+                    border: 4px solid #333;
+                    border-top: 4px solid #0e639c;
+                    border-radius: 50%;
+                    width: 50px;
+                    height: 50px;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="loader">
+                <div class="spinner"></div>
+                <p id="status"><%= t("workspaces:ide.waitingForContainer") %></p>
+            </div>
+        </body>
+        </html>
+    `);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("workspaces:ide.waitingForContainer") %>';
+
+    // Wait for container to be healthy
+    const maxAttempts = 30;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+        try {
+            const response = await fetch('/workspaces/<%= workspace.project_name %>/health');
+            const data = await response.json();
+
+            if (data.healthy) {
+                // Container is ready, navigate the already-open tab to Terminal
+                terminalWindow.location.href = '/workspaces/<%= workspace.project_name %>/terminal';
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                return;
+            }
+
+            // Update status in both button and new tab
+            if (data.status === 'starting') {
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> <%= t("workspaces:ide.containerStarting") %>';
+                try {
+                    terminalWindow.document.getElementById('status').textContent = '<%= t("workspaces:ide.containerStarting") %>';
+                } catch (e) { /* Tab might be closed */ }
+            }
+        } catch (error) {
+            console.error('Health check failed:', error);
+        }
+
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Timeout - navigate anyway
+    terminalWindow.location.href = '/workspaces/<%= workspace.project_name %>/terminal';
+    btn.disabled = false;
+    btn.innerHTML = originalContent;
 }
 
 async function openIDE(btn) {
