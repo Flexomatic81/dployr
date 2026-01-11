@@ -12,7 +12,7 @@
 const Docker = require('dockerode');
 const crypto = require('crypto');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const { pool } = require('../config/database');
