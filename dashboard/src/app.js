@@ -617,6 +617,25 @@ async function start() {
         // Handle terminal WebSocket connections
         terminalWss.on('connection', async (ws, req, containerId) => {
             let session = null;
+            let pingInterval = null;
+            ws.isAlive = true;
+
+            // Setup ping/pong heartbeat to keep connection alive
+            ws.on('pong', () => {
+                ws.isAlive = true;
+            });
+
+            pingInterval = setInterval(() => {
+                if (ws.isAlive === false) {
+                    logger.debug('Terminal WebSocket: no pong received, closing');
+                    clearInterval(pingInterval);
+                    return ws.terminate();
+                }
+                ws.isAlive = false;
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.ping();
+                }
+            }, 30000); // Ping every 30 seconds
 
             try {
                 // Create terminal session
@@ -656,6 +675,7 @@ async function start() {
             } catch (error) {
                 logger.error('Failed to create terminal session', { error: error.message });
                 ws.send(JSON.stringify({ type: 'error', message: 'Failed to create terminal session' }));
+                clearInterval(pingInterval);
                 ws.close();
                 return;
             }
@@ -687,6 +707,7 @@ async function start() {
 
             // Handle WebSocket close
             ws.on('close', () => {
+                clearInterval(pingInterval);
                 if (session) {
                     terminalService.closeSession(session.sessionId);
                 }
@@ -695,6 +716,7 @@ async function start() {
             // Handle WebSocket errors
             ws.on('error', (err) => {
                 logger.debug('Terminal WebSocket error', { error: err.message });
+                clearInterval(pingInterval);
                 if (session) {
                     terminalService.closeSession(session.sessionId);
                 }
