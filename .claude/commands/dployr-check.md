@@ -77,7 +77,28 @@ Check if key files mentioned in CLAUDE.md still exist:
 ### Unused exports
 Check if exported functions in services are actually used.
 
-## 5. Git Status
+## 5. Translation Consistency (i18n)
+
+### Missing translations (German ↔ English)
+Compare translation keys between `dashboard/src/locales/de/*.json` and `dashboard/src/locales/en/*.json`:
+
+1. For each JSON file in `de/` directory, check if corresponding file exists in `en/`
+2. For each key in German file, verify it exists in English file
+3. For each key in English file, verify it exists in German file
+4. Report missing keys with file and key path (e.g., `projects.json: actions.delete`)
+
+### Empty translation values
+Search for empty strings `""` or placeholder text in translation files.
+
+### Inconsistent placeholders
+Check that interpolation variables (e.g., `{{name}}`, `{{count}}`) match between DE and EN versions.
+
+### Unused translation keys
+Compare translation keys against actual usage in:
+- EJS templates: `t('namespace:key')` or `t('key')`
+- JavaScript files: `req.t('key')`, `res.locals.t('key')`
+
+## 6. Git Status
 
 ### Uncommitted changes
 Run `git status --porcelain` to check for uncommitted work.
