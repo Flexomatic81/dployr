@@ -524,7 +524,7 @@ router.post('/:projectName/previews',
             const userId = req.session.user.id;
             const { lifetime_hours, password } = req.body;
 
-            // Workspace muss laufen für Preview-Erstellung
+            // Workspace must be running to create preview
             if (req.workspace.status !== 'running') {
                 return res.status(400).json({
                     success: false,

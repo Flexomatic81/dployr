@@ -1,11 +1,11 @@
 /**
  * Preview Service
  *
- * Verantwortlich für:
- * - Temporäre Preview-Deployments aus Workspaces
- * - URL-Generierung
- * - Auto-Cleanup nach Ablauf
- * - Preview-Container Management
+ * Responsible for:
+ * - Temporary preview deployments from workspaces
+ * - URL generation
+ * - Auto-cleanup on expiration
+ * - Preview container management
  */
 
 const Docker = require('dockerode');
@@ -38,12 +38,12 @@ const MAX_PREVIEWS_PER_WORKSPACE = 3;
 // ============================================================
 
 /**
- * Erstellt ein Preview Environment aus einem Workspace
+ * Creates a preview environment from a workspace
  *
- * @param {number} workspaceId - ID des Workspaces
- * @param {number} userId - ID des Users
- * @param {object} options - Optionen { lifetimeHours, password }
- * @returns {Promise<object>} Preview-Objekt
+ * @param {number} workspaceId - Workspace ID
+ * @param {number} userId - User ID
+ * @param {object} options - Options { lifetimeHours, password }
+ * @returns {Promise<object>} Preview object
  */
 async function createPreview(workspaceId, userId, options = {}) {
     const { lifetimeHours = DEFAULT_LIFETIME_HOURS, password = null } = options;
@@ -61,7 +61,7 @@ async function createPreview(workspaceId, userId, options = {}) {
 
         const workspace = workspaces[0];
 
-        // 2. Prüfen ob Max-Previews erreicht
+        // 2. Check if max previews reached
         const [existingPreviews] = await pool.query(
             `SELECT COUNT(*) as count FROM preview_environments
              WHERE workspace_id = ? AND status IN ('creating', 'running')`,
@@ -157,7 +157,7 @@ async function createPreview(workspaceId, userId, options = {}) {
 
         logger.info(`Preview created: ${previewHash} for workspace ${workspaceId}`);
 
-        // 12. Preview-Objekt zurückgeben
+        // 12. Return preview object
         const [previews] = await pool.query(
             'SELECT * FROM preview_environments WHERE id = ?',
             [previewId]
@@ -183,10 +183,10 @@ async function createPreview(workspaceId, userId, options = {}) {
 }
 
 /**
- * Löscht ein Preview Environment
+ * Deletes a preview environment
  *
- * @param {number} previewId - ID des Previews
- * @param {number} userId - ID des Users (für Berechtigung)
+ * @param {number} previewId - Preview ID
+ * @param {number} userId - User ID (for authorization)
  * @returns {Promise<void>}
  */
 async function deletePreview(previewId, userId) {
@@ -209,7 +209,7 @@ async function deletePreview(previewId, userId) {
             ['stopping', previewId]
         );
 
-        // 3. Container stoppen und löschen
+        // 3. Stop and remove container
         if (preview.container_id) {
             try {
                 const container = docker.getContainer(preview.container_id);
@@ -225,7 +225,7 @@ async function deletePreview(previewId, userId) {
             await portManager.releasePort(preview.assigned_port);
         }
 
-        // 5. Preview aus DB löschen
+        // 5. Delete preview from database
         await pool.query('DELETE FROM preview_environments WHERE id = ?', [previewId]);
 
         logger.info(`Preview deleted: ${preview.preview_hash}`);
@@ -237,12 +237,12 @@ async function deletePreview(previewId, userId) {
 }
 
 /**
- * Verlängert die Lebenszeit eines Previews
+ * Extends the lifetime of a preview
  *
- * @param {number} previewId - ID des Previews
- * @param {number} userId - ID des Users
- * @param {number} additionalHours - Zusätzliche Stunden
- * @returns {Promise<object>} Aktualisiertes Preview-Objekt
+ * @param {number} previewId - Preview ID
+ * @param {number} userId - User ID
+ * @param {number} additionalHours - Additional hours
+ * @returns {Promise<object>} Updated preview object
  */
 async function extendPreview(previewId, userId, additionalHours = 24) {
     try {
@@ -270,7 +270,7 @@ async function extendPreview(previewId, userId, additionalHours = 24) {
 
         logger.info(`Preview ${preview.preview_hash} extended by ${additionalHours} hours`);
 
-        // Aktualisiertes Objekt zurückgeben
+        // Return updated object
         const [updated] = await pool.query(
             'SELECT * FROM preview_environments WHERE id = ?',
             [previewId]
@@ -285,13 +285,13 @@ async function extendPreview(previewId, userId, additionalHours = 24) {
 }
 
 /**
- * Bereinigt abgelaufene Previews (Cron Job)
+ * Cleans up expired previews (Cron Job)
  *
- * @returns {Promise<number>} Anzahl gelöschter Previews
+ * @returns {Promise<number>} Number of deleted previews
  */
 async function cleanupExpiredPreviews() {
     try {
-        // Alle abgelaufenen Previews finden
+        // Find all expired previews
         const [expiredPreviews] = await pool.query(
             `SELECT * FROM preview_environments
              WHERE expires_at < NOW()
@@ -309,7 +309,7 @@ async function cleanupExpiredPreviews() {
 
         for (const preview of expiredPreviews) {
             try {
-                // Container stoppen und löschen
+                // Stop and remove container
                 if (preview.container_id) {
                     const container = docker.getContainer(preview.container_id);
                     try {
@@ -325,7 +325,7 @@ async function cleanupExpiredPreviews() {
                     await portManager.releasePort(preview.assigned_port);
                 }
 
-                // Status auf 'expired' setzen (behalten für History)
+                // Set status to 'expired' (keep for history)
                 await pool.query(
                     `UPDATE preview_environments
                      SET status = 'expired', container_id = NULL, assigned_port = NULL
@@ -350,11 +350,11 @@ async function cleanupExpiredPreviews() {
 }
 
 /**
- * Holt alle Previews eines Workspaces
+ * Gets all previews for a workspace
  *
- * @param {number} workspaceId - ID des Workspaces
- * @param {number} userId - ID des Users
- * @returns {Promise<Array>} Liste der Previews
+ * @param {number} workspaceId - Workspace ID
+ * @param {number} userId - User ID
+ * @returns {Promise<Array>} List of previews
  */
 async function getWorkspacePreviews(workspaceId, userId) {
     try {
@@ -374,10 +374,10 @@ async function getWorkspacePreviews(workspaceId, userId) {
 }
 
 /**
- * Holt Preview anhand des Hash
+ * Gets preview by hash
  *
  * @param {string} previewHash - Preview Hash
- * @returns {Promise<object|null>} Preview-Objekt oder null
+ * @returns {Promise<object|null>} Preview object or null
  */
 async function getPreviewByHash(previewHash) {
     try {
@@ -409,20 +409,20 @@ async function validatePreviewAccess(previewHash, password = null) {
             return false;
         }
 
-        // Status prüfen
+        // Check status
         if (preview.status !== 'running') {
             return false;
         }
 
-        // Expiration prüfen
+        // Check expiration
         if (new Date(preview.expires_at) < new Date()) {
             return false;
         }
 
-        // Passwort prüfen (wenn gesetzt)
+        // Check password (if set)
         if (preview.password_hash) {
             if (!password) {
-                return false; // Passwort erforderlich
+                return false; // Password required
             }
 
             const bcrypt = require('bcrypt');
@@ -431,7 +431,7 @@ async function validatePreviewAccess(previewHash, password = null) {
             return passwordValid;
         }
 
-        // Kein Passwort gesetzt - Zugriff erlaubt
+        // No password set - access allowed
         return true;
 
     } catch (error) {
@@ -451,21 +451,21 @@ async function validatePreviewAccess(previewHash, password = null) {
  * @returns {string} Preview URL
  */
 function generatePreviewUrl(previewHash) {
-    // Für jetzt: Einfache Hash-basierte URL
-    // In Zukunft: Nginx Proxy Manager Integration für custom Subdomains
+    // For now: Simple hash-based URL
+    // Future: Nginx Proxy Manager integration for custom subdomains
     const serverIp = process.env.SERVER_IP || 'localhost';
     return `http://${serverIp}/previews/${previewHash}`;
 }
 
 /**
- * Ermittelt das passende Docker-Image für Preview
+ * Determines the appropriate Docker image for preview
  *
- * @param {string} projectName - Projekt-Name
+ * @param {string} projectName - Project name
  * @returns {string} Docker Image Name
  */
 function getPreviewImage(projectName) {
-    // Basiert auf Projekt-Typ (sollte aus DB kommen in Realität)
-    // Für jetzt: Standard nginx Image für static content
+    // Based on project type (should come from DB in reality)
+    // For now: Standard nginx image for static content
     return 'nginx:alpine';
 }
 
