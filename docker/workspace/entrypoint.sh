@@ -49,6 +49,21 @@ if [ -d "/claude-config" ]; then
 fi
 
 # ============================================================
+# Claude Code Update (background)
+# ============================================================
+
+# Update Claude Code in background to not block container startup
+# This replaces Claude's built-in auto-update which causes issues
+(
+    echo "Claude Code: Checking for updates..."
+    if npm update -g @anthropic-ai/claude-code --loglevel=error 2>/dev/null; then
+        echo "Claude Code: Updated successfully"
+    else
+        echo "Claude Code: Update check completed"
+    fi
+) &
+
+# ============================================================
 # Environment Setup
 # ============================================================
 
