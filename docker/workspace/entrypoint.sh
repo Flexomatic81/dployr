@@ -64,8 +64,22 @@ fi
 ) &
 
 # ============================================================
-# Environment Setup
+# Claude Code Configuration
 # ============================================================
+
+# Create a dummy 'code' command to prevent "spawn code ENOENT" errors
+# Claude Code tries to install VS Code extension but code-server doesn't have 'code' CLI
+# This dummy script silently succeeds so Claude Code doesn't show error messages
+if [ ! -f /usr/local/bin/code ]; then
+    cat > /usr/local/bin/code << 'CODESCRIPT'
+#!/bin/bash
+# Dummy 'code' CLI for code-server environment
+# Claude Code calls this to install VS Code extension, but code-server
+# doesn't support the standard VS Code CLI. We exit silently.
+exit 0
+CODESCRIPT
+    chmod +x /usr/local/bin/code
+fi
 
 # Setup Claude Code if API key provided
 if [ -n "$ANTHROPIC_API_KEY" ]; then
