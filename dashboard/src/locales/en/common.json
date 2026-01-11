@@ -75,6 +75,7 @@
     "user": "User"
   },
   "confirm": {
+    "action": "Are you sure you want to perform this action?",
     "delete": "Are you sure you want to delete this?",
     "deleteWarning": "This action cannot be undone!"
   },
