@@ -9,6 +9,7 @@
     "autoDeploy": "Auto‑Deploy",
     "databases": "Databases",
     "sharing": "Project Sharing",
+    "workspaces": "Workspaces",
     "domains": "Domains & SSL",
     "notifications": "Notifications",
     "admin": "Administration",
@@ -251,6 +252,68 @@
       }
     },
     "ownerOnly": "Only the owner can: delete project, disconnect Git connection, configure Auto‑Deploy, manage shares"
+  },
+
+  "workspaces": {
+    "title": "Workspaces",
+    "intro": "Workspaces are cloud-based development environments right in your browser. You can edit your code in a full IDE without installing any local tools.",
+    "featuresTitle": "Features",
+    "features": {
+      "ide": "Full IDE (VS Code) in the browser",
+      "terminal": "Integrated terminal with shell access",
+      "sync": "Automatic synchronization with your project",
+      "apiKeys": "Secure storage of API keys (Anthropic, OpenAI, etc.)",
+      "persistent": "Persistent workspace state between sessions"
+    },
+    "createTitle": "Create Workspace",
+    "createSteps": {
+      "goto": "Go to the project view",
+      "click": "Click \"Open Workspace\"",
+      "wait": "Wait until the container has started",
+      "open": "The IDE opens automatically in the browser"
+    },
+    "ideTitle": "Using the IDE",
+    "ideIntro": "The workspace IDE is based on VS Code and offers:",
+    "ideFeatures": {
+      "editor": "Code editor with syntax highlighting for all common languages",
+      "explorer": "File explorer to navigate the project",
+      "terminal": "Integrated terminal for commands (npm, git, etc.)",
+      "extensions": "Pre-installed extensions (Claude Code, Git, etc.)",
+      "search": "Global search across the entire project"
+    },
+    "terminalTitle": "Terminal Access",
+    "terminalIntro": "Through the terminal you can execute commands directly in the container:",
+    "terminalExamples": {
+      "npm": "npm install / npm run dev - Node.js commands",
+      "git": "git status / git pull - Git operations",
+      "pip": "pip install - Install Python packages",
+      "composer": "composer install - Install PHP packages"
+    },
+    "apiKeysTitle": "Managing API Keys",
+    "apiKeysIntro": "You can securely store API keys for AI assistants like Claude Code in your workspace:",
+    "apiKeysSteps": {
+      "goto": "Go to Workspaces → [Your Workspace]",
+      "scroll": "Scroll to \"API Keys\"",
+      "add": "Add your API key (stored encrypted)",
+      "use": "The key is automatically available as an environment variable"
+    },
+    "apiKeysNote": "Note: API keys are encrypted with AES-256-GCM and are only available inside the workspace container.",
+    "syncTitle": "Project Synchronization",
+    "syncIntro": "Changes in the workspace are automatically synchronized with your project:",
+    "syncFeatures": {
+      "auto": "Automatic synchronization when saving",
+      "manual": "Manual sync via the \"Sync\" button available",
+      "rebuild": "\"Rebuild\" option to recreate the container if problems occur"
+    },
+    "statusTitle": "Workspace Status",
+    "statusTypes": {
+      "stopped": "Stopped: Workspace is inactive, files are preserved",
+      "starting": "Starting: Container is being initialized",
+      "running": "Running: Workspace is active and can be used",
+      "stopping": "Stopping: Container is shutting down",
+      "error": "Error: Problem during startup, check the logs"
+    },
+    "note": "Tip: Workspaces are automatically stopped after 30 minutes of inactivity to save resources. Your changes are preserved."
   },
 
   "domains": {

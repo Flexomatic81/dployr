@@ -29,6 +29,9 @@
             <a href="#sharing" class="list-group-item list-group-item-action">
                 <i class="bi bi-share"></i> <%= t('help:nav.sharing') %>
             </a>
+            <a href="#workspaces" class="list-group-item list-group-item-action">
+                <i class="bi bi-pc-display"></i> <%= t('help:nav.workspaces') %>
+            </a>
             <a href="#domains" class="list-group-item list-group-item-action">
                 <i class="bi bi-globe2"></i> <%= t('help:nav.domains') %>
             </a>
@@ -483,6 +486,116 @@ DB_NAME=deine_db</code></pre>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
                         <strong><%= t('help:sharing.ownerOnly') %></strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Workspaces -->
+        <section id="workspaces" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pc-display me-2"></i><%= t('help:workspaces.title') %></h5>
+                </div>
+                <div class="card-body">
+                    <p><%= t('help:workspaces.intro') %></p>
+
+                    <h5><%= t('help:workspaces.featuresTitle') %></h5>
+                    <ul>
+                        <li><i class="bi bi-code-slash text-primary"></i> <%= t('help:workspaces.features.ide') %></li>
+                        <li><i class="bi bi-terminal text-success"></i> <%= t('help:workspaces.features.terminal') %></li>
+                        <li><i class="bi bi-arrow-repeat text-info"></i> <%= t('help:workspaces.features.sync') %></li>
+                        <li><i class="bi bi-key text-warning"></i> <%= t('help:workspaces.features.apiKeys') %></li>
+                        <li><i class="bi bi-hdd text-secondary"></i> <%= t('help:workspaces.features.persistent') %></li>
+                    </ul>
+
+                    <h5 class="mt-4"><%= t('help:workspaces.createTitle') %></h5>
+                    <ol>
+                        <li><%= t('help:workspaces.createSteps.goto') %></li>
+                        <li><%= t('help:workspaces.createSteps.click') %></li>
+                        <li><%= t('help:workspaces.createSteps.wait') %></li>
+                        <li><%= t('help:workspaces.createSteps.open') %></li>
+                    </ol>
+
+                    <h5 class="mt-4"><%= t('help:workspaces.ideTitle') %></h5>
+                    <p><%= t('help:workspaces.ideIntro') %></p>
+                    <ul>
+                        <li><%= t('help:workspaces.ideFeatures.editor') %></li>
+                        <li><%= t('help:workspaces.ideFeatures.explorer') %></li>
+                        <li><%= t('help:workspaces.ideFeatures.terminal') %></li>
+                        <li><%= t('help:workspaces.ideFeatures.extensions') %></li>
+                        <li><%= t('help:workspaces.ideFeatures.search') %></li>
+                    </ul>
+
+                    <h5 class="mt-4"><%= t('help:workspaces.terminalTitle') %></h5>
+                    <p><%= t('help:workspaces.terminalIntro') %></p>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><code>npm</code></td>
+                            <td><%= t('help:workspaces.terminalExamples.npm') %></td>
+                        </tr>
+                        <tr>
+                            <td><code>git</code></td>
+                            <td><%= t('help:workspaces.terminalExamples.git') %></td>
+                        </tr>
+                        <tr>
+                            <td><code>pip</code></td>
+                            <td><%= t('help:workspaces.terminalExamples.pip') %></td>
+                        </tr>
+                        <tr>
+                            <td><code>composer</code></td>
+                            <td><%= t('help:workspaces.terminalExamples.composer') %></td>
+                        </tr>
+                    </table>
+
+                    <h5 class="mt-4"><%= t('help:workspaces.apiKeysTitle') %></h5>
+                    <p><%= t('help:workspaces.apiKeysIntro') %></p>
+                    <ol>
+                        <li><%= t('help:workspaces.apiKeysSteps.goto') %></li>
+                        <li><%= t('help:workspaces.apiKeysSteps.scroll') %></li>
+                        <li><%= t('help:workspaces.apiKeysSteps.add') %></li>
+                        <li><%= t('help:workspaces.apiKeysSteps.use') %></li>
+                    </ol>
+                    <div class="alert alert-info">
+                        <i class="bi bi-shield-lock"></i>
+                        <strong><%= t('help:workspaces.apiKeysNote') %></strong>
+                    </div>
+
+                    <h5 class="mt-4"><%= t('help:workspaces.syncTitle') %></h5>
+                    <p><%= t('help:workspaces.syncIntro') %></p>
+                    <ul>
+                        <li><%= t('help:workspaces.syncFeatures.auto') %></li>
+                        <li><%= t('help:workspaces.syncFeatures.manual') %></li>
+                        <li><%= t('help:workspaces.syncFeatures.rebuild') %></li>
+                    </ul>
+
+                    <h5 class="mt-4"><%= t('help:workspaces.statusTitle') %></h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><span class="badge bg-secondary">Stopped</span></td>
+                            <td><%= t('help:workspaces.statusTypes.stopped') %></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-warning">Starting</span></td>
+                            <td><%= t('help:workspaces.statusTypes.starting') %></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-success">Running</span></td>
+                            <td><%= t('help:workspaces.statusTypes.running') %></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-info">Stopping</span></td>
+                            <td><%= t('help:workspaces.statusTypes.stopping') %></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-danger">Error</span></td>
+                            <td><%= t('help:workspaces.statusTypes.error') %></td>
+                        </tr>
+                    </table>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong><%= t('help:workspaces.note') %></strong>
                     </div>
                 </div>
             </div>

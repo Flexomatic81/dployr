@@ -9,6 +9,7 @@
     "autoDeploy": "Auto-Deploy",
     "databases": "Datenbanken",
     "sharing": "Projekt-Sharing",
+    "workspaces": "Workspaces",
     "domains": "Domains & SSL",
     "notifications": "Benachrichtigungen",
     "admin": "Administration",
@@ -251,6 +252,68 @@
       }
     },
     "ownerOnly": "Nur der Besitzer kann: Projekt löschen, Git-Verbindung trennen, Auto-Deploy konfigurieren, Freigaben verwalten"
+  },
+
+  "workspaces": {
+    "title": "Workspaces",
+    "intro": "Workspaces sind cloud-basierte Entwicklungsumgebungen direkt im Browser. Du kannst deinen Code in einer vollständigen IDE bearbeiten, ohne lokale Tools installieren zu müssen.",
+    "featuresTitle": "Features",
+    "features": {
+      "ide": "Vollständige IDE (VS Code) im Browser",
+      "terminal": "Integriertes Terminal mit Shell-Zugriff",
+      "sync": "Automatische Synchronisation mit deinem Projekt",
+      "apiKeys": "Sichere Speicherung von API-Keys (Anthropic, OpenAI, etc.)",
+      "persistent": "Persistenter Workspace-Status zwischen Sessions"
+    },
+    "createTitle": "Workspace erstellen",
+    "createSteps": {
+      "goto": "Gehe zur Projektansicht",
+      "click": "Klicke auf \"Workspace öffnen\"",
+      "wait": "Warte bis der Container gestartet ist",
+      "open": "Die IDE öffnet sich automatisch im Browser"
+    },
+    "ideTitle": "IDE verwenden",
+    "ideIntro": "Die Workspace-IDE basiert auf VS Code und bietet:",
+    "ideFeatures": {
+      "editor": "Code-Editor mit Syntax-Highlighting für alle gängigen Sprachen",
+      "explorer": "Datei-Explorer zum Navigieren im Projekt",
+      "terminal": "Integriertes Terminal für Befehle (npm, git, etc.)",
+      "extensions": "Vorinstallierte Extensions (Claude Code, Git, etc.)",
+      "search": "Globale Suche im gesamten Projekt"
+    },
+    "terminalTitle": "Terminal-Zugriff",
+    "terminalIntro": "Über das Terminal kannst du direkt Befehle im Container ausführen:",
+    "terminalExamples": {
+      "npm": "npm install / npm run dev - Node.js Befehle",
+      "git": "git status / git pull - Git-Operationen",
+      "pip": "pip install - Python-Pakete installieren",
+      "composer": "composer install - PHP-Pakete installieren"
+    },
+    "apiKeysTitle": "API-Keys verwalten",
+    "apiKeysIntro": "Du kannst API-Keys für KI-Assistenten wie Claude Code sicher im Workspace speichern:",
+    "apiKeysSteps": {
+      "goto": "Gehe zu Workspaces → [Dein Workspace]",
+      "scroll": "Scrolle zu \"API-Keys\"",
+      "add": "Füge deinen API-Key hinzu (wird verschlüsselt gespeichert)",
+      "use": "Der Key wird automatisch als Umgebungsvariable verfügbar"
+    },
+    "apiKeysNote": "Hinweis: API-Keys werden mit AES-256-GCM verschlüsselt und sind nur innerhalb des Workspace-Containers verfügbar.",
+    "syncTitle": "Projekt-Synchronisation",
+    "syncIntro": "Änderungen im Workspace werden automatisch mit deinem Projekt synchronisiert:",
+    "syncFeatures": {
+      "auto": "Automatische Synchronisation beim Speichern",
+      "manual": "Manueller Sync über den \"Sync\"-Button möglich",
+      "rebuild": "\"Rebuild\"-Option zum Neuerstellen des Containers bei Problemen"
+    },
+    "statusTitle": "Workspace-Status",
+    "statusTypes": {
+      "stopped": "Gestoppt: Workspace ist inaktiv, Dateien bleiben erhalten",
+      "starting": "Wird gestartet: Container wird initialisiert",
+      "running": "Läuft: Workspace ist aktiv und kann verwendet werden",
+      "stopping": "Wird gestoppt: Container wird heruntergefahren",
+      "error": "Fehler: Problem beim Starten, prüfe die Logs"
+    },
+    "note": "Tipp: Workspaces werden nach 30 Minuten Inaktivität automatisch gestoppt, um Ressourcen zu sparen. Deine Änderungen bleiben erhalten."
   },
 
   "domains": {
