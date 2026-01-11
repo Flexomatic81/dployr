@@ -117,8 +117,10 @@ do_deploy() {
         echo "Updating from branch: $BRANCH"
     fi
 
-    # Fetch latest code from remote (including tags for version detection)
-    if ! git fetch --tags origin "$BRANCH" 2>&1; then
+    # Fetch latest code from remote
+    # Note: --tags may show "rejected" warnings for existing tags, which is harmless
+    # We fetch branch first (critical), then tags separately (optional)
+    if ! git fetch origin "$BRANCH" 2>&1; then
         if [ "$JSON_OUTPUT" = true ]; then
             echo "{\"status\":\"error\",\"error\":\"Failed to fetch from remote\"}"
         else
@@ -126,6 +128,8 @@ do_deploy() {
         fi
         exit 1
     fi
+    # Fetch tags separately, ignore errors (tag conflicts are harmless)
+    git fetch --tags origin 2>/dev/null || true
 
     # Reset to remote branch - this handles diverged histories gracefully
     # Using reset instead of pull ensures updates always work regardless of local state
