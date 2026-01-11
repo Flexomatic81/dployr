@@ -31,13 +31,14 @@ if [ -d "/claude-config" ]; then
 
     # Also symlink ~/.claude.json for OAuth session persistence
     # Claude Code stores OAuth tokens in ~/.claude.json (not in ~/.claude/)
-    if [ -f "/claude-config/claude.json" ]; then
+    if [ -f "/claude-config/claude.json" ] && [ -s "/claude-config/claude.json" ]; then
+        # File exists and is not empty - use it
         rm -f /home/coder/.claude.json
         ln -sf /claude-config/claude.json /home/coder/.claude.json
         chown -h coder:coder /home/coder/.claude.json
     else
-        # Create empty file so symlink works on first run
-        touch /claude-config/claude.json
+        # Create valid empty JSON file so symlink works on first run
+        echo '{}' > /claude-config/claude.json
         chown coder:coder /claude-config/claude.json
         rm -f /home/coder/.claude.json
         ln -sf /claude-config/claude.json /home/coder/.claude.json
