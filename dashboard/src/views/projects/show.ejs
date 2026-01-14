@@ -137,6 +137,31 @@
                             <td><code class="small"><%= project.database %></code></td>
                         </tr>
                     <% } %>
+                    <% if (project.isCustom && project.customAnalysis) { %>
+                        <% if (project.customAnalysis.appTechnology) { %>
+                        <tr>
+                            <th><%= t('projects:customProject.technology') %>:</th>
+                            <td>
+                                <span class="badge bg-info-subtle text-info">
+                                    <%= project.customAnalysis.appTechnology %>
+                                </span>
+                                <small class="text-muted">(<%= t('projects:customProject.detected') %>)</small>
+                            </td>
+                        </tr>
+                        <% } %>
+                        <% if (project.customAnalysis.databases && project.customAnalysis.databases.length > 0) { %>
+                        <tr>
+                            <th><%= t('projects:customProject.integratedDb') %>:</th>
+                            <td>
+                                <% project.customAnalysis.databases.forEach(db => { %>
+                                    <span class="badge bg-primary-subtle text-primary me-1">
+                                        <i class="<%= db.icon %>"></i> <%= db.type %>
+                                    </span>
+                                <% }) %>
+                            </td>
+                        </tr>
+                        <% } %>
+                    <% } %>
                 </table>
             </div>
         </div>
@@ -882,6 +907,13 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
     </div>
     <div class="collapse" id="collapseEnv">
     <div class="card-body">
+        <% if (project.isCustom && project.customAnalysis && project.customAnalysis.databases && project.customAnalysis.databases.length > 0) { %>
+        <div class="alert alert-warning mb-3">
+            <i class="bi bi-database-fill me-2"></i>
+            <strong><%= t('projects:customProject.integratedDb') %>:</strong>
+            <%- t('projects:customProject.integratedDbHint', { type: project.customAnalysis.databases.map(db => db.type).join(', ') }) %>
+        </div>
+        <% } %>
         <% if (envExample && envExample.exists && !envContent.trim() && userDatabases && userDatabases.length > 0) { %>
         <div class="alert alert-info mb-3">
             <i class="bi bi-lightbulb"></i>

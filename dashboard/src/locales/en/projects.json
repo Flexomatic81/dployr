@@ -80,7 +80,12 @@
   },
 
   "customProject": {
-    "info": "This project uses a custom docker-compose.yml. The project type cannot be changed as this would overwrite your configuration. Edit your docker-compose.yml in the project instead."
+    "info": "This project uses a custom docker-compose.yml. The project type cannot be changed as this would overwrite your configuration. Edit your docker-compose.yml in the project instead.",
+    "technology": "Technology",
+    "integratedDb": "Integrated Database",
+    "integratedDbHint": "This project includes an integrated {{type}} database. Connection details are managed internally via docker-compose and do not need to be configured manually in .env.",
+    "servicesCount": "{{count}} services",
+    "detected": "detected"
   },
 
   "templateInfo": {

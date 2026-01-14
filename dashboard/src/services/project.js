@@ -84,8 +84,10 @@ async function getProjectInfo(systemUsername, projectName) {
 
         // For custom projects, get service info from docker compose
         let services = [];
+        let customAnalysis = null;
         if (templateType === 'custom') {
             services = await dockerService.getProjectServices(projectPath);
+            customAnalysis = await analyzeCustomDockerCompose(projectPath);
         }
 
         return {
@@ -100,6 +102,7 @@ async function getProjectInfo(systemUsername, projectName) {
             containers,
             services, // Multi-service info for custom projects
             isCustom: templateType === 'custom',
+            customAnalysis, // Analyzed info for custom projects (databases, appTechnology, ports)
             hasDatabase: !!envData.DB_DATABASE,
             database: envData.DB_DATABASE || null
         };
@@ -141,6 +144,126 @@ async function detectTemplateType(projectPath) {
         }
     } catch (error) {
         return 'unknown';
+    }
+}
+
+// Analyze custom docker-compose.yml to extract service info
+// Returns: { services: [...], databases: [...], appTechnology: string|null, ports: [...] }
+async function analyzeCustomDockerCompose(projectPath) {
+    const result = {
+        services: [],
+        databases: [],
+        appTechnology: null,
+        ports: []
+    };
+
+    try {
+        const composePath = path.join(projectPath, 'docker-compose.yml');
+        const content = await fs.readFile(composePath, 'utf8');
+
+        // Known database image patterns
+        const databasePatterns = {
+            'mysql': { name: 'MySQL', icon: 'bi-database' },
+            'mariadb': { name: 'MariaDB', icon: 'bi-database' },
+            'postgres': { name: 'PostgreSQL', icon: 'bi-database-fill' },
+            'mongo': { name: 'MongoDB', icon: 'bi-database' },
+            'redis': { name: 'Redis', icon: 'bi-lightning' },
+            'memcached': { name: 'Memcached', icon: 'bi-memory' }
+        };
+
+        // Known app technology patterns
+        const appPatterns = {
+            'node': 'Node.js',
+            'php': 'PHP',
+            'python': 'Python',
+            'ruby': 'Ruby',
+            'golang': 'Go',
+            'rust': 'Rust',
+            'openjdk': 'Java',
+            'dotnet': '.NET',
+            'nginx': 'Nginx',
+            'apache': 'Apache',
+            'caddy': 'Caddy'
+        };
+
+        // Simple YAML parsing for services section
+        const lines = content.split('\n');
+        let inServices = false;
+        let currentService = null;
+        let serviceIndent = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            // Detect services section
+            if (trimmed === 'services:') {
+                inServices = true;
+                continue;
+            }
+
+            // Exit services section on same-level key
+            if (inServices && !line.startsWith(' ') && !line.startsWith('\t') && trimmed && !trimmed.startsWith('#')) {
+                inServices = false;
+            }
+
+            if (!inServices) continue;
+
+            // Detect service name (indented key with colon, not further indented properties)
+            const leadingSpaces = line.length - line.trimStart().length;
+            if (leadingSpaces > 0 && leadingSpaces <= 4 && trimmed.endsWith(':') && !trimmed.includes(' ')) {
+                currentService = trimmed.slice(0, -1);
+                serviceIndent = leadingSpaces;
+                result.services.push(currentService);
+                continue;
+            }
+
+            // Look for image or build context within current service
+            if (currentService && leadingSpaces > serviceIndent) {
+                // Check for image
+                const imageMatch = trimmed.match(/^image:\s*["']?([^"'\s]+)/);
+                if (imageMatch) {
+                    const image = imageMatch[1].toLowerCase();
+
+                    // Check for database
+                    for (const [pattern, dbInfo] of Object.entries(databasePatterns)) {
+                        if (image.includes(pattern)) {
+                            result.databases.push({
+                                service: currentService,
+                                type: dbInfo.name,
+                                icon: dbInfo.icon,
+                                image: imageMatch[1]
+                            });
+                            break;
+                        }
+                    }
+
+                    // Check for app technology (if not already set)
+                    if (!result.appTechnology) {
+                        for (const [pattern, tech] of Object.entries(appPatterns)) {
+                            if (image.includes(pattern)) {
+                                result.appTechnology = tech;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Check for ports
+                const portsMatch = trimmed.match(/^-\s*["']?(\d+):(\d+)/);
+                if (portsMatch) {
+                    result.ports.push({
+                        host: portsMatch[1],
+                        container: portsMatch[2]
+                    });
+                }
+            }
+        }
+
+        return result;
+    } catch (error) {
+        logger.debug('Could not analyze docker-compose.yml', { projectPath, error: error.message });
+        return result;
     }
 }
 
@@ -1071,5 +1194,6 @@ module.exports = {
     mergeDbCredentials,
     getUserDbCredentials,
     getLinkedDatabase,
-    getTotalProjectCount
+    getTotalProjectCount,
+    analyzeCustomDockerCompose
 };

@@ -80,7 +80,12 @@
   },
 
   "customProject": {
-    "info": "Dieses Projekt verwendet eine benutzerdefinierte docker-compose.yml. Der Projekttyp kann nicht geändert werden, da dies die Konfiguration überschreiben würde. Bearbeite stattdessen deine docker-compose.yml im Projekt."
+    "info": "Dieses Projekt verwendet eine benutzerdefinierte docker-compose.yml. Der Projekttyp kann nicht geändert werden, da dies die Konfiguration überschreiben würde. Bearbeite stattdessen deine docker-compose.yml im Projekt.",
+    "technology": "Technologie",
+    "integratedDb": "Integrierte Datenbank",
+    "integratedDbHint": "Dieses Projekt enthält eine integrierte {{type}}-Datenbank. Die Verbindungsdaten werden intern über docker-compose verwaltet und müssen nicht manuell in der .env konfiguriert werden.",
+    "servicesCount": "{{count}} Services",
+    "detected": "erkannt"
   },
 
   "templateInfo": {
