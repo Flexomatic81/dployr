@@ -79,6 +79,10 @@
     "rebuildHelp": "Baut alle Container neu und startet sie. Nützlich nach Änderungen an Dockerfile oder docker-compose.yml."
   },
 
+  "customProject": {
+    "info": "Dieses Projekt verwendet eine benutzerdefinierte docker-compose.yml. Der Projekttyp kann nicht geändert werden, da dies die Konfiguration überschreiben würde. Bearbeite stattdessen deine docker-compose.yml im Projekt."
+  },
+
   "templateInfo": {
     "title": "Template-Informationen",
     "static": {

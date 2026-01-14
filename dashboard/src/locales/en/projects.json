@@ -79,6 +79,10 @@
     "rebuildHelp": "Rebuilds all containers and starts them. Useful after changes to Dockerfile or docker-compose.yml."
   },
 
+  "customProject": {
+    "info": "This project uses a custom docker-compose.yml. The project type cannot be changed as this would overwrite your configuration. Edit your docker-compose.yml in the project instead."
+  },
+
   "templateInfo": {
     "title": "Template Information",
     "static": {
