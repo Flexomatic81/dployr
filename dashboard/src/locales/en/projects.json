@@ -85,7 +85,8 @@
     "integratedDb": "Integrated Database",
     "integratedDbHint": "This project includes an integrated {{type}} database. Connection details are managed internally via docker-compose and do not need to be configured manually in .env.",
     "servicesCount": "{{count}} services",
-    "detected": "detected"
+    "detected": "detected",
+    "portRemapInfo": "Ports are automatically remapped. Your services are accessible via the displayed external ports, not the ports defined in your docker-compose.yml."
   },
 
   "templateInfo": {

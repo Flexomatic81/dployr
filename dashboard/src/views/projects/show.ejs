@@ -200,6 +200,10 @@
                     }) %>
                 <% } else if (project.isCustom && project.services && project.services.length > 0) { %>
                     <!-- Multi-service display for custom docker-compose projects -->
+                    <div class="alert alert-info small mb-3 py-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <%= t('projects:customProject.portRemapInfo') %>
+                    </div>
                     <div class="list-group list-group-flush">
                         <% project.services.forEach(service => { %>
                             <div class="list-group-item px-0">
