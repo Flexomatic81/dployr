@@ -17,6 +17,7 @@ const sharingService = require('../../services/sharing');
 const proxyService = require('../../services/proxy');
 const backupService = require('../../services/backup');
 const workspaceService = require('../../services/workspace');
+const composeValidator = require('../../services/compose-validator');
 const upload = require('../../middleware/upload');
 const { validateZipMiddleware } = require('../../middleware/upload');
 const { logger } = require('../../config/logger');
@@ -462,7 +463,34 @@ router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission
 // Rebuild project with --build flag (manage or higher, useful for custom docker-compose)
 router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     const project = req.projectAccess.project;
+    const systemUsername = req.projectAccess.systemUsername;
     const isAsync = req.query.async === 'true';
+
+    // For custom projects, re-import docker-compose.yml from html/ before rebuild
+    // This allows users to update their docker-compose.yml and have changes applied
+    if (project.templateType === 'custom') {
+        const containerPrefix = `${systemUsername}-${project.name}`;
+        const basePort = parseInt(project.port, 10) || 10000;
+
+        const reimportResult = composeValidator.reimportUserCompose(
+            project.path,
+            containerPrefix,
+            basePort
+        );
+
+        if (reimportResult.success) {
+            logger.info('Re-imported docker-compose.yml before rebuild', {
+                name: project.name,
+                services: reimportResult.services
+            });
+        } else if (!reimportResult.notFound) {
+            // Only warn if there was an actual error (not just missing file)
+            logger.warn('Failed to re-import docker-compose.yml, proceeding with existing config', {
+                name: project.name,
+                error: reimportResult.error || reimportResult.errors
+            });
+        }
+    }
 
     if (isAsync) {
         // Start rebuild in background and return immediately

@@ -66,6 +66,39 @@ const MAX_RESOURCE_LIMITS = {
     memory: '2G'
 };
 
+// Database image patterns - volumes for these services go to ./data/ instead of ./html/
+// This keeps database files out of the workspace area for security
+const DATABASE_IMAGE_PATTERNS = [
+    'mysql',
+    'mariadb',
+    'postgres',
+    'postgresql',
+    'mongo',
+    'mongodb',
+    'redis',
+    'memcached',
+    'elasticsearch',
+    'cassandra',
+    'couchdb',
+    'neo4j',
+    'influxdb',
+    'clickhouse',
+    'timescaledb'
+];
+
+/**
+ * Check if a service is a database based on its image
+ * @param {object} service - Service definition from compose file
+ * @returns {boolean} - True if service appears to be a database
+ */
+function isDatabaseService(service) {
+    if (!service || !service.image) {
+        return false;
+    }
+    const image = service.image.toLowerCase();
+    return DATABASE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
+}
+
 /**
  * Parse docker-compose.yml content
  * @param {string} content - YAML content
@@ -277,20 +310,25 @@ function transformCompose(compose, containerPrefix, basePort) {
         }
 
         // Transform volume paths to be relative to project
+        // Database services get ./data/ prefix, app services get ./html/ prefix
+        // This keeps database files out of the workspace area for security
+        const isDatabase = isDatabaseService(service);
+        const volumePrefix = isDatabase ? './data' : './html';
+
         if (service.volumes && Array.isArray(service.volumes)) {
             service.volumes = service.volumes.map(volume => {
                 if (typeof volume === 'string') {
                     const parts = volume.split(':');
                     if (parts.length >= 2) {
                         let source = parts[0];
-                        // If source is relative (starts with . or no /), prefix with ./html/
-                        if (!source.startsWith('/') && !source.startsWith('./html')) {
+                        // If source is relative (starts with . or no /), prefix appropriately
+                        if (!source.startsWith('/') && !source.startsWith('./html') && !source.startsWith('./data')) {
                             if (source === '.') {
-                                source = './html';
+                                source = volumePrefix;
                             } else if (source.startsWith('./')) {
-                                source = './html/' + source.slice(2);
+                                source = volumePrefix + '/' + source.slice(2);
                             } else {
-                                source = './html/' + source;
+                                source = volumePrefix + '/' + source;
                             }
                         }
                         parts[0] = source;
@@ -422,12 +460,69 @@ function findDockerfile(dirPath) {
     return { exists: false };
 }
 
+/**
+ * Re-import user's docker-compose.yml from html/ folder during rebuild
+ * This allows users to update their docker-compose.yml and have changes applied on rebuild
+ * @param {string} projectPath - Path to project directory
+ * @param {string} containerPrefix - Container name prefix (username-projectname)
+ * @param {number} basePort - Base port for allocation (use existing project port)
+ * @returns {object} - Result with success flag, yaml content, and port mappings
+ */
+function reimportUserCompose(projectPath, containerPrefix, basePort) {
+    const fs = require('fs');
+    const htmlPath = path.join(projectPath, 'html');
+
+    // Find docker-compose.yml in html/ folder
+    const userCompose = findComposeFile(htmlPath);
+
+    if (!userCompose.exists) {
+        return {
+            success: false,
+            error: 'No docker-compose.yml found in html/ folder',
+            notFound: true
+        };
+    }
+
+    try {
+        // Read the user's docker-compose.yml from html/
+        const composeContent = fs.readFileSync(userCompose.path, 'utf8');
+
+        // Process and transform it (validation, port mapping, network injection, etc.)
+        const result = processUserCompose(composeContent, containerPrefix, basePort);
+
+        if (!result.success) {
+            return result;
+        }
+
+        // Write the transformed docker-compose.yml to project root
+        fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), result.yaml);
+
+        logger.info('Re-imported user docker-compose.yml on rebuild', {
+            projectPath,
+            services: result.services,
+            portMappings: result.portMappings
+        });
+
+        return result;
+    } catch (error) {
+        logger.error('Failed to re-import user docker-compose.yml', {
+            projectPath,
+            error: error.message
+        });
+        return {
+            success: false,
+            error: `Failed to re-import docker-compose.yml: ${error.message}`
+        };
+    }
+}
+
 module.exports = {
     parseCompose,
     validateCompose,
     transformCompose,
     stringifyCompose,
     processUserCompose,
+    reimportUserCompose,
     findComposeFile,
     findDockerfile,
     BLOCKED_SERVICE_OPTIONS,

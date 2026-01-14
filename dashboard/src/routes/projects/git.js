@@ -9,6 +9,7 @@ const { requireAuth } = require('../../middleware/auth');
 const { getProjectAccess, requirePermission } = require('../../middleware/projectAccess');
 const gitService = require('../../services/git');
 const autoDeployService = require('../../services/autodeploy');
+const composeValidator = require('../../services/compose-validator');
 const { logger } = require('../../config/logger');
 
 // Perform Git pull (manage or higher)
@@ -39,6 +40,31 @@ router.post('/pull', requireAuth, getProjectAccess(), requirePermission('manage'
         } catch (e) {}
 
         const result = await gitService.pullChanges(projectPath);
+
+        // For custom projects with changes, re-import docker-compose.yml from html/
+        const project = req.projectAccess.project;
+        if (result.hasChanges && project.templateType === 'custom') {
+            const containerPrefix = `${systemUsername}-${projectName}`;
+            const basePort = parseInt(project.port, 10) || 10000;
+
+            const reimportResult = composeValidator.reimportUserCompose(
+                projectPath,
+                containerPrefix,
+                basePort
+            );
+
+            if (reimportResult.success) {
+                logger.info('Re-imported docker-compose.yml after Git pull', {
+                    name: projectName,
+                    services: reimportResult.services
+                });
+            } else if (!reimportResult.notFound) {
+                logger.warn('Failed to re-import docker-compose.yml after Git pull', {
+                    name: projectName,
+                    error: reimportResult.error || reimportResult.errors
+                });
+            }
+        }
 
         // Get new commit hash and message
         let newCommitHash = null;

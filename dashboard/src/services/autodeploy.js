@@ -6,6 +6,8 @@ const gitService = require('./git');
 const dockerService = require('./docker');
 const userService = require('./user');
 const emailService = require('./email');
+const composeValidator = require('./compose-validator');
+const projectService = require('./project');
 const { VALID_INTERVALS } = require('../config/constants');
 const { logger } = require('../config/logger');
 const { generateWebhookSecret } = require('./utils/webhook');
@@ -265,6 +267,40 @@ async function executeDeploy(userId, systemUsername, projectName, triggerType = 
 
         // Execute Git Pull
         const pullResult = await gitService.pullChanges(projectPath);
+
+        // For custom projects with changes, re-import docker-compose.yml from html/
+        if (pullResult.hasChanges) {
+            try {
+                const projectInfo = await projectService.getProjectInfo(systemUsername, projectName);
+                if (projectInfo && projectInfo.templateType === 'custom') {
+                    const containerPrefix = `${systemUsername}-${projectName}`;
+                    const basePort = parseInt(projectInfo.port, 10) || 10000;
+
+                    const reimportResult = composeValidator.reimportUserCompose(
+                        projectPath,
+                        containerPrefix,
+                        basePort
+                    );
+
+                    if (reimportResult.success) {
+                        logger.info('[AutoDeploy] Re-imported docker-compose.yml after Git pull', {
+                            projectName,
+                            services: reimportResult.services
+                        });
+                    } else if (!reimportResult.notFound) {
+                        logger.warn('[AutoDeploy] Failed to re-import docker-compose.yml after Git pull', {
+                            projectName,
+                            error: reimportResult.error || reimportResult.errors
+                        });
+                    }
+                }
+            } catch (reimportError) {
+                logger.warn('[AutoDeploy] Could not check project type for re-import', {
+                    projectName,
+                    error: reimportError.message
+                });
+            }
+        }
 
         if (!pullResult.hasChanges) {
             await updateDeploymentLog(logId, {
