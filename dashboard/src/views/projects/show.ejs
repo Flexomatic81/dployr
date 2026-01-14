@@ -28,24 +28,18 @@
         </a>
         <% if (project.status === 'running') { %>
             <% if (canManage) { %>
-            <form action="/projects/<%= project.name %>/restart" method="POST" class="d-inline">
-                <button type="submit" class="btn btn-outline-warning">
-                    <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.restart') %>
-                </button>
-            </form>
-            <form action="/projects/<%= project.name %>/stop" method="POST" class="d-inline">
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-stop-fill"></i> <%= t('common:buttons.stop') %>
-                </button>
-            </form>
+            <button type="button" class="btn btn-outline-warning" onclick="projectAction('restart')">
+                <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.restart') %>
+            </button>
+            <button type="button" class="btn btn-danger" onclick="projectAction('stop')">
+                <i class="bi bi-stop-fill"></i> <%= t('common:buttons.stop') %>
+            </button>
             <% } %>
         <% } else { %>
             <% if (canManage) { %>
-            <form action="/projects/<%= project.name %>/start" method="POST" class="d-inline">
-                <button type="submit" class="btn btn-success">
-                    <i class="bi bi-play-fill"></i> <%= t('common:buttons.start') %>
-                </button>
-            </form>
+            <button type="button" class="btn btn-success" onclick="projectAction('start')">
+                <i class="bi bi-play-fill"></i> <%= t('common:buttons.start') %>
+            </button>
             <% } %>
         <% } %>
         <% if (projectAccess.isOwner) { %>
@@ -165,11 +159,9 @@
                         <%= project.runningContainers %>/<%= project.totalContainers %> <%= t('common:status.active').toLowerCase() %>
                     </span>
                     <% if (project.isCustom && canManage) { %>
-                        <form action="/projects/<%= project.name %>/rebuild" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-warning" title="<%= t('projects:services.rebuildHelp') %>">
-                                <i class="bi bi-hammer"></i> <%= t('projects:services.rebuild') %>
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="projectAction('rebuild')" title="<%= t('projects:services.rebuildHelp') %>">
+                            <i class="bi bi-hammer"></i> <%= t('projects:services.rebuild') %>
+                        </button>
                     <% } %>
                 </div>
             </div>
@@ -1280,6 +1272,38 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
 </div>
 <% } %>
 
+<!-- Project Action Modal (start/stop/restart with progress) -->
+<% if (canManage) { %>
+<div class="modal fade" id="projectActionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="projectActionTitle">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span id="projectActionText"><%= t('projects:action.starting') %></span>
+                </h5>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div id="projectActionSpinner">
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 mb-0 text-body-secondary" id="projectActionStatus"><%= t('projects:action.pleaseWait') %></p>
+                </div>
+                <div id="projectActionSuccess" class="d-none">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 text-success" id="projectActionSuccessText"><%= t('projects:action.success') %></p>
+                </div>
+                <div id="projectActionError" class="d-none">
+                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 text-danger" id="projectActionErrorText"><%= t('projects:action.error') %></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<% } %>
+
 <!-- Delete Modal (only for owner) -->
 <% if (projectAccess.isOwner) { %>
 <div class="modal fade" id="deleteModal" tabindex="-1">
@@ -1505,4 +1529,122 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Project action handling (start/stop/restart with modal and polling)
+const PROJECT_NAME = '<%= project.name %>';
+const ACTION_TEXTS = {
+    start: '<%= t("projects:action.starting") %>',
+    stop: '<%= t("projects:action.stopping") %>',
+    restart: '<%= t("projects:action.restarting") %>',
+    rebuild: '<%= t("projects:action.rebuilding") %>'
+};
+const SUCCESS_TEXTS = {
+    start: '<%= t("projects:action.started") %>',
+    stop: '<%= t("projects:action.stopped") %>',
+    restart: '<%= t("projects:action.restarted") %>',
+    rebuild: '<%= t("projects:action.rebuilt") %>'
+};
+const EXPECTED_STATUS = {
+    start: 'running',
+    stop: 'stopped',
+    restart: 'running',
+    rebuild: 'running'
+};
+const CONTAINERS_ACTIVE_TEXT = '<%= t("projects:action.containersActive") %>';
+
+let pollInterval = null;
+
+async function projectAction(action) {
+    const modal = document.getElementById('projectActionModal');
+    if (!modal) return;
+
+    // Reset modal state
+    document.getElementById('projectActionText').textContent = ACTION_TEXTS[action] || action;
+    document.getElementById('projectActionSpinner').classList.remove('d-none');
+    document.getElementById('projectActionSuccess').classList.add('d-none');
+    document.getElementById('projectActionError').classList.add('d-none');
+    document.getElementById('projectActionStatus').textContent = '<%= t("projects:action.pleaseWait") %>';
+
+    // Show modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+
+    try {
+        // Start action asynchronously
+        const response = await fetch(`/projects/${PROJECT_NAME}/${action}?async=true`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Action failed');
+        }
+
+        // Start polling for status
+        const expectedStatus = EXPECTED_STATUS[action];
+        let attempts = 0;
+        const maxAttempts = 60; // 2 minutes max
+
+        pollInterval = setInterval(async () => {
+            attempts++;
+
+            try {
+                const statusResponse = await fetch(`/projects/${PROJECT_NAME}/status`);
+                const statusData = await statusResponse.json();
+
+                // Update status text
+                if (statusData.status === 'running') {
+                    document.getElementById('projectActionStatus').textContent =
+                        CONTAINERS_ACTIVE_TEXT.replace('{{running}}', statusData.runningContainers).replace('{{total}}', statusData.totalContainers);
+                }
+
+                // Check if we reached expected status
+                if (statusData.status === expectedStatus) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    showActionSuccess(action);
+                    return;
+                }
+
+                // Timeout
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    showActionError('<%= t("projects:action.timeout") %>');
+                }
+            } catch (e) {
+                // Ignore polling errors, keep trying
+            }
+        }, 2000);
+
+    } catch (error) {
+        showActionError(error.message);
+    }
+}
+
+function showActionSuccess(action) {
+    document.getElementById('projectActionSpinner').classList.add('d-none');
+    document.getElementById('projectActionSuccess').classList.remove('d-none');
+    document.getElementById('projectActionSuccessText').textContent = SUCCESS_TEXTS[action] || '<%= t("projects:action.success") %>';
+
+    // Reload page after 1.5 seconds
+    setTimeout(() => {
+        window.location.reload();
+    }, 1500);
+}
+
+function showActionError(message) {
+    document.getElementById('projectActionSpinner').classList.add('d-none');
+    document.getElementById('projectActionError').classList.remove('d-none');
+    document.getElementById('projectActionErrorText').textContent = message;
+
+    // Allow closing the modal on error
+    const modal = document.getElementById('projectActionModal');
+    if (modal) {
+        modal.setAttribute('data-bs-backdrop', 'true');
+        modal.setAttribute('data-bs-keyboard', 'true');
+    }
+}
 </script>

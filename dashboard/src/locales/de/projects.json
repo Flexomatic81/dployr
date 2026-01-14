@@ -285,6 +285,22 @@
     "submit": "Projekt endgültig löschen"
   },
 
+  "action": {
+    "starting": "Projekt wird gestartet",
+    "stopping": "Projekt wird gestoppt",
+    "restarting": "Projekt wird neugestartet",
+    "rebuilding": "Projekt wird neu gebaut",
+    "started": "Projekt gestartet",
+    "stopped": "Projekt gestoppt",
+    "restarted": "Projekt neugestartet",
+    "rebuilt": "Projekt neu gebaut",
+    "pleaseWait": "Bitte warten...",
+    "success": "Aktion erfolgreich",
+    "error": "Fehler bei der Aktion",
+    "timeout": "Zeitüberschreitung - Projekt wird möglicherweise noch verarbeitet",
+    "containersActive": "{{running}}/{{total}} Container aktiv"
+  },
+
   "flash": {
     "created": "Projekt \"{{name}}\" erfolgreich erstellt!",
     "deleted": "Projekt \"{{name}}\" wurde gelöscht",

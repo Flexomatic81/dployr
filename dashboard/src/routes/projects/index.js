@@ -354,11 +354,45 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
     }
 });
 
-// Start project (manage or higher)
-router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+// Get project status (API endpoint for polling)
+router.get('/:name/status', requireAuth, getProjectAccess(), requirePermission('read'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
-        // Custom projects need --build to build the Dockerfile
+        const systemUsername = req.projectAccess.systemUsername;
+        const projectInfo = await projectService.getProjectInfo(systemUsername, req.params.name);
+
+        res.json({
+            status: projectInfo?.status || 'unknown',
+            runningContainers: projectInfo?.runningContainers || 0,
+            totalContainers: projectInfo?.totalContainers || 0,
+            services: projectInfo?.services || []
+        });
+    } catch (error) {
+        logger.error('Error getting project status', { error: error.message });
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Start project - async API (manage or higher)
+router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    const project = req.projectAccess.project;
+    const isAsync = req.query.async === 'true';
+
+    if (isAsync) {
+        // Start in background and return immediately
+        dockerService.startProject(project.path, { build: project.isCustom })
+            .then(() => {
+                logger.info('Project started successfully (async)', { name: req.params.name });
+            })
+            .catch(error => {
+                logger.error('Error starting project (async)', { name: req.params.name, error: error.message });
+            });
+
+        return res.json({ status: 'starting', message: 'Project is starting...' });
+    }
+
+    // Synchronous start (legacy behavior)
+    try {
         await dockerService.startProject(project.path, { build: project.isCustom });
         req.flash('success', req.t('projects:flash.started', { name: req.params.name }));
         res.redirect(`/projects/${req.params.name}`);
@@ -369,10 +403,24 @@ router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('
     }
 });
 
-// Stop project (manage or higher)
+// Stop project - async API (manage or higher)
 router.post('/:name/stop', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    const project = req.projectAccess.project;
+    const isAsync = req.query.async === 'true';
+
+    if (isAsync) {
+        dockerService.stopProject(project.path)
+            .then(() => {
+                logger.info('Project stopped successfully (async)', { name: req.params.name });
+            })
+            .catch(error => {
+                logger.error('Error stopping project (async)', { name: req.params.name, error: error.message });
+            });
+
+        return res.json({ status: 'stopping', message: 'Project is stopping...' });
+    }
+
     try {
-        const project = req.projectAccess.project;
         await dockerService.stopProject(project.path);
         req.flash('success', req.t('projects:flash.stopped', { name: req.params.name }));
         res.redirect(`/projects/${req.params.name}`);
@@ -383,10 +431,24 @@ router.post('/:name/stop', requireAuth, getProjectAccess(), requirePermission('m
     }
 });
 
-// Restart project (manage or higher)
+// Restart project - async API (manage or higher)
 router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    const project = req.projectAccess.project;
+    const isAsync = req.query.async === 'true';
+
+    if (isAsync) {
+        dockerService.restartProject(project.path)
+            .then(() => {
+                logger.info('Project restarted successfully (async)', { name: req.params.name });
+            })
+            .catch(error => {
+                logger.error('Error restarting project (async)', { name: req.params.name, error: error.message });
+            });
+
+        return res.json({ status: 'restarting', message: 'Project is restarting...' });
+    }
+
     try {
-        const project = req.projectAccess.project;
         await dockerService.restartProject(project.path);
         req.flash('success', req.t('projects:flash.restarted', { name: req.params.name }));
         res.redirect(`/projects/${req.params.name}`);
@@ -399,8 +461,23 @@ router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission
 
 // Rebuild project with --build flag (manage or higher, useful for custom docker-compose)
 router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    const project = req.projectAccess.project;
+    const isAsync = req.query.async === 'true';
+
+    if (isAsync) {
+        // Start rebuild in background and return immediately
+        dockerService.rebuildProject(project.path)
+            .then(() => {
+                logger.info('Project rebuilt successfully (async)', { name: req.params.name });
+            })
+            .catch(error => {
+                logger.error('Error rebuilding project (async)', { name: req.params.name, error: error.message });
+            });
+
+        return res.json({ status: 'rebuilding', message: 'Project is being rebuilt...' });
+    }
+
     try {
-        const project = req.projectAccess.project;
         await dockerService.rebuildProject(project.path);
         req.flash('success', req.t('projects:flash.rebuilt', { name: req.params.name }));
         res.redirect(`/projects/${req.params.name}`);

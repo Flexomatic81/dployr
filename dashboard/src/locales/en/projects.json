@@ -285,6 +285,22 @@
     "submit": "Permanently delete project"
   },
 
+  "action": {
+    "starting": "Starting project",
+    "stopping": "Stopping project",
+    "restarting": "Restarting project",
+    "rebuilding": "Rebuilding project",
+    "started": "Project started",
+    "stopped": "Project stopped",
+    "restarted": "Project restarted",
+    "rebuilt": "Project rebuilt",
+    "pleaseWait": "Please wait...",
+    "success": "Action successful",
+    "error": "Action failed",
+    "timeout": "Timeout - project may still be processing",
+    "containersActive": "{{running}}/{{total}} containers active"
+  },
+
   "flash": {
     "created": "Project \"{{name}}\" created successfully!",
     "deleted": "Project \"{{name}}\" has been deleted",
