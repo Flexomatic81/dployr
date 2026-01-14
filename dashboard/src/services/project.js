@@ -233,9 +233,13 @@ async function analyzeCustomDockerCompose(projectPath) {
 
             if (!inServices) continue;
 
-            // Detect service name (indented key with colon, not further indented properties)
+            // Detect service name (indented key with colon at service level, typically 2 spaces)
+            // Service names are direct children of 'services:', so they should be at consistent indent
             const leadingSpaces = line.length - line.trimStart().length;
-            if (leadingSpaces > 0 && leadingSpaces <= 4 && trimmed.endsWith(':') && !trimmed.includes(' ')) {
+
+            // A service name must be at indent level 2 (direct child of services:) and end with just ':'
+            // This excludes nested properties like 'build:', 'ports:', etc. which are at level 4+
+            if (leadingSpaces === 2 && trimmed.endsWith(':') && !trimmed.includes(' ')) {
                 // Save previous service's build context if any
                 if (currentService && currentBuildContext) {
                     buildContexts.push({
