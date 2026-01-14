@@ -3,6 +3,7 @@ const mockFs = {
     existsSync: jest.fn(),
     mkdirSync: jest.fn(),
     writeFileSync: jest.fn(),
+    readFileSync: jest.fn(),
     readdirSync: jest.fn(),
     statSync: jest.fn(),
     renameSync: jest.fn(),
@@ -31,6 +32,12 @@ const mockGenerateNginxConfig = jest.fn();
 // Mock security utils
 const mockRemoveBlockedFiles = jest.fn();
 
+// Mock compose validator
+const mockComposeValidator = {
+    findComposeFile: jest.fn(),
+    processUserCompose: jest.fn()
+};
+
 jest.mock('fs', () => mockFs);
 jest.mock('../../src/services/git', () => mockGitService);
 jest.mock('../../src/services/utils/nginx', () => ({
@@ -39,12 +46,15 @@ jest.mock('../../src/services/utils/nginx', () => ({
 jest.mock('../../src/services/utils/security', () => ({
     removeBlockedFiles: mockRemoveBlockedFiles
 }));
+jest.mock('../../src/services/compose-validator', () => mockComposeValidator);
 
 const zipService = require('../../src/services/zip');
 
 describe('Zip Service', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Default: no user compose file found
+        mockComposeValidator.findComposeFile.mockReturnValue({ exists: false });
     });
 
     describe('extractZip', () => {
@@ -100,11 +110,9 @@ describe('Zip Service', () => {
     });
 
     describe('createProjectFromZip', () => {
-        it('should create project successfully', async () => {
-            mockFs.existsSync
-                .mockReturnValueOnce(false)  // Project doesn't exist
-                .mockReturnValueOnce(false)  // html path doesn't exist
-                .mockReturnValueOnce(true);  // ZIP exists for cleanup
+        it('should create project successfully (no user compose)', async () => {
+            // existsSync calls: 1) projectPath check, 2) ZIP cleanup
+            mockFs.existsSync.mockReturnValue(false).mockReturnValueOnce(false).mockReturnValueOnce(true);
             mockFs.readdirSync.mockReturnValue(['index.html', 'style.css']); // Multiple files (no flatten)
             mockGitService.detectProjectType.mockReturnValue('static');
             mockGitService.generateDockerCompose.mockReturnValue('version: "3"\n');
@@ -116,7 +124,9 @@ describe('Zip Service', () => {
                 success: true,
                 projectType: 'static',
                 path: expect.stringContaining('testuser/my-project'),
-                port: 3000
+                port: 3000,
+                portMappings: [],
+                services: []
             });
             expect(mockFs.mkdirSync).toHaveBeenCalled();
             expect(mockFs.writeFileSync).toHaveBeenCalledWith(
@@ -129,10 +139,44 @@ describe('Zip Service', () => {
             );
         });
 
+        it('should use user docker-compose.yml when provided', async () => {
+            // existsSync calls: 1) projectPath check, 2) ZIP cleanup
+            mockFs.existsSync.mockReturnValueOnce(false).mockReturnValueOnce(true);
+            mockFs.readdirSync.mockReturnValue(['docker-compose.yml', 'app.py']);
+            mockFs.readFileSync.mockReturnValue('version: "3"\nservices:\n  web:\n    image: python');
+            mockComposeValidator.findComposeFile.mockReturnValue({
+                exists: true,
+                filename: 'docker-compose.yml',
+                path: '/app/users/testuser/custom-project/html/docker-compose.yml'
+            });
+            mockComposeValidator.processUserCompose.mockReturnValue({
+                success: true,
+                yaml: 'x-dployr:\n  transformed: true\nservices:\n  web:\n    image: python',
+                portMappings: [{ service: 'web', external: 3000, internal: 8000 }],
+                services: ['web']
+            });
+
+            const result = await zipService.createProjectFromZip('testuser', 'custom-project', '/tmp/upload.zip', 3000);
+
+            expect(result).toEqual({
+                success: true,
+                projectType: 'custom',
+                path: expect.stringContaining('testuser/custom-project'),
+                port: 3000,
+                portMappings: [{ service: 'web', external: 3000, internal: 8000 }],
+                services: ['web']
+            });
+            expect(mockFs.writeFileSync).toHaveBeenCalledWith(
+                expect.stringContaining('docker-compose.yml'),
+                expect.stringContaining('x-dployr')
+            );
+            expect(mockGitService.detectProjectType).not.toHaveBeenCalled();
+        });
+
         it('should throw error if project already exists', async () => {
-            mockFs.existsSync
-                .mockReturnValueOnce(true)  // Project exists
-                .mockReturnValueOnce(true); // ZIP exists for cleanup
+            // First existsSync for projectPath returns true (exists)
+            // Second existsSync for ZIP cleanup returns true
+            mockFs.existsSync.mockReturnValueOnce(true).mockReturnValueOnce(true);
 
             await expect(
                 zipService.createProjectFromZip('testuser', 'existing', '/tmp/upload.zip', 3000)
@@ -142,10 +186,7 @@ describe('Zip Service', () => {
         });
 
         it('should create nginx config for static projects', async () => {
-            mockFs.existsSync
-                .mockReturnValueOnce(false) // Project doesn't exist
-                .mockReturnValueOnce(false) // html path
-                .mockReturnValueOnce(true); // ZIP cleanup
+            mockFs.existsSync.mockReturnValueOnce(false).mockReturnValueOnce(true);
             mockFs.readdirSync.mockReturnValue(['index.html']);
             mockGitService.detectProjectType.mockReturnValue('static');
             mockGitService.generateDockerCompose.mockReturnValue('version: "3"\n');
@@ -164,10 +205,7 @@ describe('Zip Service', () => {
         });
 
         it('should not create nginx config for non-static projects', async () => {
-            mockFs.existsSync
-                .mockReturnValueOnce(false)
-                .mockReturnValueOnce(false)
-                .mockReturnValueOnce(true);
+            mockFs.existsSync.mockReturnValueOnce(false).mockReturnValueOnce(true);
             mockFs.readdirSync.mockReturnValue(['package.json']);
             mockGitService.detectProjectType.mockReturnValue('nodejs');
             mockGitService.generateDockerCompose.mockReturnValue('version: "3"\n');
@@ -177,27 +215,11 @@ describe('Zip Service', () => {
             expect(mockGenerateNginxConfig).not.toHaveBeenCalled();
         });
 
-        it('should remove blocked files from html subfolder', async () => {
-            mockFs.existsSync
-                .mockReturnValueOnce(false) // Project doesn't exist
-                .mockReturnValueOnce(true)  // html path exists
-                .mockReturnValueOnce(true); // ZIP cleanup
-            mockFs.readdirSync.mockReturnValue(['index.html']);
-            mockGitService.detectProjectType.mockReturnValue('static');
-            mockGitService.generateDockerCompose.mockReturnValue('version: "3"\n');
-            mockRemoveBlockedFiles.mockReturnValue(['Dockerfile']);
-
-            await zipService.createProjectFromZip('testuser', 'project', '/tmp/upload.zip', 3000);
-
-            expect(mockRemoveBlockedFiles).toHaveBeenCalledWith(
-                expect.stringContaining('html')
-            );
-        });
+        // NOTE: removeBlockedFiles is no longer called in zip.js since Docker files
+        // are now allowed and validated by compose-validator.js instead of being blocked.
 
         it('should cleanup on error', async () => {
-            mockFs.existsSync
-                .mockReturnValueOnce(false)  // Project doesn't exist
-                .mockReturnValueOnce(true);  // ZIP exists for cleanup
+            mockFs.existsSync.mockReturnValueOnce(false).mockReturnValueOnce(true);
             mockFs.readdirSync.mockImplementation(() => {
                 throw new Error('Read error');
             });
@@ -211,6 +233,32 @@ describe('Zip Service', () => {
                 { recursive: true, force: true }
             );
             expect(mockFs.unlinkSync).toHaveBeenCalledWith('/tmp/upload.zip'); // ZIP cleanup
+        });
+
+        it('should fall back to auto-detection if user compose validation fails', async () => {
+            mockFs.existsSync.mockReturnValueOnce(false).mockReturnValueOnce(true);
+            mockFs.readdirSync.mockReturnValue(['docker-compose.yml', 'index.html']);
+            mockFs.readFileSync.mockReturnValue('invalid: compose');
+            mockComposeValidator.findComposeFile.mockReturnValue({
+                exists: true,
+                filename: 'docker-compose.yml',
+                path: '/app/users/testuser/fallback/html/docker-compose.yml'
+            });
+            mockComposeValidator.processUserCompose.mockReturnValue({
+                success: false,
+                errors: ['Invalid compose file']
+            });
+            mockGitService.detectProjectType.mockReturnValue('static');
+            mockGitService.generateDockerCompose.mockReturnValue('version: "3"\n');
+            mockGenerateNginxConfig.mockReturnValue('server {}');
+
+            const result = await zipService.createProjectFromZip('testuser', 'fallback', '/tmp/upload.zip', 3000);
+
+            expect(result.projectType).toBe('static');
+            expect(mockGitService.detectProjectType).toHaveBeenCalled();
+            expect(mockFs.unlinkSync).toHaveBeenCalledWith(
+                '/app/users/testuser/fallback/html/docker-compose.yml'
+            );
         });
     });
 

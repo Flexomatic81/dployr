@@ -192,6 +192,63 @@ function createSessionStore() {
     }
 }
 
+/**
+ * Validates a session from a WebSocket request.
+ * Parses the session cookie, looks up the session in the store,
+ * and returns the user data if valid.
+ *
+ * @param {object} req - HTTP request with cookies
+ * @returns {Promise<object|null>} User object if valid session, null otherwise
+ */
+async function validateWebSocketSession(req) {
+    try {
+        const cookies = req.headers.cookie || '';
+        if (!cookies.includes('connect.sid')) {
+            return null;
+        }
+
+        // Parse the session ID from the cookie
+        // Cookie format: connect.sid=s%3A<sessionId>.<signature>
+        const sidMatch = cookies.match(/connect\.sid=s%3A([^.]+)\./);
+        if (!sidMatch) {
+            return null;
+        }
+
+        const sessionId = sidMatch[1];
+
+        // Look up the session in the store
+        if (!sessionStore) {
+            logger.warn('WebSocket session validation failed: no session store');
+            return null;
+        }
+
+        return new Promise((resolve) => {
+            sessionStore.get(sessionId, (err, sessionData) => {
+                if (err || !sessionData) {
+                    logger.debug('WebSocket session lookup failed', {
+                        error: err?.message,
+                        sessionId: sessionId.substring(0, 8) + '...'
+                    });
+                    resolve(null);
+                    return;
+                }
+
+                // Check if session has user data
+                if (!sessionData.user || !sessionData.user.id) {
+                    logger.debug('WebSocket session has no user');
+                    resolve(null);
+                    return;
+                }
+
+                resolve(sessionData.user);
+            });
+        });
+    } catch (error) {
+        logger.error('WebSocket session validation error', { error: error.message });
+        return null;
+    }
+}
+
 // Session Setup - initially with memory store, upgraded after setup
 app.use(session({
     secret: process.env.SESSION_SECRET || 'change-this-secret',
@@ -732,28 +789,56 @@ async function start() {
             if (terminalMatch) {
                 const projectName = terminalMatch[1];
 
-                // Require session cookie for authentication
-                const cookies = req.headers.cookie || '';
-                if (!cookies.includes('connect.sid')) {
-                    logger.warn('Terminal WebSocket rejected: no session', { projectName });
-                    socket.destroy();
-                    return;
-                }
-
                 try {
+                    // Validate session and get user
+                    const user = await validateWebSocketSession(req);
+                    if (!user) {
+                        logger.warn('Terminal WebSocket rejected: invalid session', { projectName });
+                        socket.destroy();
+                        return;
+                    }
+
                     const pool = getPool();
-                    const [rows] = await pool.query(
-                        'SELECT container_id, status FROM workspaces WHERE project_name = ?',
+
+                    // Get workspace and verify ownership/access
+                    const [workspaceRows] = await pool.query(
+                        'SELECT w.container_id, w.status, w.user_id FROM workspaces w WHERE w.project_name = ?',
                         [projectName]
                     );
 
-                    if (!rows.length || rows[0].status !== 'running' || !rows[0].container_id) {
+                    if (!workspaceRows.length || workspaceRows[0].status !== 'running' || !workspaceRows[0].container_id) {
                         logger.warn('Terminal WebSocket rejected: workspace not running', { projectName });
                         socket.destroy();
                         return;
                     }
 
-                    const containerId = rows[0].container_id;
+                    const workspace = workspaceRows[0];
+
+                    // Check if user owns the workspace or has share access
+                    let hasAccess = workspace.user_id === user.id;
+                    if (!hasAccess) {
+                        // Check for share permission (at least 'manage' required for workspace)
+                        const [shareRows] = await pool.query(
+                            `SELECT ps.permission FROM project_shares ps
+                             JOIN projects p ON ps.owner_id = p.user_id AND ps.project_name = p.name
+                             WHERE p.name = ? AND ps.shared_with_id = ?
+                               AND ps.permission IN ('manage', 'full')`,
+                            [projectName, user.id]
+                        );
+                        hasAccess = shareRows.length > 0;
+                    }
+
+                    if (!hasAccess) {
+                        logger.warn('Terminal WebSocket rejected: no access', {
+                            projectName,
+                            userId: user.id,
+                            workspaceOwnerId: workspace.user_id
+                        });
+                        socket.destroy();
+                        return;
+                    }
+
+                    const containerId = workspace.container_id;
 
                     // Upgrade to WebSocket and pass container ID
                     terminalWss.handleUpgrade(req, socket, head, (ws) => {
@@ -775,23 +860,51 @@ async function start() {
 
             const projectName = match[1];
 
-            // Require session cookie for authentication
-            const cookies = req.headers.cookie || '';
-            if (!cookies.includes('connect.sid')) {
-                logger.warn('WebSocket upgrade rejected: no session', { projectName });
-                socket.destroy();
-                return;
-            }
-
             try {
+                // Validate session and get user
+                const user = await validateWebSocketSession(req);
+                if (!user) {
+                    logger.warn('WebSocket upgrade rejected: invalid session', { projectName });
+                    socket.destroy();
+                    return;
+                }
+
                 const pool = getPool();
-                const [rows] = await pool.query(
-                    'SELECT container_id, status FROM workspaces WHERE project_name = ?',
+
+                // Get workspace and verify ownership/access
+                const [workspaceRows] = await pool.query(
+                    'SELECT w.container_id, w.status, w.user_id FROM workspaces w WHERE w.project_name = ?',
                     [projectName]
                 );
 
-                if (!rows.length || rows[0].status !== 'running' || !rows[0].container_id) {
+                if (!workspaceRows.length || workspaceRows[0].status !== 'running' || !workspaceRows[0].container_id) {
                     logger.warn('WebSocket upgrade rejected: workspace not running', { projectName });
+                    socket.destroy();
+                    return;
+                }
+
+                const workspace = workspaceRows[0];
+
+                // Check if user owns the workspace or has share access
+                let hasAccess = workspace.user_id === user.id;
+                if (!hasAccess) {
+                    // Check for share permission (at least 'manage' required for workspace)
+                    const [shareRows] = await pool.query(
+                        `SELECT ps.permission FROM project_shares ps
+                         JOIN projects p ON ps.owner_id = p.user_id AND ps.project_name = p.name
+                         WHERE p.name = ? AND ps.shared_with_id = ?
+                           AND ps.permission IN ('manage', 'full')`,
+                        [projectName, user.id]
+                    );
+                    hasAccess = shareRows.length > 0;
+                }
+
+                if (!hasAccess) {
+                    logger.warn('WebSocket upgrade rejected: no access', {
+                        projectName,
+                        userId: user.id,
+                        workspaceOwnerId: workspace.user_id
+                    });
                     socket.destroy();
                     return;
                 }
@@ -803,7 +916,7 @@ async function start() {
 
                 for (let attempt = 1; attempt <= maxRetries; attempt++) {
                     try {
-                        containerIp = await workspaceService.getContainerIp(rows[0].container_id);
+                        containerIp = await workspaceService.getContainerIp(workspace.container_id);
                         if (containerIp) break;
                     } catch (ipError) {
                         logger.warn('Failed to get container IP', {
@@ -821,7 +934,7 @@ async function start() {
                 if (!containerIp) {
                     logger.error('WebSocket upgrade failed: no container IP after retries', {
                         projectName,
-                        containerId: rows[0].container_id
+                        containerId: workspace.container_id
                     });
                     socket.destroy();
                     return;

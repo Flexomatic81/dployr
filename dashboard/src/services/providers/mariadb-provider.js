@@ -2,6 +2,7 @@ const mysql = require('mysql2/promise');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const { generatePassword } = require('../utils/crypto');
+const { assertValidSqlIdentifier } = require('../utils/security');
 
 const execAsync = promisify(exec);
 
@@ -14,8 +15,16 @@ const DB_PORT = 3306;
 
 // Create new database
 async function createDatabase(systemUsername, databaseName) {
+    // Validate identifiers before SQL execution (defense-in-depth)
+    assertValidSqlIdentifier(systemUsername, 'system username');
+    assertValidSqlIdentifier(databaseName, 'database name');
+
     const fullDbName = `${systemUsername}_${databaseName}`;
     const dbUser = `${systemUsername}_${databaseName}`;
+
+    // Validate combined identifier as well
+    assertValidSqlIdentifier(fullDbName, 'full database name');
+
     const dbPassword = generatePassword();
 
     const rootConnection = await mysql.createConnection({
@@ -63,6 +72,12 @@ async function createDatabase(systemUsername, databaseName) {
 
 // Delete database
 async function deleteDatabase(databaseName, username) {
+    // Validate identifiers before SQL execution (defense-in-depth)
+    assertValidSqlIdentifier(databaseName, 'database name');
+    if (username) {
+        assertValidSqlIdentifier(username, 'username');
+    }
+
     const rootConnection = await mysql.createConnection({
         host: DB_HOST,
         port: DB_PORT,
@@ -125,6 +140,10 @@ function getConnectionInfo() {
  * @returns {Promise<{success: boolean, path: string}>}
  */
 async function dumpDatabase(databaseName, username, password, outputPath) {
+    // Validate identifiers before command execution (defense-in-depth)
+    assertValidSqlIdentifier(databaseName, 'database name');
+    assertValidSqlIdentifier(username, 'username');
+
     // Use mysqldump command - available in the dashboard container
     const command = `mysqldump -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${password}" --single-transaction --routines --triggers "${databaseName}" > "${outputPath}"`;
 
@@ -145,6 +164,10 @@ async function dumpDatabase(databaseName, username, password, outputPath) {
  * @returns {Promise<{success: boolean}>}
  */
 async function restoreDatabase(databaseName, username, password, inputPath) {
+    // Validate identifiers before command execution (defense-in-depth)
+    assertValidSqlIdentifier(databaseName, 'database name');
+    assertValidSqlIdentifier(username, 'username');
+
     const command = `mysql -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${password}" "${databaseName}" < "${inputPath}"`;
 
     try {

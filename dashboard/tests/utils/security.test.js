@@ -15,7 +15,13 @@ jest.mock('../../src/config/logger', () => ({
     }
 }));
 
-const { sanitizeReturnUrl, removeBlockedFiles } = require('../../src/services/utils/security');
+const {
+    sanitizeReturnUrl,
+    removeBlockedFiles,
+    isValidSqlIdentifier,
+    assertValidSqlIdentifier,
+    MAX_SQL_IDENTIFIER_LENGTH
+} = require('../../src/services/utils/security');
 
 describe('Security Utils', () => {
     describe('sanitizeReturnUrl', () => {
@@ -120,24 +126,28 @@ describe('Security Utils', () => {
             }
         });
 
-        it('should remove Dockerfile', () => {
+        // NOTE: Docker files are now ALLOWED since custom docker-compose feature.
+        // BLOCKED_PROJECT_FILES is now empty by default.
+        // These tests verify the function still works correctly but doesn't block Docker files.
+
+        it('should NOT remove Dockerfile (now allowed)', () => {
             const dockerFile = path.join(testDir, 'Dockerfile');
             fs.writeFileSync(dockerFile, 'FROM node:20');
 
             const removed = removeBlockedFiles(testDir);
 
-            expect(removed).toContain(dockerFile);
-            expect(fs.existsSync(dockerFile)).toBe(false);
+            expect(removed).toEqual([]);
+            expect(fs.existsSync(dockerFile)).toBe(true);
         });
 
-        it('should remove docker-compose.yml', () => {
+        it('should NOT remove docker-compose.yml (now allowed)', () => {
             const composeFile = path.join(testDir, 'docker-compose.yml');
             fs.writeFileSync(composeFile, 'version: "3"');
 
             const removed = removeBlockedFiles(testDir);
 
-            expect(removed).toContain(composeFile);
-            expect(fs.existsSync(composeFile)).toBe(false);
+            expect(removed).toEqual([]);
+            expect(fs.existsSync(composeFile)).toBe(true);
         });
 
         it('should return empty array for empty directory', () => {
@@ -163,6 +173,155 @@ describe('Security Utils', () => {
 
             expect(removed).not.toContain(safeFile);
             expect(fs.existsSync(safeFile)).toBe(true);
+        });
+    });
+
+    describe('isValidSqlIdentifier', () => {
+        describe('valid identifiers', () => {
+            it('should accept simple lowercase identifiers', () => {
+                expect(isValidSqlIdentifier('users')).toBe(true);
+                expect(isValidSqlIdentifier('projects')).toBe(true);
+                expect(isValidSqlIdentifier('mydb')).toBe(true);
+            });
+
+            it('should accept identifiers with underscores', () => {
+                expect(isValidSqlIdentifier('john_blog')).toBe(true);
+                expect(isValidSqlIdentifier('user_database')).toBe(true);
+                expect(isValidSqlIdentifier('my_app_db')).toBe(true);
+            });
+
+            it('should accept identifiers starting with underscore', () => {
+                expect(isValidSqlIdentifier('_internal')).toBe(true);
+                expect(isValidSqlIdentifier('_temp_db')).toBe(true);
+            });
+
+            it('should accept identifiers with numbers', () => {
+                expect(isValidSqlIdentifier('db1')).toBe(true);
+                expect(isValidSqlIdentifier('user123_db')).toBe(true);
+                expect(isValidSqlIdentifier('app2024')).toBe(true);
+            });
+
+            it('should accept uppercase and mixed case', () => {
+                expect(isValidSqlIdentifier('Users')).toBe(true);
+                expect(isValidSqlIdentifier('MyDatabase')).toBe(true);
+                expect(isValidSqlIdentifier('UPPERCASE')).toBe(true);
+            });
+
+            it('should accept single character identifiers', () => {
+                expect(isValidSqlIdentifier('a')).toBe(true);
+                expect(isValidSqlIdentifier('Z')).toBe(true);
+                expect(isValidSqlIdentifier('_')).toBe(true);
+            });
+        });
+
+        describe('invalid identifiers - SQL injection attempts', () => {
+            it('should reject identifiers starting with numbers', () => {
+                expect(isValidSqlIdentifier('123db')).toBe(false);
+                expect(isValidSqlIdentifier('1_user')).toBe(false);
+            });
+
+            it('should reject identifiers with SQL special characters', () => {
+                expect(isValidSqlIdentifier("user'; DROP TABLE users;--")).toBe(false);
+                expect(isValidSqlIdentifier('db"name')).toBe(false);
+                expect(isValidSqlIdentifier('db`name')).toBe(false);
+            });
+
+            it('should reject identifiers with semicolons', () => {
+                expect(isValidSqlIdentifier('db;DROP')).toBe(false);
+            });
+
+            it('should reject identifiers with spaces', () => {
+                expect(isValidSqlIdentifier('my db')).toBe(false);
+                expect(isValidSqlIdentifier(' trimme')).toBe(false);
+                expect(isValidSqlIdentifier('trimme ')).toBe(false);
+            });
+
+            it('should reject identifiers with hyphens', () => {
+                expect(isValidSqlIdentifier('my-database')).toBe(false);
+                expect(isValidSqlIdentifier('user-name')).toBe(false);
+            });
+
+            it('should reject identifiers with dots', () => {
+                expect(isValidSqlIdentifier('db.table')).toBe(false);
+                expect(isValidSqlIdentifier('schema.name')).toBe(false);
+            });
+
+            it('should reject identifiers with special characters', () => {
+                expect(isValidSqlIdentifier('db@name')).toBe(false);
+                expect(isValidSqlIdentifier('db#name')).toBe(false);
+                expect(isValidSqlIdentifier('db$name')).toBe(false);
+                expect(isValidSqlIdentifier('db%name')).toBe(false);
+                expect(isValidSqlIdentifier('db&name')).toBe(false);
+                expect(isValidSqlIdentifier('db*name')).toBe(false);
+                expect(isValidSqlIdentifier('db(name)')).toBe(false);
+            });
+
+            it('should reject identifiers with slashes', () => {
+                expect(isValidSqlIdentifier('db/name')).toBe(false);
+                expect(isValidSqlIdentifier('db\\name')).toBe(false);
+            });
+
+            it('should reject identifiers with newlines', () => {
+                expect(isValidSqlIdentifier('db\nname')).toBe(false);
+                expect(isValidSqlIdentifier('db\rname')).toBe(false);
+            });
+        });
+
+        describe('edge cases', () => {
+            it('should reject null and undefined', () => {
+                expect(isValidSqlIdentifier(null)).toBe(false);
+                expect(isValidSqlIdentifier(undefined)).toBe(false);
+            });
+
+            it('should reject empty string', () => {
+                expect(isValidSqlIdentifier('')).toBe(false);
+            });
+
+            it('should reject non-string values', () => {
+                expect(isValidSqlIdentifier(123)).toBe(false);
+                expect(isValidSqlIdentifier({})).toBe(false);
+                expect(isValidSqlIdentifier([])).toBe(false);
+                expect(isValidSqlIdentifier(true)).toBe(false);
+            });
+
+            it('should reject identifiers exceeding max length', () => {
+                const longIdentifier = 'a'.repeat(MAX_SQL_IDENTIFIER_LENGTH + 1);
+                expect(isValidSqlIdentifier(longIdentifier)).toBe(false);
+            });
+
+            it('should accept identifiers at max length', () => {
+                const maxLengthIdentifier = 'a'.repeat(MAX_SQL_IDENTIFIER_LENGTH);
+                expect(isValidSqlIdentifier(maxLengthIdentifier)).toBe(true);
+            });
+        });
+    });
+
+    describe('assertValidSqlIdentifier', () => {
+        it('should not throw for valid identifiers', () => {
+            expect(() => assertValidSqlIdentifier('valid_db')).not.toThrow();
+            expect(() => assertValidSqlIdentifier('user123')).not.toThrow();
+        });
+
+        it('should throw for invalid identifiers', () => {
+            expect(() => assertValidSqlIdentifier("user'; DROP TABLE--")).toThrow();
+            expect(() => assertValidSqlIdentifier('123invalid')).toThrow();
+            expect(() => assertValidSqlIdentifier('')).toThrow();
+        });
+
+        it('should include context in error message', () => {
+            expect(() => assertValidSqlIdentifier('bad-name', 'database name'))
+                .toThrow(/database name/);
+        });
+
+        it('should mention the invalid identifier in error message', () => {
+            expect(() => assertValidSqlIdentifier('bad-name', 'test'))
+                .toThrow(/bad-name/);
+        });
+    });
+
+    describe('MAX_SQL_IDENTIFIER_LENGTH', () => {
+        it('should be 63 (PostgreSQL limit)', () => {
+            expect(MAX_SQL_IDENTIFIER_LENGTH).toBe(63);
         });
     });
 });

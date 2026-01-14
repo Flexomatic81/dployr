@@ -160,7 +160,11 @@ describe('Project Service', () => {
                 totalContainers: 2,
                 containers: expect.any(Array),
                 hasDatabase: false,
-                database: null
+                database: null,
+                // New fields for custom docker-compose support
+                isCustom: false,
+                customAnalysis: null,
+                services: []
             });
         });
 

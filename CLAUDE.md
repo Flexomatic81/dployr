@@ -193,6 +193,7 @@ This is handled in `docker.js` when executing docker-compose commands.
 | `dashboard/src/services/database.js` | Database CRUD with provider pattern |
 | `dashboard/src/services/git.js` | Git clone, type detection, docker-compose generation |
 | `dashboard/src/services/zip.js` | ZIP upload processing, auto-flatten |
+| `dashboard/src/services/compose-validator.js` | Custom docker-compose.yml validation and transformation |
 | `dashboard/src/middleware/upload.js` | Multer configuration for file uploads |
 | `scripts/create-project.sh` | CLI project creation (interactive) |
 | `templates/*/docker-compose.yml` | Template definitions |
@@ -214,6 +215,54 @@ This is handled in `docker.js` when executing docker-compose commands.
 
 Template type is auto-detected from docker-compose.yml content in existing projects.
 
+### Custom Docker-Compose Projects
+
+Users can deploy projects with their own `docker-compose.yml` files. These are validated, sanitized, and transformed for security.
+
+**How it works:**
+1. User uploads Git repo or ZIP containing `docker-compose.yml` in project root
+2. System detects custom compose file and sets `templateType: 'custom'`
+3. `compose-validator.js` parses, validates, and transforms the file
+4. Ports are remapped to available external ports (starting from project's base port)
+5. All services join `dployr-network` for inter-container communication
+6. Resource limits are enforced (default: 1 CPU, 512MB RAM per service)
+
+**Security Validations:**
+- Blocked service options: `privileged`, `cap_add`, `devices`, `pid`, `network_mode: host`, etc.
+- Blocked volume mounts: `/var/run/docker.sock`, `/etc/`, `/root/`, `/proc/`, `/sys/`, etc.
+- Blocked network drivers: `host`, `macvlan`, `ipvlan`
+- Build context must be relative (within project directory)
+
+**Transformations Applied:**
+- Container names prefixed with `{username}-{projectname}-{service}`
+- Ports remapped: `8080:80` → `{externalPort}:80` (external port auto-assigned)
+- Volumes prefixed: `./app:/app` → `./html/app:/app` (app services) or `./data/app:/app` (database services)
+- Build context prefixed: `./` → `./html/`
+- `dployr-network` added to all services
+- Resource limits added if not present
+- `TZ=Europe/Berlin` environment variable added
+
+**Database Volume Isolation:**
+Database services (MySQL, PostgreSQL, MongoDB, Redis, etc.) have their volumes mounted to `./data/` instead of `./html/`. This keeps database files out of the workspace area for security.
+
+**Re-Import on Rebuild/Git Pull:**
+When a custom project is rebuilt or receives a Git pull, the system re-imports `docker-compose.yml` from `html/` to apply any user changes. The transformation is re-applied with the same base port.
+
+**Project Detail Display:**
+Custom projects show:
+- Service list with container status and ports
+- Technology detection from Dockerfile (if present)
+- Port remapping info (external → internal mapping)
+- Integrated database hints when DB images are detected
+
+**Service:** `compose-validator.js` - Parsing, validation, transformation of user docker-compose files
+
+**Key Functions:**
+- `processUserCompose(content, containerPrefix, basePort)` - Full pipeline
+- `validateCompose(compose)` - Security validation
+- `transformCompose(compose, containerPrefix, basePort)` - Apply transformations
+- `reimportUserCompose(projectPath, containerPrefix, basePort)` - Re-import on rebuild
+
 ## Authentication Flow
 
 1. User registers → `approved = FALSE`
@@ -232,23 +281,7 @@ The dashboard implements multiple security layers:
 - **Input Validation**: Joi schemas for login, register, project creation
 - **MySQL Session Store**: Persistent sessions (survives restarts)
 - **CSRF Protection**: Via session-based forms (skipped for `/setup/*` routes during initial setup)
-- **Blocked Docker Files**: Custom Dockerfiles/docker-compose.yml are automatically removed
-
-### Blocked Project Files
-
-Users cannot deploy custom Docker configurations. The following files are automatically removed from Git clones and ZIP uploads:
-
-- `Dockerfile`, `dockerfile`
-- `docker-compose.yml`, `docker-compose.yaml`
-- `compose.yml`, `compose.yaml`
-- `.dockerignore`
-
-This is enforced by `removeBlockedFiles()` in `services/utils/security.js`. The blocked files list is defined in `config/constants.js` as `BLOCKED_PROJECT_FILES`.
-
-**Why?** Users can only deploy using the predefined project templates (static, PHP, Node.js, etc.). This prevents:
-- Privilege escalation via custom Docker images
-- Resource abuse via unlimited container configurations
-- Security bypasses via custom network settings
+- **Custom Docker-Compose Validation**: User-provided docker-compose.yml files are validated and sanitized (see "Custom Docker-Compose Projects" section)
 
 ## Logging
 
@@ -842,6 +875,7 @@ The project detail page shows a "Backup Database" button only if the project has
 | `database.js` | Multi-DB provider delegation |
 | `git.js` | Git clone (to html/), type detection, docker-compose generation, path helpers (getGitPath, isGitRepository) |
 | `zip.js` | ZIP extraction (to html/), auto-flatten, project creation |
+| `compose-validator.js` | Custom docker-compose.yml parsing, validation, security checks, transformation |
 | `autodeploy.js` | Auto-deploy polling, deployment execution, history logging |
 | `sharing.js` | Project sharing, permission levels (read/manage/full), access control |
 | `backup.js` | Project/database backup creation, restore, preview, history |

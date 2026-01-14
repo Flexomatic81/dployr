@@ -9,6 +9,9 @@ const YAML = require('yaml');
 const path = require('path');
 const { logger } = require('../config/logger');
 
+// Default timezone for containers (configurable via CONTAINER_TIMEZONE env var)
+const DEFAULT_TIMEZONE = process.env.CONTAINER_TIMEZONE || 'Europe/Berlin';
+
 // Blocked options for security
 const BLOCKED_SERVICE_OPTIONS = [
     'privileged',
@@ -252,11 +255,11 @@ function transformCompose(compose, containerPrefix, basePort) {
         }
         if (Array.isArray(service.environment)) {
             if (!service.environment.some(e => e.startsWith('TZ='))) {
-                service.environment.push('TZ=Europe/Berlin');
+                service.environment.push(`TZ=${DEFAULT_TIMEZONE}`);
             }
         } else if (typeof service.environment === 'object') {
             if (!service.environment.TZ) {
-                service.environment.TZ = 'Europe/Berlin';
+                service.environment.TZ = DEFAULT_TIMEZONE;
             }
         }
 

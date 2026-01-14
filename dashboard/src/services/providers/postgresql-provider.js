@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const { generatePassword } = require('../utils/crypto');
+const { assertValidSqlIdentifier } = require('../utils/security');
 
 const execAsync = promisify(exec);
 
@@ -26,10 +27,19 @@ function getRootPool() {
 
 // Create new database
 async function createDatabase(systemUsername, databaseName) {
+    // Validate identifiers before SQL execution (defense-in-depth)
+    assertValidSqlIdentifier(systemUsername, 'system username');
+
     // PostgreSQL doesn't allow hyphens in identifiers without quotes
     const safeName = databaseName.replace(/-/g, '_');
+    assertValidSqlIdentifier(safeName, 'database name');
+
     const fullDbName = `${systemUsername}_${safeName}`;
     const dbUser = `${systemUsername}_${safeName}`;
+
+    // Validate combined identifier as well
+    assertValidSqlIdentifier(fullDbName, 'full database name');
+
     const dbPassword = generatePassword();
 
     const pool = getRootPool();
@@ -83,6 +93,12 @@ async function createDatabase(systemUsername, databaseName) {
 
 // Delete database
 async function deleteDatabase(databaseName, username) {
+    // Validate identifiers before SQL execution (defense-in-depth)
+    assertValidSqlIdentifier(databaseName, 'database name');
+    if (username) {
+        assertValidSqlIdentifier(username, 'username');
+    }
+
     const pool = getRootPool();
 
     try {
@@ -143,6 +159,10 @@ function getConnectionInfo() {
  * @returns {Promise<{success: boolean, path: string}>}
  */
 async function dumpDatabase(databaseName, username, password, outputPath) {
+    // Validate identifiers before command execution (defense-in-depth)
+    assertValidSqlIdentifier(databaseName, 'database name');
+    assertValidSqlIdentifier(username, 'username');
+
     // Use pg_dump with PGPASSWORD env variable for authentication
     const command = `PGPASSWORD="${password}" pg_dump -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -F p -b -v "${databaseName}" > "${outputPath}"`;
 
@@ -166,6 +186,10 @@ async function dumpDatabase(databaseName, username, password, outputPath) {
  * @returns {Promise<{success: boolean}>}
  */
 async function restoreDatabase(databaseName, username, password, inputPath) {
+    // Validate identifiers before command execution (defense-in-depth)
+    assertValidSqlIdentifier(databaseName, 'database name');
+    assertValidSqlIdentifier(username, 'username');
+
     const command = `PGPASSWORD="${password}" psql -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -d "${databaseName}" -f "${inputPath}"`;
 
     try {

@@ -75,7 +75,55 @@ function removeBlockedFiles(htmlPath) {
     return removedFiles;
 }
 
+/**
+ * Maximum length for SQL identifiers (database names, usernames)
+ * MySQL limit is 64, PostgreSQL is 63. Using 63 to be safe.
+ */
+const MAX_SQL_IDENTIFIER_LENGTH = 63;
+
+/**
+ * Validates a SQL identifier (database name, username) for safety.
+ * Only allows alphanumeric characters and underscores.
+ * This is a defense-in-depth measure to prevent SQL injection
+ * even if upstream validation is bypassed.
+ *
+ * @param {string} identifier - The identifier to validate
+ * @returns {boolean} - True if the identifier is valid
+ */
+function isValidSqlIdentifier(identifier) {
+    if (!identifier || typeof identifier !== 'string') {
+        return false;
+    }
+
+    // Check length
+    if (identifier.length === 0 || identifier.length > MAX_SQL_IDENTIFIER_LENGTH) {
+        return false;
+    }
+
+    // Only allow alphanumeric characters and underscores
+    // Must start with letter or underscore (not a number)
+    const validPattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+    return validPattern.test(identifier);
+}
+
+/**
+ * Asserts that a SQL identifier is valid, throws an error if not.
+ * Use this before any SQL execution with user-supplied identifiers.
+ *
+ * @param {string} identifier - The identifier to validate
+ * @param {string} context - Context for error message (e.g., 'database name', 'username')
+ * @throws {Error} - If the identifier is invalid
+ */
+function assertValidSqlIdentifier(identifier, context = 'identifier') {
+    if (!isValidSqlIdentifier(identifier)) {
+        throw new Error(`Invalid ${context}: "${identifier}". Only alphanumeric characters and underscores are allowed, must start with letter or underscore, max ${MAX_SQL_IDENTIFIER_LENGTH} characters.`);
+    }
+}
+
 module.exports = {
     removeBlockedFiles,
-    sanitizeReturnUrl
+    sanitizeReturnUrl,
+    isValidSqlIdentifier,
+    assertValidSqlIdentifier,
+    MAX_SQL_IDENTIFIER_LENGTH
 };
