@@ -102,11 +102,12 @@ async function getContainerLogs(containerId, lines = 100) {
 }
 
 // Start project with docker-compose
-async function startProject(projectPath) {
+async function startProject(projectPath, options = {}) {
     const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
+    const buildFlag = options.build ? ' --build' : '';
     return new Promise((resolve, reject) => {
-        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d`, (error, stdout, stderr) => {
+        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d${buildFlag}`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {

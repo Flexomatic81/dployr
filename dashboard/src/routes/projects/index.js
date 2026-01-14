@@ -358,7 +358,8 @@ router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
 router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     try {
         const project = req.projectAccess.project;
-        await dockerService.startProject(project.path);
+        // Custom projects need --build to build the Dockerfile
+        await dockerService.startProject(project.path, { build: project.isCustom });
         req.flash('success', req.t('projects:flash.started', { name: req.params.name }));
         res.redirect(`/projects/${req.params.name}`);
     } catch (error) {
