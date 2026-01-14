@@ -99,6 +99,14 @@
                                         <span class="badge bg-danger-subtle">Laravel</span>
                                     <% } else if (project.templateType === 'python-flask' || project.templateType === 'python-django') { %>
                                         <span class="badge bg-warning-subtle">Python</span>
+                                    <% } else if (project.templateType === 'nextjs') { %>
+                                        <span class="badge bg-dark">Next.js</span>
+                                    <% } else if (project.templateType === 'nuxtjs') { %>
+                                        <span class="badge bg-success">Nuxt.js</span>
+                                    <% } else if (project.templateType === 'nodejs-static') { %>
+                                        <span class="badge bg-info-subtle">SPA</span>
+                                    <% } else if (project.templateType === 'custom') { %>
+                                        <span class="badge bg-warning-subtle text-warning"><i class="bi bi-gear-wide-connected"></i> <%= t('projects:types.custom') %></span>
                                     <% } else { %>
                                         <span class="badge bg-secondary">Static</span>
                                     <% } %>
