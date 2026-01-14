@@ -121,10 +121,10 @@ async function detectTemplateType(projectPath) {
         const content = await fs.readFile(composePath, 'utf8');
 
         // Detect custom user-provided docker-compose (marked with x-dployr extension or label)
+        // Use regex for flexible matching (handles various whitespace and quote styles)
         if (content.includes('x-dployr:') ||
-            content.includes('dployr-custom: "true"') ||
-            content.includes("dployr-custom: 'true'") ||
-            content.includes('dployr-custom=true')) {
+            /dployr-custom:\s*["']?true["']?/i.test(content) ||
+            /dployr-custom\s*=\s*["']?true["']?/i.test(content)) {
             return 'custom';
         }
 
