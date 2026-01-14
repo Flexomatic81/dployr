@@ -1594,14 +1594,20 @@ async function projectAction(action) {
                 const statusResponse = await fetch(`/projects/${PROJECT_NAME}/status`);
                 const statusData = await statusResponse.json();
 
-                // Update status text
-                if (statusData.status === 'running') {
+                // Update status text with container progress
+                if (statusData.totalContainers > 0) {
                     document.getElementById('projectActionStatus').textContent =
                         CONTAINERS_ACTIVE_TEXT.replace('{{running}}', statusData.runningContainers).replace('{{total}}', statusData.totalContainers);
                 }
 
                 // Check if we reached expected status
-                if (statusData.status === expectedStatus) {
+                // For start/restart/rebuild: ALL containers must be running
+                // For stop: status must be 'stopped'
+                const allContainersReady = (expectedStatus === 'running')
+                    ? (statusData.status === 'running' && statusData.runningContainers === statusData.totalContainers && statusData.totalContainers > 0)
+                    : (statusData.status === expectedStatus);
+
+                if (allContainersReady) {
                     clearInterval(pollInterval);
                     pollInterval = null;
                     showActionSuccess(action);
