@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const gitService = require('./git');
 const { generateNginxConfig } = require('./utils/nginx');
-const { removeBlockedFiles } = require('./utils/security');
 const { logger } = require('../config/logger');
+const composeValidator = require('./compose-validator');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -57,6 +57,7 @@ function flattenIfNeeded(destPath) {
  */
 async function createProjectFromZip(systemUsername, projectName, zipPath, port) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+    const htmlPath = path.join(projectPath, 'html');
 
     // Check if project already exists
     if (fs.existsSync(projectPath)) {
@@ -70,33 +71,80 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
         const userPath = path.join(USERS_PATH, systemUsername);
         fs.mkdirSync(userPath, { recursive: true });
 
-        // Create project directory
-        fs.mkdirSync(projectPath, { recursive: true });
+        // Create project and html directories
+        fs.mkdirSync(htmlPath, { recursive: true });
 
-        // Extract ZIP
-        logger.info('Extracting ZIP', { projectPath });
-        extractZip(zipPath, projectPath);
+        // Extract ZIP to html/ subfolder
+        logger.info('Extracting ZIP', { htmlPath });
+        extractZip(zipPath, htmlPath);
 
         // Check if only one subfolder exists and flatten if needed
-        flattenIfNeeded(projectPath);
+        flattenIfNeeded(htmlPath);
 
-        // Detect project type (uses git.js function)
-        const projectType = gitService.detectProjectType(projectPath);
-        logger.info('Project type detected', { projectType });
+        // Check if user provided docker-compose.yml
+        const userCompose = composeValidator.findComposeFile(htmlPath);
+        let projectType;
+        let portMappings = [];
+        let services = [];
 
-        // Generate docker-compose.yml (uses git.js function)
-        const dockerCompose = gitService.generateDockerCompose(
-            projectType,
-            `${systemUsername}-${projectName}`,
-            port
-        );
-        fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
+        if (userCompose.exists) {
+            // User provided docker-compose.yml - validate and transform it
+            logger.info('Found user docker-compose.yml in ZIP', { file: userCompose.filename });
+
+            const composeContent = fs.readFileSync(userCompose.path, 'utf8');
+            const containerPrefix = `${systemUsername}-${projectName}`;
+            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port);
+
+            if (result.success) {
+                // Use transformed user compose
+                projectType = 'custom';
+                portMappings = result.portMappings;
+                services = result.services;
+
+                // Write transformed docker-compose.yml to project root
+                fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), result.yaml);
+
+                logger.info('Using user docker-compose.yml from ZIP', {
+                    services: result.services,
+                    portMappings: result.portMappings
+                });
+            } else {
+                // Validation failed - log errors and fall back to auto-detection
+                logger.warn('User docker-compose.yml validation failed, falling back to auto-detection', {
+                    errors: result.errors || result.error
+                });
+
+                // Remove invalid compose file
+                fs.unlinkSync(userCompose.path);
+
+                // Fall back to auto-detection
+                projectType = gitService.detectProjectType(projectPath);
+                const dockerCompose = gitService.generateDockerCompose(
+                    projectType,
+                    `${systemUsername}-${projectName}`,
+                    port
+                );
+                fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
+            }
+        } else {
+            // No user compose - use auto-detection (existing behavior)
+            projectType = gitService.detectProjectType(projectPath);
+            logger.info('Project type detected', { projectType });
+
+            // Generate docker-compose.yml (uses git.js function)
+            const dockerCompose = gitService.generateDockerCompose(
+                projectType,
+                `${systemUsername}-${projectName}`,
+                port
+            );
+            fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
+        }
 
         // Generate .env
         const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
         fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
-        // nginx config for static websites
+        // nginx config for static websites (only for auto-detected static type)
         if (projectType === 'static') {
             const nginxDir = path.join(projectPath, 'nginx');
             fs.mkdirSync(nginxDir, { recursive: true });
@@ -106,17 +154,6 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
             );
         }
 
-        // Remove blocked Docker files from user upload (security)
-        // Only check html/ subfolder if it exists - projectPath contains our system-generated docker-compose.yml
-        // Note: ZIP extracts to projectPath, so user's docker-compose.yml is overwritten by ours above
-        const htmlPath = path.join(projectPath, 'html');
-        if (fs.existsSync(htmlPath)) {
-            const removedFiles = removeBlockedFiles(htmlPath);
-            if (removedFiles.length > 0) {
-                logger.info('Removed blocked files after ZIP extraction', { files: removedFiles });
-            }
-        }
-
         // Delete ZIP file
         cleanupZip(zipPath);
 
@@ -124,7 +161,9 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
             success: true,
             projectType,
             path: projectPath,
-            port
+            port,
+            services,
+            portMappings
         };
 
     } catch (error) {

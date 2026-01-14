@@ -480,6 +480,27 @@ async function initDatabase() {
             // Global defaults already exist - ignore
         }
 
+        // ============================================================
+        // PROJECT PORTS TABLE (for multi-container projects)
+        // ============================================================
+
+        // Project ports table - tracks port allocations for custom docker-compose projects
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS project_ports (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+                service_name VARCHAR(100) NOT NULL,
+                internal_port INT NOT NULL,
+                external_port INT NOT NULL,
+                protocol VARCHAR(10) DEFAULT 'tcp',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_external_port (external_port),
+                INDEX idx_project (user_id, project_name)
+            )
+        `);
+
         connection.release();
         logger.info('Database schema initialized (including workspaces)');
     } catch (error) {

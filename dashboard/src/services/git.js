@@ -4,6 +4,7 @@ const simpleGit = require('simple-git');
 const { generateNginxConfig } = require('./utils/nginx');
 const { removeBlockedFiles } = require('./utils/security');
 const { logger } = require('../config/logger');
+const composeValidator = require('./compose-validator');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -790,25 +791,6 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
         const git = simpleGit({ timeout: { block: 120000 } });
         await git.clone(authenticatedUrl, htmlPath);
 
-        // Detect project type (from project folder - detectProjectType checks html/ internally)
-        const projectType = detectProjectType(projectPath);
-        logger.info('Project type detected', { projectType });
-
-        // Generate docker-compose.yml (in project root)
-        const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
-        fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
-
-        // Generate .env (in project root - only Docker variables)
-        const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
-        fs.writeFileSync(path.join(projectPath, '.env'), envContent);
-
-        // nginx config for static websites
-        if (projectType === 'static') {
-            const nginxDir = path.join(projectPath, 'nginx');
-            fs.mkdirSync(nginxDir, { recursive: true });
-            fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
-        }
-
         // Save credentials if token present (in html/ folder)
         if (token) {
             const credentialsPath = path.join(htmlPath, '.git-credentials');
@@ -821,18 +803,75 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
             await htmlGit.addConfig('credential.helper', 'store --file=.git-credentials');
         }
 
-        // Remove blocked Docker files from user repository (security)
-        // Only from htmlPath - projectPath contains our system-generated docker-compose.yml
-        const removedFiles = removeBlockedFiles(htmlPath);
-        if (removedFiles.length > 0) {
-            logger.info('Removed blocked files after Git clone', { files: removedFiles });
+        // Check if user provided docker-compose.yml
+        const userCompose = composeValidator.findComposeFile(htmlPath);
+        let projectType;
+        let portMappings = [];
+        let services = [];
+
+        if (userCompose.exists) {
+            // User provided docker-compose.yml - validate and transform it
+            logger.info('Found user docker-compose.yml', { file: userCompose.filename });
+
+            const composeContent = fs.readFileSync(userCompose.path, 'utf8');
+            const containerPrefix = `${systemUsername}-${projectName}`;
+            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port);
+
+            if (result.success) {
+                // Use transformed user compose
+                projectType = 'custom';
+                portMappings = result.portMappings;
+                services = result.services;
+
+                // Write transformed docker-compose.yml to project root
+                fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), result.yaml);
+
+                logger.info('Using user docker-compose.yml', {
+                    services: result.services,
+                    portMappings: result.portMappings
+                });
+            } else {
+                // Validation failed - log errors and fall back to auto-detection
+                logger.warn('User docker-compose.yml validation failed, falling back to auto-detection', {
+                    errors: result.errors || result.error
+                });
+
+                // Remove invalid compose file
+                fs.unlinkSync(userCompose.path);
+
+                // Fall back to auto-detection
+                projectType = detectProjectType(projectPath);
+                const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
+                fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
+            }
+        } else {
+            // No user compose - use auto-detection (existing behavior)
+            projectType = detectProjectType(projectPath);
+            logger.info('Project type detected', { projectType });
+
+            // Generate docker-compose.yml (in project root)
+            const dockerCompose = generateDockerCompose(projectType, `${systemUsername}-${projectName}`, port);
+            fs.writeFileSync(path.join(projectPath, 'docker-compose.yml'), dockerCompose);
+        }
+
+        // Generate .env (in project root - only Docker variables)
+        const envContent = `PROJECT_NAME=${systemUsername}-${projectName}\nEXPOSED_PORT=${port}\n`;
+        fs.writeFileSync(path.join(projectPath, '.env'), envContent);
+
+        // nginx config for static websites (only for auto-detected static type)
+        if (projectType === 'static') {
+            const nginxDir = path.join(projectPath, 'nginx');
+            fs.mkdirSync(nginxDir, { recursive: true });
+            fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
         }
 
         return {
             success: true,
             projectType,
             path: projectPath,
-            port
+            port,
+            services,
+            portMappings
         };
     } catch (err) {
         // Cleanup on error

@@ -31,11 +31,15 @@ function sanitizeReturnUrl(returnTo, fallback) {
 }
 
 /**
- * Removes blocked Docker files from user-uploaded content
- * This prevents users from deploying custom Docker configurations
+ * Removes blocked files from user-uploaded content
  *
- * IMPORTANT: Only removes files from htmlPath (user content), NOT from projectPath
- * because projectPath contains our system-generated docker-compose.yml
+ * NOTE: As of the custom docker-compose feature, Docker files (Dockerfile,
+ * docker-compose.yml) are now ALLOWED. They are validated and transformed
+ * by compose-validator.js instead of being blocked.
+ *
+ * This function now only removes files from BLOCKED_PROJECT_FILES constant,
+ * which is empty by default. It remains for potential future use (e.g.,
+ * blocking .env files with secrets).
  *
  * @param {string} htmlPath - Path to the html subdirectory (user content)
  * @returns {string[]} - List of removed files

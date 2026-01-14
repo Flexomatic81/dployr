@@ -396,6 +396,49 @@ router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission
     }
 });
 
+// Rebuild project with --build flag (manage or higher, useful for custom docker-compose)
+router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    try {
+        const project = req.projectAccess.project;
+        await dockerService.rebuildProject(project.path);
+        req.flash('success', req.t('projects:flash.rebuilt', { name: req.params.name }));
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        logger.error('Error rebuilding project', { error: error.message });
+        req.flash('error', req.t('common:errors.actionFailed', { action: 'Rebuild', error: error.message }));
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Restart specific service in multi-container project (manage or higher)
+router.post('/:name/services/:service/restart', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
+    try {
+        const project = req.projectAccess.project;
+        const serviceName = req.params.service;
+        await dockerService.restartService(project.path, serviceName);
+        req.flash('success', req.t('projects:flash.serviceRestarted', { service: serviceName }));
+        res.redirect(`/projects/${req.params.name}`);
+    } catch (error) {
+        logger.error('Error restarting service', { service: req.params.service, error: error.message });
+        req.flash('error', req.t('common:errors.actionFailed', { action: req.t('common:buttons.restart'), error: error.message }));
+        res.redirect(`/projects/${req.params.name}`);
+    }
+});
+
+// Get logs for specific service in multi-container project (API)
+router.get('/:name/services/:service/logs', requireAuth, getProjectAccess(), async (req, res) => {
+    try {
+        const project = req.projectAccess.project;
+        const serviceName = req.params.service;
+        const lines = parseInt(req.query.lines) || 100;
+        const logs = await dockerService.getServiceLogs(project.path, serviceName, lines);
+        res.json({ success: true, logs });
+    } catch (error) {
+        logger.error('Error fetching service logs', { service: req.params.service, error: error.message });
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // Change project type (full or owner)
 router.post('/:name/change-type', requireAuth, getProjectAccess(), requirePermission('full'), async (req, res) => {
     try {

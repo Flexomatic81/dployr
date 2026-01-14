@@ -64,7 +64,19 @@
     "nodejs": "Node.js App",
     "laravel": "Laravel/Symfony",
     "nodejsStatic": "React/Vue (Static Build)",
-    "nextjs": "Next.js (SSR)"
+    "nextjs": "Next.js (SSR)",
+    "custom": "Benutzerdefiniert"
+  },
+
+  "services": {
+    "title": "Services",
+    "restart": "Service neustarten",
+    "logs": "Logs anzeigen",
+    "status": "Status",
+    "running": "Läuft",
+    "stopped": "Gestoppt",
+    "rebuild": "Neu bauen",
+    "rebuildHelp": "Baut alle Container neu und startet sie. Nützlich nach Änderungen an Dockerfile oder docker-compose.yml."
   },
 
   "templateInfo": {
@@ -294,7 +306,9 @@
     "webhookEnabled": "Webhook aktiviert. Kopiere das Secret - es wird nur einmal angezeigt!",
     "webhookDisabled": "Webhook deaktiviert",
     "webhookRegenerated": "Neues Webhook-Secret generiert. Aktualisiere den Webhook bei deinem Git-Provider!",
-    "cloned": "Projekt \"{{source}}\" erfolgreich geklont zu \"{{name}}\""
+    "cloned": "Projekt \"{{source}}\" erfolgreich geklont zu \"{{name}}\"",
+    "rebuilt": "Projekt \"{{name}}\" wurde neu gebaut und gestartet",
+    "serviceRestarted": "Service \"{{service}}\" wurde neugestartet"
   },
 
   "errors": {

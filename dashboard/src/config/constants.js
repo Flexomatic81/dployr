@@ -22,19 +22,15 @@ const PROJECT_TYPES = [
     'nextjs',
     'nuxtjs',
     'python-flask',
-    'python-django'
+    'python-django',
+    'custom'  // User-provided docker-compose.yml
 ];
 
 // Blocked files that should be removed from user uploads (security)
-// These files could be used to override Docker configuration or execute malicious code
+// Note: Docker files are now ALLOWED - users can bring their own docker-compose.yml
+// Only files that could expose secrets or bypass security are blocked
 const BLOCKED_PROJECT_FILES = [
-    'Dockerfile',
-    'dockerfile',
-    'docker-compose.yml',
-    'docker-compose.yaml',
-    'compose.yml',
-    'compose.yaml',
-    '.dockerignore'
+    // Empty - Docker files are now validated and transformed instead of blocked
 ];
 
 // Known aliases for database environment variables
@@ -47,10 +43,62 @@ const DB_VARIABLE_ALIASES = {
     password: ['DB_PASSWORD', 'DATABASE_PASSWORD', 'MYSQL_PASSWORD', 'POSTGRES_PASSWORD', 'PG_PASSWORD']
 };
 
+// Blocked docker-compose options for security
+// These options could be used for privilege escalation or host access
+const BLOCKED_COMPOSE_OPTIONS = {
+    service_level: [
+        'privileged',
+        'cap_add',
+        'cap_drop',
+        'cgroup_parent',
+        'devices',
+        'dns',
+        'dns_search',
+        'external_links',
+        'extra_hosts',
+        'ipc',
+        'links',
+        'network_mode',
+        'pid',
+        'security_opt',
+        'shm_size',
+        'sysctls',
+        'userns_mode',
+        'uts'
+    ],
+    blocked_volume_sources: [
+        '/var/run/docker.sock',
+        '/var/run/',
+        '/etc/',
+        '/root/',
+        '/home/',
+        '/proc/',
+        '/sys/',
+        '/dev/'
+    ],
+    blocked_network_modes: ['host', 'none']
+};
+
+// Maximum resource limits for user containers
+const MAX_RESOURCE_LIMITS = {
+    cpus: 2,
+    memory: '2G',
+    services_per_project: 10
+};
+
+// Default resource limits applied to containers
+const DEFAULT_RESOURCE_LIMITS = {
+    cpus: '1',
+    memory: '512M'
+};
+
 module.exports = {
     PERMISSION_LEVELS,
     VALID_INTERVALS,
     PROJECT_TYPES,
     BLOCKED_PROJECT_FILES,
-    DB_VARIABLE_ALIASES
+    DB_VARIABLE_ALIASES,
+    BLOCKED_COMPOSE_OPTIONS,
+    MAX_RESOURCE_LIMITS,
+    DEFAULT_RESOURCE_LIMITS
 };

@@ -114,6 +114,8 @@
                                 <span class="badge bg-info-subtle text-info"><%= t('projects:types.nodejsStatic') %></span>
                             <% } else if (project.templateType === 'nextjs') { %>
                                 <span class="badge bg-dark text-white"><%= t('projects:types.nextjs') %></span>
+                            <% } else if (project.templateType === 'custom') { %>
+                                <span class="badge bg-warning-subtle text-warning"><i class="bi bi-gear-wide-connected"></i> <%= t('projects:types.custom') %></span>
                             <% } else { %>
                                 <span class="badge bg-secondary-subtle text-secondary"><%= t('projects:types.static') %></span>
                             <% } %>
@@ -150,10 +152,26 @@
     <div class="col-md-6 mb-4">
         <div class="card d-elevated h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-box"></i> <%= t('projects:info.containers') %></h5>
-                <span class="badge bg-secondary-subtle text-secondary">
-                    <%= project.runningContainers %>/<%= project.totalContainers %> <%= t('common:status.active').toLowerCase() %>
-                </span>
+                <h5 class="mb-0">
+                    <i class="bi bi-box"></i>
+                    <% if (project.isCustom) { %>
+                        <%= t('projects:services.title') %>
+                    <% } else { %>
+                        <%= t('projects:info.containers') %>
+                    <% } %>
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary-subtle text-secondary">
+                        <%= project.runningContainers %>/<%= project.totalContainers %> <%= t('common:status.active').toLowerCase() %>
+                    </span>
+                    <% if (project.isCustom && canManage) { %>
+                        <form action="/projects/<%= project.name %>/rebuild" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-warning" title="<%= t('projects:services.rebuildHelp') %>">
+                                <i class="bi bi-hammer"></i> <%= t('projects:services.rebuild') %>
+                            </button>
+                        </form>
+                    <% } %>
+                </div>
             </div>
             <div class="card-body">
                 <% if (project.containers.length === 0) { %>
@@ -163,7 +181,46 @@
                         description: t('projects:info.noContainersHint'),
                         compact: true
                     }) %>
+                <% } else if (project.isCustom && project.services && project.services.length > 0) { %>
+                    <!-- Multi-service display for custom docker-compose projects -->
+                    <div class="list-group list-group-flush">
+                        <% project.services.forEach(service => { %>
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-box<%= service.State === 'running' ? '-fill text-success' : ' text-muted' %>"></i>
+                                        <strong><%= service.Service || service.Name %></strong>
+                                        <% if (service.State === 'running') { %>
+                                            <span class="badge bg-success-subtle text-success ms-2"><%= t('projects:services.running') %></span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary-subtle text-secondary ms-2"><%= service.State || t('projects:services.stopped') %></span>
+                                        <% } %>
+                                        <br>
+                                        <small class="text-muted">
+                                            <% if (service.Image) { %><%= service.Image %><% } %>
+                                            <% if (service.Ports) { %> &bull; <%= service.Ports %><% } %>
+                                        </small>
+                                    </div>
+                                    <% if (canManage) { %>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="showServiceLogs('<%= service.Service || service.Name %>')"
+                                                title="<%= t('projects:services.logs') %>">
+                                            <i class="bi bi-terminal"></i>
+                                        </button>
+                                        <form action="/projects/<%= project.name %>/services/<%= service.Service || service.Name %>/restart" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-warning" title="<%= t('projects:services.restart') %>">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
                 <% } else { %>
+                    <!-- Standard container display -->
                     <div class="list-group list-group-flush">
                         <% project.containers.forEach(container => { %>
                             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
@@ -186,6 +243,67 @@
         </div>
     </div>
 </div>
+
+<!-- Service Logs Modal (for custom docker-compose projects) -->
+<% if (project.isCustom && canManage) { %>
+<div class="modal fade" id="serviceLogsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-terminal"></i> <span id="serviceLogsTitle">Service Logs</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="serviceLogsContent" class="bg-dark text-light p-3 rounded" style="max-height: 500px; overflow-y: auto; font-size: 0.8rem;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common:buttons.close') %></button>
+                <button type="button" class="btn btn-primary" id="refreshLogsBtn">
+                    <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.refresh') %>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentServiceName = '';
+
+function showServiceLogs(serviceName) {
+    currentServiceName = serviceName;
+    document.getElementById('serviceLogsTitle').textContent = serviceName + ' Logs';
+    document.getElementById('serviceLogsContent').textContent = 'Loading...';
+
+    const modal = new bootstrap.Modal(document.getElementById('serviceLogsModal'));
+    modal.show();
+
+    fetchServiceLogs(serviceName);
+}
+
+function fetchServiceLogs(serviceName) {
+    fetch(`/projects/<%= project.name %>/services/${serviceName}/logs?lines=200`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('serviceLogsContent').textContent = data.logs || 'No logs available';
+            } else {
+                document.getElementById('serviceLogsContent').textContent = 'Error: ' + data.error;
+            }
+        })
+        .catch(error => {
+            document.getElementById('serviceLogsContent').textContent = 'Error: ' + error.message;
+        });
+}
+
+document.getElementById('refreshLogsBtn')?.addEventListener('click', function() {
+    if (currentServiceName) {
+        fetchServiceLogs(currentServiceName);
+    }
+});
+</script>
+<% } %>
 
 <!-- Development Workspace (only for manage permission or higher) -->
 <% if (canManage) { %>

@@ -82,6 +82,12 @@ async function getProjectInfo(systemUsername, projectName) {
         const runningContainers = containers.filter(c => c.State === 'running').length;
         const totalContainers = containers.length;
 
+        // For custom projects, get service info from docker compose
+        let services = [];
+        if (templateType === 'custom') {
+            services = await dockerService.getProjectServices(projectPath);
+        }
+
         return {
             name: projectName,
             path: projectPath,
@@ -92,6 +98,8 @@ async function getProjectInfo(systemUsername, projectName) {
             runningContainers,
             totalContainers,
             containers,
+            services, // Multi-service info for custom projects
+            isCustom: templateType === 'custom',
             hasDatabase: !!envData.DB_DATABASE,
             database: envData.DB_DATABASE || null
         };
@@ -108,6 +116,14 @@ async function detectTemplateType(projectPath) {
     try {
         const composePath = path.join(projectPath, 'docker-compose.yml');
         const content = await fs.readFile(composePath, 'utf8');
+
+        // Detect custom user-provided docker-compose (marked with x-dployr extension or label)
+        if (content.includes('x-dployr:') ||
+            content.includes('dployr-custom: "true"') ||
+            content.includes("dployr-custom: 'true'") ||
+            content.includes('dployr-custom=true')) {
+            return 'custom';
+        }
 
         // Detect new extended types
         if (content.includes('composer install') || content.includes('APACHE_DOCUMENT_ROOT')) {

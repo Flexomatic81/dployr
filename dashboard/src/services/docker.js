@@ -146,6 +146,96 @@ async function restartProject(projectPath) {
     });
 }
 
+// Get detailed service information for multi-container projects
+async function getProjectServices(projectPath) {
+    const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
+    return new Promise((resolve, reject) => {
+        exec(
+            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" ps --format json`,
+            (error, stdout, stderr) => {
+                if (error) {
+                    // If compose file doesn't exist or project not started, return empty
+                    resolve([]);
+                } else {
+                    try {
+                        // Each line is a JSON object
+                        const services = stdout.trim().split('\n')
+                            .filter(line => line.trim())
+                            .map(line => {
+                                try {
+                                    return JSON.parse(line);
+                                } catch {
+                                    return null;
+                                }
+                            })
+                            .filter(s => s !== null);
+                        resolve(services);
+                    } catch (e) {
+                        resolve([]);
+                    }
+                }
+            }
+        );
+    });
+}
+
+// Get logs for a specific service in a multi-container project
+async function getServiceLogs(projectPath, serviceName, lines = 100) {
+    const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
+    return new Promise((resolve, reject) => {
+        exec(
+            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" logs --tail ${lines} ${serviceName}`,
+            { maxBuffer: 1024 * 1024 * 5 }, // 5MB buffer
+            (error, stdout, stderr) => {
+                if (error) {
+                    resolve(`Error loading logs for ${serviceName}: ${error.message}`);
+                } else {
+                    resolve(stdout || stderr || 'No logs available');
+                }
+            }
+        );
+    });
+}
+
+// Restart a specific service in a multi-container project
+async function restartService(projectPath, serviceName) {
+    const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
+    return new Promise((resolve, reject) => {
+        exec(
+            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" restart ${serviceName}`,
+            (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(stderr || error.message));
+                } else {
+                    resolve(stdout);
+                }
+            }
+        );
+    });
+}
+
+// Rebuild and restart project (for projects with build context)
+async function rebuildProject(projectPath) {
+    const { exec } = require('child_process');
+    const hostPath = toHostPath(projectPath);
+    return new Promise((resolve, reject) => {
+        exec(
+            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d --build`,
+            { timeout: 300000 }, // 5 minute timeout for builds
+            (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(stderr || error.message));
+                } else {
+                    resolve(stdout);
+                }
+            }
+        );
+    });
+}
+
 module.exports = {
     docker,
     getUserContainers,
@@ -156,5 +246,10 @@ module.exports = {
     getContainerLogs,
     startProject,
     stopProject,
-    restartProject
+    restartProject,
+    // Multi-container support
+    getProjectServices,
+    getServiceLogs,
+    restartService,
+    rebuildProject
 };
