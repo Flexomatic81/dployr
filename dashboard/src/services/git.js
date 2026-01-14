@@ -616,11 +616,13 @@ services:
         RUN npm run build
 
         FROM nginx:alpine
-        # Support multiple output folders: dist (Vite), build (CRA), out (Next export), .output/public (Nuxt generate)
-        COPY --from=builder /app/dist /usr/share/nginx/html 2>/dev/null || true
-        COPY --from=builder /app/build /usr/share/nginx/html 2>/dev/null || true
-        COPY --from=builder /app/out /usr/share/nginx/html 2>/dev/null || true
-        COPY --from=builder /app/.output/public /usr/share/nginx/html 2>/dev/null || true
+        # Copy build output - check common output folders (dist, build, out, .output/public)
+        COPY --from=builder /app /tmp/app
+        RUN if [ -d /tmp/app/dist ]; then cp -r /tmp/app/dist/* /usr/share/nginx/html/; \
+            elif [ -d /tmp/app/build ]; then cp -r /tmp/app/build/* /usr/share/nginx/html/; \
+            elif [ -d /tmp/app/out ]; then cp -r /tmp/app/out/* /usr/share/nginx/html/; \
+            elif [ -d /tmp/app/.output/public ]; then cp -r /tmp/app/.output/public/* /usr/share/nginx/html/; \
+            fi && rm -rf /tmp/app
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     networks:
