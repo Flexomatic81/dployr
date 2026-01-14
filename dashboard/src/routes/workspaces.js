@@ -160,17 +160,35 @@ router.post('/:projectName/start',
                 systemUsername
             );
 
-            res.json({
-                success: true,
-                message: req.t('workspaces:messages.started'),
-                workspace
-            });
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.json({
+                    success: true,
+                    message: req.t('workspaces:messages.started'),
+                    workspace
+                });
+            } else {
+                // Normal form submission - redirect to IDE
+                req.flash('success', req.t('workspaces:messages.started'));
+                res.redirect(`/workspaces/${projectName}/ide`);
+            }
         } catch (error) {
             logger.error('Failed to start workspace', { error: error.message });
-            res.status(500).json({
-                success: false,
-                error: error.message || req.t('workspaces:errors.startFailed')
-            });
+
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.status(500).json({
+                    success: false,
+                    error: error.message || req.t('workspaces:errors.startFailed')
+                });
+            } else {
+                req.flash('error', error.message || req.t('workspaces:errors.startFailed'));
+                res.redirect(`/projects/${req.params.projectName}`);
+            }
         }
     }
 );
@@ -189,17 +207,34 @@ router.post('/:projectName/stop',
 
             const workspace = await workspaceService.stopWorkspace(userId, projectName);
 
-            res.json({
-                success: true,
-                message: req.t('workspaces:messages.stopped'),
-                workspace
-            });
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.json({
+                    success: true,
+                    message: req.t('workspaces:messages.stopped'),
+                    workspace
+                });
+            } else {
+                req.flash('success', req.t('workspaces:messages.stopped'));
+                res.redirect(`/projects/${projectName}`);
+            }
         } catch (error) {
             logger.error('Failed to stop workspace', { error: error.message });
-            res.status(500).json({
-                success: false,
-                error: req.t('workspaces:errors.stopFailed')
-            });
+
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.status(500).json({
+                    success: false,
+                    error: req.t('workspaces:errors.stopFailed')
+                });
+            } else {
+                req.flash('error', req.t('workspaces:errors.stopFailed'));
+                res.redirect(`/projects/${projectName}`);
+            }
         }
     }
 );
@@ -223,17 +258,34 @@ router.post('/:projectName/sync/to-project',
                 systemUsername
             );
 
-            res.json({
-                success: true,
-                message: req.t('workspaces:messages.synced'),
-                result
-            });
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.json({
+                    success: true,
+                    message: req.t('workspaces:messages.synced'),
+                    result
+                });
+            } else {
+                req.flash('success', req.t('workspaces:messages.synced'));
+                res.redirect(`/projects/${projectName}`);
+            }
         } catch (error) {
             logger.error('Failed to sync to project', { error: error.message });
-            res.status(500).json({
-                success: false,
-                error: req.t('workspaces:errors.syncFailed')
-            });
+
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.status(500).json({
+                    success: false,
+                    error: req.t('workspaces:errors.syncFailed')
+                });
+            } else {
+                req.flash('error', req.t('workspaces:errors.syncFailed'));
+                res.redirect(`/projects/${projectName}`);
+            }
         }
     }
 );
@@ -252,17 +304,34 @@ router.post('/:projectName/sync/from-project',
 
             const result = await workspaceService.syncFromProject(userId, projectName);
 
-            res.json({
-                success: true,
-                message: req.t('workspaces:messages.synced'),
-                result
-            });
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.json({
+                    success: true,
+                    message: req.t('workspaces:messages.synced'),
+                    result
+                });
+            } else {
+                req.flash('success', req.t('workspaces:messages.synced'));
+                res.redirect(`/projects/${projectName}`);
+            }
         } catch (error) {
             logger.error('Failed to sync from project', { error: error.message });
-            res.status(500).json({
-                success: false,
-                error: req.t('workspaces:errors.syncFailed')
-            });
+
+            // Check if request expects JSON (AJAX) or HTML (form submission)
+            const wantsJson = req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+            if (wantsJson) {
+                res.status(500).json({
+                    success: false,
+                    error: req.t('workspaces:errors.syncFailed')
+                });
+            } else {
+                req.flash('error', req.t('workspaces:errors.syncFailed'));
+                res.redirect(`/projects/${projectName}`);
+            }
         }
     }
 );
