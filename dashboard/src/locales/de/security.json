@@ -1,0 +1,92 @@
+{
+  "title": "Sicherheit",
+  "status": {
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert"
+  },
+  "twoFactor": {
+    "title": "Zwei-Faktor-Authentifizierung",
+    "description": "Schütze dein Konto mit einem zusätzlichen Sicherheitsfaktor. Bei der Anmeldung benötigst du neben deinem Passwort einen Code aus deiner Authenticator-App.",
+    "activeInfo": "Die Zwei-Faktor-Authentifizierung ist für dein Konto aktiviert.",
+    "requiredByAdmin": "Die Zwei-Faktor-Authentifizierung ist für alle Benutzer verpflichtend und kann nicht deaktiviert werden.",
+    "requiredWarning": "Der Administrator hat die Zwei-Faktor-Authentifizierung für alle Benutzer verpflichtend gemacht."
+  },
+  "verify": {
+    "title": "Zwei-Faktor-Authentifizierung",
+    "subtitle": "Anmeldung als {{username}}",
+    "codeLabel": "Authentifizierungscode",
+    "codeHint": "Gib den 6-stelligen Code aus deiner Authenticator-App ein oder verwende einen Backup-Code.",
+    "submit": "Bestätigen",
+    "cancel": "Abbrechen",
+    "backupHint": "Du kannst auch einen deiner Backup-Codes verwenden."
+  },
+  "setup": {
+    "title": "2FA einrichten",
+    "required": "Die Zwei-Faktor-Authentifizierung muss eingerichtet werden, bevor du fortfahren kannst.",
+    "requiredTitle": "2FA-Einrichtung erforderlich",
+    "requiredDescription": "Dein Administrator hat die Zwei-Faktor-Authentifizierung für alle Benutzer verpflichtend gemacht. Bitte richte sie jetzt ein.",
+    "scanTitle": "QR-Code scannen",
+    "scanInstructions": "Scanne diesen QR-Code mit deiner Authenticator-App",
+    "manualTitle": "Manuelle Eingabe",
+    "manualDescription": "Wenn du den QR-Code nicht scannen kannst, gib diesen Schlüssel manuell in deiner App ein:",
+    "verifyTitle": "Code bestätigen",
+    "verifyDescription": "Gib den 6-stelligen Code aus deiner Authenticator-App ein, um die Einrichtung abzuschließen."
+  },
+  "disable": {
+    "title": "2FA deaktivieren",
+    "warning": "Wenn du die Zwei-Faktor-Authentifizierung deaktivierst, wird dein Konto weniger sicher sein."
+  },
+  "backupCodes": {
+    "title": "Backup-Codes",
+    "remaining": "{{count}} Codes verbleibend",
+    "regenerate": "Neue Codes generieren",
+    "regenerateTitle": "Neue Backup-Codes generieren",
+    "regenerateWarning": "Die aktuellen Backup-Codes werden ungültig. Stelle sicher, dass du die neuen Codes sicher aufbewahrst.",
+    "lowWarning": "Du hast nur noch wenige Backup-Codes übrig. Erwäge, neue Codes zu generieren.",
+    "successTitle": "2FA erfolgreich aktiviert!",
+    "successDescription": "Dein Konto ist jetzt durch Zwei-Faktor-Authentifizierung geschützt.",
+    "yourCodes": "Deine Backup-Codes",
+    "saveWarning": "Speichere diese Codes jetzt!",
+    "saveDescription": "Du kannst diese Codes nur einmal sehen. Bewahre sie sicher auf - du benötigst sie, falls du den Zugang zu deiner Authenticator-App verlierst.",
+    "copy": "Kopieren",
+    "download": "Herunterladen",
+    "print": "Drucken",
+    "importantTitle": "Wichtige Hinweise",
+    "important1": "Jeder Code kann nur einmal verwendet werden.",
+    "important2": "Bewahre diese Codes an einem sicheren Ort auf (z.B. Passwort-Manager).",
+    "important3": "Teile diese Codes mit niemandem.",
+    "important4": "Du kannst jederzeit neue Codes generieren (die alten werden dann ungültig).",
+    "done": "Fertig"
+  },
+  "buttons": {
+    "enable": "2FA aktivieren",
+    "disable": "2FA deaktivieren"
+  },
+  "errors": {
+    "invalidCode": "Ungültiger Code. Bitte versuche es erneut.",
+    "invalidPassword": "Falsches Passwort.",
+    "notConfigured": "Zwei-Faktor-Authentifizierung ist nicht konfiguriert.",
+    "notEnabled": "Zwei-Faktor-Authentifizierung ist nicht aktiviert.",
+    "sessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+    "setupExpired": "Die Einrichtung ist abgelaufen. Bitte starte den Vorgang erneut.",
+    "cannotDisable": "Die Zwei-Faktor-Authentifizierung kann nicht deaktiviert werden, da sie vom Administrator verpflichtend gemacht wurde."
+  },
+  "flash": {
+    "enabled": "Zwei-Faktor-Authentifizierung wurde aktiviert.",
+    "disabled": "Zwei-Faktor-Authentifizierung wurde deaktiviert."
+  },
+  "howItWorks": {
+    "title": "So funktioniert's",
+    "step1": {
+      "title": "App installieren",
+      "description": "Lade eine Authenticator-App wie Google Authenticator oder Authy auf dein Smartphone."
+    },
+    "step2": {
+      "title": "Code eingeben",
+      "description": "Bei jeder Anmeldung gibst du den 6-stelligen Code aus der App ein."
+    }
+  },
+  "apps": {
+    "title": "Unterstützte Apps"
+  }
+}

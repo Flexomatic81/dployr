@@ -37,6 +37,35 @@ router.post('/login', redirectIfAuth, validate('login'), async (req, res) => {
             return res.redirect('/login');
         }
 
+        // Check 2FA status
+        const totpSettings = await userService.getTotpSettings(user.id);
+        const twoFaRequired = userService.isTwoFaRequired();
+
+        if (totpSettings && totpSettings.enabled) {
+            // User has 2FA enabled - require verification
+            req.session.pendingTwoFa = {
+                userId: user.id,
+                username: user.username,
+                systemUsername: user.system_username,
+                isAdmin: user.is_admin,
+                expires: Date.now() + 5 * 60 * 1000 // 5 minutes
+            };
+            return res.redirect('/login/2fa');
+        }
+
+        if (twoFaRequired && !user.is_admin) {
+            // 2FA is required but user hasn't set it up - force setup
+            req.session.pendingTwoFaSetup = {
+                userId: user.id,
+                username: user.username,
+                systemUsername: user.system_username,
+                isAdmin: user.is_admin,
+                expires: Date.now() + 30 * 60 * 1000 // 30 minutes for setup
+            };
+            req.flash('warning', req.t('security:setup.required'));
+            return res.redirect('/settings/security/setup');
+        }
+
         // Create session
         req.session.user = {
             id: user.id,

@@ -245,6 +245,22 @@ async function initDatabase() {
             // Columns already exist - ignore
         }
 
+        // Migration: Add TOTP (Two-Factor Authentication) columns
+        try {
+            await connection.execute(`
+                ALTER TABLE dashboard_users ADD COLUMN totp_secret VARCHAR(64) NULL
+            `);
+            await connection.execute(`
+                ALTER TABLE dashboard_users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE
+            `);
+            await connection.execute(`
+                ALTER TABLE dashboard_users ADD COLUMN totp_backup_codes TEXT NULL
+            `);
+            logger.info('Migration: Added TOTP columns for 2FA');
+        } catch (e) {
+            // Columns already exist - ignore
+        }
+
         // Project domains table for NPM integration
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS project_domains (

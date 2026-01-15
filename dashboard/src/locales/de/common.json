@@ -7,7 +7,9 @@
     "help": "Hilfe",
     "logout": "Logout",
     "notifications": "Benachrichtigungen",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "security": "Sicherheit",
+    "settings": "Einstellungen"
   },
   "buttons": {
     "save": "Speichern",
@@ -114,5 +116,8 @@
     "actionFailed": "{{action}} fehlgeschlagen: {{error}}",
     "invalidInput": "Ungültige Eingabe",
     "csrfInvalid": "Sicherheitstoken ungültig oder abgelaufen. Bitte versuche es erneut."
+  },
+  "flash": {
+    "copied": "Kopiert!"
   }
 }

@@ -311,6 +311,32 @@ const schemas = {
             }),
         ssl: Joi.boolean()
             .optional()
+    }),
+
+    // Two-Factor Authentication Schemas
+    twoFaCode: Joi.object({
+        code: Joi.string()
+            .pattern(/^[A-Za-z0-9\-]{6,9}$/)
+            .required()
+            .messages({
+                'string.pattern.base': 'Code must be 6 digits or a valid backup code',
+                'any.required': 'Code is required'
+            })
+    }),
+
+    twoFaDisable: Joi.object({
+        code: Joi.string()
+            .pattern(/^[A-Za-z0-9\-]{6,9}$/)
+            .required()
+            .messages({
+                'string.pattern.base': 'Code must be 6 digits or a valid backup code',
+                'any.required': 'Code is required'
+            }),
+        password: Joi.string()
+            .required()
+            .messages({
+                'any.required': 'Password is required'
+            })
     })
 };
 

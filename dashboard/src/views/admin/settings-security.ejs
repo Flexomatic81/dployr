@@ -1,0 +1,121 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard"><%= t('common:nav.dashboard') %></a></li>
+        <li class="breadcrumb-item"><a href="/admin"><%= t('common:nav.admin') %></a></li>
+        <li class="breadcrumb-item active"><%= t('admin:security.title') %></li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-shield-lock"></i> <%= t('admin:security.title') %></h1>
+</div>
+
+<!-- Status Card -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1"><%= t('admin:security.status.title') %></h6>
+                        <span class="badge <%= security.require2fa ? 'bg-warning' : 'bg-secondary' %> fs-6">
+                            <% if (security.require2fa) { %>
+                                <i class="bi bi-shield-check"></i> <%= t('admin:security.status.enabled') %>
+                            <% } else { %>
+                                <i class="bi bi-shield"></i> <%= t('admin:security.status.disabled') %>
+                            <% } %>
+                        </span>
+                    </div>
+                    <i class="bi bi-shield-lock fs-1 <%= security.require2fa ? 'text-warning' : 'text-secondary' %> opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="text-muted mb-2"><%= t('admin:security.users2faStatus') %></h6>
+                <div class="d-flex gap-3">
+                    <span class="badge bg-danger fs-6">
+                        <i class="bi bi-x-circle"></i> <%= usersWithout2fa.length %> <%= t('admin:security.usersWithout2fa') %>
+                    </span>
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-check-circle"></i> <%= usersWith2fa.length %> <%= t('admin:security.usersWith2fa') %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-gear"></i> <%= t('admin:email.configuration') %>
+    </div>
+    <div class="card-body">
+        <form action="/admin/settings/security" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <!-- Enable/Disable 2FA Requirement -->
+            <div class="mb-4">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="require_2fa" name="require_2fa" <%= security.require2fa ? 'checked' : '' %>>
+                    <label class="form-check-label" for="require_2fa">
+                        <strong><%= t('admin:security.require2fa') %></strong>
+                    </label>
+                </div>
+                <small class="text-muted d-block mt-1"><%= t('admin:security.require2faHelp') %></small>
+                <small class="text-muted d-block"><i class="bi bi-info-circle"></i> <%= t('admin:security.adminNote') %></small>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between">
+                <a href="/admin" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> <%= t('common:buttons.back') %>
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> <%= t('common:buttons.save') %>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users without 2FA -->
+<% if (usersWithout2fa.length > 0) { %>
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-exclamation-triangle text-warning"></i> <%= t('admin:security.usersWithout2fa') %>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th><%= t('admin:users.columns.username') %></th>
+                        <th><%= t('common:labels.status') %></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% usersWithout2fa.forEach(u => { %>
+                    <tr>
+                        <td><%= u.username %></td>
+                        <td>
+                            <span class="badge bg-danger">
+                                <i class="bi bi-x-circle"></i> 2FA
+                            </span>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<% } else { %>
+<div class="alert alert-success">
+    <i class="bi bi-check-circle"></i> <%= t('admin:security.allUsersHave2fa') %>
+</div>
+<% } %>

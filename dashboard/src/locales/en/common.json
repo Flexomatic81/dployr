@@ -7,7 +7,9 @@
     "help": "Help",
     "logout": "Logout",
     "notifications": "Notifications",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "security": "Security",
+    "settings": "Settings"
   },
   "buttons": {
     "save": "Save",
@@ -114,5 +116,8 @@
     "actionFailed": "{{action}} failed: {{error}}",
     "invalidInput": "Invalid input",
     "csrfInvalid": "Security token invalid or expired. Please try again."
+  },
+  "flash": {
+    "copied": "Copied!"
   }
 }

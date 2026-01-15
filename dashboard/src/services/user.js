@@ -402,6 +402,90 @@ async function updateNotificationPreferences(userId, { deploySuccess, deployFail
     );
 }
 
+// ============================================
+// Two-Factor Authentication (TOTP) Functions
+// ============================================
+
+/**
+ * Get TOTP settings for user
+ * @returns {{secret: string|null, enabled: boolean, backupCodes: string[]|null}}
+ */
+async function getTotpSettings(userId) {
+    const [users] = await pool.query(
+        'SELECT totp_secret, totp_enabled, totp_backup_codes FROM dashboard_users WHERE id = ?',
+        [userId]
+    );
+    if (!users[0]) return null;
+
+    let backupCodes = null;
+    if (users[0].totp_backup_codes) {
+        try {
+            backupCodes = JSON.parse(users[0].totp_backup_codes);
+        } catch {
+            backupCodes = null;
+        }
+    }
+
+    return {
+        secret: users[0].totp_secret,
+        enabled: users[0].totp_enabled === 1 || users[0].totp_enabled === true,
+        backupCodes
+    };
+}
+
+/**
+ * Save TOTP secret during setup (before enabling)
+ */
+async function saveTotpSecret(userId, secret) {
+    await pool.query(
+        'UPDATE dashboard_users SET totp_secret = ? WHERE id = ?',
+        [secret, userId]
+    );
+}
+
+/**
+ * Enable TOTP for user with backup codes
+ * @param {number} userId - User ID
+ * @param {string[]} hashedBackupCodes - Array of bcrypt hashes
+ */
+async function enableTotp(userId, hashedBackupCodes) {
+    const backupCodesJson = JSON.stringify(hashedBackupCodes);
+    await pool.query(
+        'UPDATE dashboard_users SET totp_enabled = TRUE, totp_backup_codes = ? WHERE id = ?',
+        [backupCodesJson, userId]
+    );
+}
+
+/**
+ * Disable TOTP for user
+ */
+async function disableTotp(userId) {
+    await pool.query(
+        'UPDATE dashboard_users SET totp_enabled = FALSE, totp_secret = NULL, totp_backup_codes = NULL WHERE id = ?',
+        [userId]
+    );
+}
+
+/**
+ * Update backup codes (after one is used)
+ * @param {number} userId - User ID
+ * @param {string[]} hashedBackupCodes - Updated array of bcrypt hashes
+ */
+async function updateBackupCodes(userId, hashedBackupCodes) {
+    const backupCodesJson = JSON.stringify(hashedBackupCodes);
+    await pool.query(
+        'UPDATE dashboard_users SET totp_backup_codes = ? WHERE id = ?',
+        [backupCodesJson, userId]
+    );
+}
+
+/**
+ * Check if 2FA is required (from environment or settings)
+ */
+function isTwoFaRequired() {
+    return process.env.REQUIRE_2FA === 'true';
+}
+
 module.exports = {
     getAllUsers,
     getPendingUsers,
@@ -433,5 +517,12 @@ module.exports = {
     getFullUserById,
     // Notification preferences
     getNotificationPreferences,
-    updateNotificationPreferences
+    updateNotificationPreferences,
+    // Two-Factor Authentication
+    getTotpSettings,
+    saveTotpSecret,
+    enableTotp,
+    disableTotp,
+    updateBackupCodes,
+    isTwoFaRequired
 };

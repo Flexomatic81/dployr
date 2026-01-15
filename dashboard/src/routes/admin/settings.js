@@ -1,6 +1,6 @@
 /**
  * Admin Settings Routes
- * Handles Email and NPM configuration
+ * Handles Email, NPM, and Security configuration
  */
 
 const express = require('express');
@@ -11,6 +11,7 @@ const proxyService = require('../../services/proxy');
 const emailService = require('../../services/email');
 const userService = require('../../services/user');
 const { logger } = require('../../config/logger');
+const pool = require('../../config/database');
 
 const ENV_PATH = '/app/.env';
 const SETUP_MARKER_PATH = '/app/infrastructure/.setup-complete';
@@ -524,6 +525,68 @@ router.get('/npm/operation-logs', async (req, res) => {
         }
     } catch (error) {
         res.json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// Security Settings
+// ============================================
+
+// Show Security settings
+router.get('/security', async (req, res) => {
+    try {
+        const envVars = await readEnvFile();
+
+        // Get 2FA status for all users
+        const [users] = await pool.query(`
+            SELECT id, username, is_admin, totp_enabled
+            FROM dashboard_users
+            WHERE approved = TRUE
+            ORDER BY username
+        `);
+
+        const usersWithout2fa = users.filter(u => !u.totp_enabled && !u.is_admin);
+        const usersWith2fa = users.filter(u => u.totp_enabled);
+
+        res.render('admin/settings-security', {
+            title: req.t('admin:security.title'),
+            security: {
+                require2fa: envVars.REQUIRE_2FA === 'true'
+            },
+            usersWithout2fa,
+            usersWith2fa
+        });
+    } catch (error) {
+        logger.error('Error loading security settings', { error: error.message });
+        req.flash('error', req.t('common:errors.loadError'));
+        res.redirect('/admin');
+    }
+});
+
+// Save Security settings
+router.post('/security', async (req, res) => {
+    try {
+        const { require_2fa } = req.body;
+
+        const envVars = await readEnvFile();
+        envVars.REQUIRE_2FA = require_2fa === 'on' ? 'true' : 'false';
+
+        await writeEnvFile(envVars);
+
+        // Update process.env so changes take effect immediately
+        process.env.REQUIRE_2FA = envVars.REQUIRE_2FA;
+
+        logger.info('Security settings updated', {
+            require2fa: require_2fa === 'on',
+            userId: req.session.user.id
+        });
+
+        req.flash('success', req.t('admin:security.saved'));
+        res.redirect('/admin/settings/security');
+    } catch (error) {
+        logger.error('Error saving security settings', { error: error.message });
+        req.flash('error', req.t('common:errors.saveError'));
+        res.redirect('/admin/settings/security');
     }
 });
 

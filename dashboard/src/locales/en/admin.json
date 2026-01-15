@@ -23,7 +23,9 @@
     "emailDescription": "Set up SMTP server for email notifications.",
     "configureEmail": "Configure Email",
     "updatesDescription": "Update Dployr to the latest version.",
-    "checkUpdates": "Check Updates"
+    "checkUpdates": "Check Updates",
+    "securityDescription": "Configure two-factor authentication and security policies.",
+    "configureSecurity": "Configure Security"
   },
 
   "users": {
@@ -320,6 +322,24 @@
     "stepRestart": "Restart services",
     "stepReady": "Waiting for dashboard",
     "redirecting": "Redirecting to login..."
+  },
+
+  "security": {
+    "title": "Security Settings",
+    "status": {
+      "title": "2FA Requirement",
+      "enabled": "Enforced",
+      "disabled": "Optional"
+    },
+    "require2fa": "Require two-factor authentication for all users",
+    "require2faHelp": "When enabled, all users (except admins) must set up 2FA before they can use the dashboard.",
+    "adminNote": "Admins are exempt until they enable 2FA themselves.",
+    "saved": "Security settings saved.",
+    "users2faStatus": "User 2FA Status",
+    "usersWithout2fa": "Users without 2FA",
+    "usersWith2fa": "Users with 2FA",
+    "allUsersHave2fa": "All users have 2FA enabled.",
+    "noUsersWithout2fa": "No users without 2FA."
   },
 
   "resources": {

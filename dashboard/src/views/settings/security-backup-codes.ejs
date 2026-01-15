@@ -1,0 +1,136 @@
+<%- include('../partials/pageHeader', {
+    title: t('security:backupCodes.title'),
+    titleIcon: 'bi-key-fill',
+    breadcrumbs: [
+        { label: t('common:nav.settings'), href: '/settings' },
+        { label: t('security:title'), href: '/settings/security' },
+        { label: t('security:backupCodes.title') }
+    ]
+}) %>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-shield-fill-check"></i>
+            <strong><%= t('security:backupCodes.successTitle') %></strong><br>
+            <%= t('security:backupCodes.successDescription') %>
+        </div>
+
+        <div class="card d-elevated mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-key-fill"></i>
+                    <%= t('security:backupCodes.yourCodes') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong><%= t('security:backupCodes.saveWarning') %></strong><br>
+                    <%= t('security:backupCodes.saveDescription') %>
+                </div>
+
+                <!-- Backup Codes Grid -->
+                <div class="row g-2 mb-4" id="backupCodesContainer">
+                    <% backupCodes.forEach((code, index) => { %>
+                        <div class="col-6 col-md-4">
+                            <div class="p-2 bg-light rounded text-center font-monospace fw-bold">
+                                <%= code %>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="copyAllCodes()">
+                        <i class="bi bi-clipboard"></i>
+                        <%= t('security:backupCodes.copy') %>
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="downloadCodes()">
+                        <i class="bi bi-download"></i>
+                        <%= t('security:backupCodes.download') %>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="printCodes()">
+                        <i class="bi bi-printer"></i>
+                        <%= t('security:backupCodes.print') %>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Important Notes -->
+        <div class="card d-elevated mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    <%= t('security:backupCodes.importantTitle') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><%= t('security:backupCodes.important1') %></li>
+                    <li><%= t('security:backupCodes.important2') %></li>
+                    <li><%= t('security:backupCodes.important3') %></li>
+                    <li><%= t('security:backupCodes.important4') %></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="/settings/security" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i>
+                <%= t('security:backupCodes.done') %>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+const backupCodes = <%= JSON.stringify(backupCodes) %>;
+
+function copyAllCodes() {
+    const text = backupCodes.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target.closest('button');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> <%= t("common:flash.copied") %>';
+        setTimeout(() => btn.innerHTML = originalHtml, 2000);
+    });
+}
+
+function downloadCodes() {
+    const text = 'Dployr Backup Codes\n' +
+                 '==================\n\n' +
+                 'Generated: ' + new Date().toISOString() + '\n\n' +
+                 backupCodes.join('\n') + '\n\n' +
+                 'Important: Each code can only be used once.\n' +
+                 'Keep these codes in a safe place.';
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dployr-backup-codes.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function printCodes() {
+    window.print();
+}
+</script>
+
+<style>
+@media print {
+    .navbar, .sidebar, .btn, .alert-warning, header, footer {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+}
+</style>

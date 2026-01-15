@@ -1,0 +1,92 @@
+{
+  "title": "Security",
+  "status": {
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "twoFactor": {
+    "title": "Two-Factor Authentication",
+    "description": "Protect your account with an additional security factor. When logging in, you'll need a code from your authenticator app in addition to your password.",
+    "activeInfo": "Two-factor authentication is enabled for your account.",
+    "requiredByAdmin": "Two-factor authentication is required for all users and cannot be disabled.",
+    "requiredWarning": "The administrator has made two-factor authentication mandatory for all users."
+  },
+  "verify": {
+    "title": "Two-Factor Authentication",
+    "subtitle": "Signing in as {{username}}",
+    "codeLabel": "Authentication Code",
+    "codeHint": "Enter the 6-digit code from your authenticator app or use a backup code.",
+    "submit": "Verify",
+    "cancel": "Cancel",
+    "backupHint": "You can also use one of your backup codes."
+  },
+  "setup": {
+    "title": "Set up 2FA",
+    "required": "Two-factor authentication must be set up before you can continue.",
+    "requiredTitle": "2FA Setup Required",
+    "requiredDescription": "Your administrator has made two-factor authentication mandatory for all users. Please set it up now.",
+    "scanTitle": "Scan QR Code",
+    "scanInstructions": "Scan this QR code with your authenticator app",
+    "manualTitle": "Manual Entry",
+    "manualDescription": "If you can't scan the QR code, enter this key manually in your app:",
+    "verifyTitle": "Verify Code",
+    "verifyDescription": "Enter the 6-digit code from your authenticator app to complete setup."
+  },
+  "disable": {
+    "title": "Disable 2FA",
+    "warning": "Disabling two-factor authentication will make your account less secure."
+  },
+  "backupCodes": {
+    "title": "Backup Codes",
+    "remaining": "{{count}} codes remaining",
+    "regenerate": "Regenerate Codes",
+    "regenerateTitle": "Regenerate Backup Codes",
+    "regenerateWarning": "Your current backup codes will be invalidated. Make sure to save the new codes securely.",
+    "lowWarning": "You have only a few backup codes remaining. Consider regenerating new codes.",
+    "successTitle": "2FA Successfully Enabled!",
+    "successDescription": "Your account is now protected with two-factor authentication.",
+    "yourCodes": "Your Backup Codes",
+    "saveWarning": "Save these codes now!",
+    "saveDescription": "You can only see these codes once. Keep them safe - you'll need them if you lose access to your authenticator app.",
+    "copy": "Copy",
+    "download": "Download",
+    "print": "Print",
+    "importantTitle": "Important Notes",
+    "important1": "Each code can only be used once.",
+    "important2": "Store these codes in a safe place (e.g., password manager).",
+    "important3": "Don't share these codes with anyone.",
+    "important4": "You can regenerate new codes at any time (old ones will be invalidated).",
+    "done": "Done"
+  },
+  "buttons": {
+    "enable": "Enable 2FA",
+    "disable": "Disable 2FA"
+  },
+  "errors": {
+    "invalidCode": "Invalid code. Please try again.",
+    "invalidPassword": "Incorrect password.",
+    "notConfigured": "Two-factor authentication is not configured.",
+    "notEnabled": "Two-factor authentication is not enabled.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "setupExpired": "Setup has expired. Please start the process again.",
+    "cannotDisable": "Two-factor authentication cannot be disabled because it has been made mandatory by the administrator."
+  },
+  "flash": {
+    "enabled": "Two-factor authentication has been enabled.",
+    "disabled": "Two-factor authentication has been disabled."
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "step1": {
+      "title": "Install App",
+      "description": "Download an authenticator app like Google Authenticator or Authy on your smartphone."
+    },
+    "step2": {
+      "title": "Enter Code",
+      "description": "Each time you sign in, enter the 6-digit code from the app."
+    }
+  },
+  "apps": {
+    "title": "Supported Apps"
+  }
+}

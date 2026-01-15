@@ -23,7 +23,9 @@
     "emailDescription": "SMTP-Server für E-Mail-Benachrichtigungen einrichten.",
     "configureEmail": "E-Mail konfigurieren",
     "updatesDescription": "Dployr auf die neueste Version aktualisieren.",
-    "checkUpdates": "Updates prüfen"
+    "checkUpdates": "Updates prüfen",
+    "securityDescription": "Zwei-Faktor-Authentifizierung und Sicherheitsrichtlinien konfigurieren.",
+    "configureSecurity": "Sicherheit konfigurieren"
   },
 
   "users": {
@@ -320,6 +322,24 @@
     "stepRestart": "Services neu starten",
     "stepReady": "Warten auf Dashboard",
     "redirecting": "Weiterleitung zum Login..."
+  },
+
+  "security": {
+    "title": "Sicherheitseinstellungen",
+    "status": {
+      "title": "2FA-Pflicht",
+      "enabled": "Erzwungen",
+      "disabled": "Optional"
+    },
+    "require2fa": "Zwei-Faktor-Authentifizierung für alle Benutzer erzwingen",
+    "require2faHelp": "Wenn aktiviert, müssen alle Benutzer (außer Admins) 2FA einrichten, bevor sie das Dashboard nutzen können.",
+    "adminNote": "Admins sind ausgenommen, bis sie selbst 2FA aktivieren.",
+    "saved": "Sicherheitseinstellungen wurden gespeichert.",
+    "users2faStatus": "2FA-Status der Benutzer",
+    "usersWithout2fa": "Benutzer ohne 2FA",
+    "usersWith2fa": "Benutzer mit 2FA",
+    "allUsersHave2fa": "Alle Benutzer haben 2FA aktiviert.",
+    "noUsersWithout2fa": "Keine Benutzer ohne 2FA."
   },
 
   "resources": {

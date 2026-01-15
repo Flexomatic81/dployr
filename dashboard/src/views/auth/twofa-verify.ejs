@@ -1,0 +1,56 @@
+<div class="row justify-content-center min-vh-100 pt-5 mt-5">
+    <div class="col-md-5 col-lg-4 col-xl-3">
+        <div class="card d-elevated">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-shield-lock text-primary fs-2"></i>
+                    </div>
+                    <h4 class="mb-1"><%= t('security:verify.title') %></h4>
+                    <p class="text-muted small mb-0"><%= t('security:verify.subtitle', { username }) %></p>
+                </div>
+
+                <form method="POST" action="/login/2fa/verify">
+                    <%- csrfInput %>
+                    <div class="mb-3">
+                        <label for="code" class="form-label"><%= t('security:verify.codeLabel') %></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="text"
+                                   class="form-control form-control-lg text-center font-monospace"
+                                   id="code"
+                                   name="code"
+                                   maxlength="8"
+                                   pattern="[A-Za-z0-9\-]{6,9}"
+                                   placeholder="000000"
+                                   autocomplete="one-time-code"
+                                   inputmode="numeric"
+                                   required
+                                   autofocus>
+                        </div>
+                        <small class="text-muted"><%= t('security:verify.codeHint') %></small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-check-lg"></i> <%= t('security:verify.submit') %>
+                    </button>
+                </form>
+
+                <form method="POST" action="/login/2fa/cancel">
+                    <%- csrfInput %>
+                    <button type="submit" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left"></i> <%= t('security:verify.cancel') %>
+                    </button>
+                </form>
+
+                <div class="d-divider"></div>
+
+                <div class="text-center">
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle"></i> <%= t('security:verify.backupHint') %>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

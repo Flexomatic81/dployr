@@ -41,6 +41,7 @@ const profileRoutes = require('./routes/profile');
 const backupRoutes = require('./routes/backups');
 const workspaceRoutes = require('./routes/workspaces');
 const apiKeyRoutes = require('./routes/api-keys');
+const twofaRoutes = require('./routes/twofa');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -413,6 +414,9 @@ app.use('/backups', backupRoutes);
 // Workspace routes
 app.use('/workspaces', requireAuth, workspaceRoutes);
 app.use('/settings/api-keys', requireAuth, apiKeyRoutes);
+
+// 2FA routes (login routes are public, settings routes are authenticated inside router)
+app.use('/', twofaRoutes);
 
 // Apply rate limiting to workspace actions
 app.use('/workspaces/:projectName/start', workspaceLimiter);

@@ -1,0 +1,230 @@
+<%- include('../partials/pageHeader', {
+    title: t('security:title'),
+    titleIcon: 'bi-shield-lock',
+    breadcrumbs: [
+        { label: t('common:nav.settings'), href: '/settings' },
+        { label: t('security:title') }
+    ]
+}) %>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <!-- 2FA Status Card -->
+        <div class="card d-elevated mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check"></i>
+                    <%= t('security:twoFactor.title') %>
+                </h5>
+                <% if (totpEnabled) { %>
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle"></i>
+                        <%= t('security:status.enabled') %>
+                    </span>
+                <% } else { %>
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-x-circle"></i>
+                        <%= t('security:status.disabled') %>
+                    </span>
+                <% } %>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    <%= t('security:twoFactor.description') %>
+                </p>
+
+                <% if (totpEnabled) { %>
+                    <!-- 2FA is enabled -->
+                    <div class="alert alert-success">
+                        <i class="bi bi-shield-fill-check"></i>
+                        <strong><%= t('security:twoFactor.activeInfo') %></strong>
+                    </div>
+
+                    <!-- Backup Codes Status -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="bi bi-key-fill"></i>
+                                        <%= t('security:backupCodes.title') %>
+                                    </h6>
+                                    <p class="text-muted small mb-0">
+                                        <%= t('security:backupCodes.remaining', { count: remainingBackupCodes }) %>
+                                    </p>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#regenerateCodesModal">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                    <%= t('security:backupCodes.regenerate') %>
+                                </button>
+                            </div>
+                            <% if (remainingBackupCodes <= 3) { %>
+                                <div class="alert alert-warning mt-3 mb-0 small">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <%= t('security:backupCodes.lowWarning') %>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Disable 2FA -->
+                    <% if (!twoFaRequired || user.is_admin) { %>
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#disableModal">
+                            <i class="bi bi-shield-x"></i>
+                            <%= t('security:buttons.disable') %>
+                        </button>
+                    <% } else { %>
+                        <div class="alert alert-info small mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            <%= t('security:twoFactor.requiredByAdmin') %>
+                        </div>
+                    <% } %>
+                <% } else { %>
+                    <!-- 2FA is not enabled -->
+                    <% if (twoFaRequired) { %>
+                        <div class="alert alert-warning mb-4">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong><%= t('security:twoFactor.requiredWarning') %></strong>
+                        </div>
+                    <% } %>
+
+                    <a href="/settings/security/setup" class="btn btn-primary">
+                        <i class="bi bi-shield-plus"></i>
+                        <%= t('security:buttons.enable') %>
+                    </a>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="card d-elevated mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-question-circle"></i>
+                    <%= t('security:howItWorks.title') %>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-primary rounded-pill fs-6">1</span>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-1"><%= t('security:howItWorks.step1.title') %></h6>
+                                <p class="text-muted small mb-0"><%= t('security:howItWorks.step1.description') %></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-primary rounded-pill fs-6">2</span>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-1"><%= t('security:howItWorks.step2.title') %></h6>
+                                <p class="text-muted small mb-0"><%= t('security:howItWorks.step2.description') %></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supported Apps -->
+        <div class="alert alert-light">
+            <i class="bi bi-phone"></i>
+            <strong><%= t('security:apps.title') %></strong><br>
+            <span class="small text-muted">
+                Google Authenticator, Authy, Microsoft Authenticator, 1Password, Bitwarden
+            </span>
+        </div>
+    </div>
+</div>
+
+<% if (totpEnabled) { %>
+<!-- Disable 2FA Modal -->
+<div class="modal fade" id="disableModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/settings/security/disable" method="POST">
+                <%- csrfInput %>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-shield-x text-danger"></i>
+                        <%= t('security:disable.title') %>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <%= t('security:disable.warning') %>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="disablePassword" class="form-label"><%= t('common:labels.password') %></label>
+                        <input type="password" class="form-control" id="disablePassword" name="password" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="disableCode" class="form-label"><%= t('security:verify.codeLabel') %></label>
+                        <input type="text" class="form-control font-monospace" id="disableCode" name="code"
+                               maxlength="8" pattern="[A-Za-z0-9\-]{6,9}" placeholder="000000" required>
+                        <small class="text-muted"><%= t('security:verify.codeHint') %></small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <%= t('common:buttons.cancel') %>
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-shield-x"></i>
+                        <%= t('security:buttons.disable') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Regenerate Backup Codes Modal -->
+<div class="modal fade" id="regenerateCodesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/settings/security/regenerate-backup-codes" method="POST">
+                <%- csrfInput %>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-arrow-repeat"></i>
+                        <%= t('security:backupCodes.regenerateTitle') %>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <%= t('security:backupCodes.regenerateWarning') %>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="regenerateCode" class="form-label"><%= t('security:verify.codeLabel') %></label>
+                        <input type="text" class="form-control font-monospace" id="regenerateCode" name="code"
+                               maxlength="6" pattern="\d{6}" placeholder="000000" inputmode="numeric" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <%= t('common:buttons.cancel') %>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-arrow-repeat"></i>
+                        <%= t('security:backupCodes.regenerate') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<% } %>
