@@ -5,6 +5,54 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.0] - 2026-01-15
+
+### Added
+- **Custom Docker-Compose Projects**: Deploy projects with your own docker-compose.yml
+  - Automatic detection and validation of user-provided docker-compose files
+  - Security validation (blocks privileged mode, host networking, dangerous mounts)
+  - Port remapping to available external ports
+  - Resource limits enforcement (1 CPU, 512MB RAM per service by default)
+  - Container names prefixed with username-projectname for isolation
+  - Database volumes isolated to `./data/` directory
+  - Re-import docker-compose.yml on rebuild/git pull
+  - Technology detection from Dockerfile
+  - Port remapping info hint in project details
+- Status modal with polling for project actions (start/stop/restart/rebuild)
+- Custom project type badge in dashboard and project list
+
+### Fixed
+- Git "dubious ownership" error in dashboard container (safe.directory config)
+- MySQL session store not initializing at startup (WebSocket/IDE failures)
+- Missing `Accept: application/json` header in AJAX fetch calls
+- JSON and form submission support for workspace routes
+- Service detection in custom docker-compose parsing
+- Wait for all containers to be running before success response
+
+### Security
+- SQL injection vulnerability in database providers (parameterized queries)
+- Open redirect vulnerability in return URLs (sanitizeReturnUrl function)
+
+### Changed
+- Removed project settings card with type dropdown (type is now immutable)
+- Custom projects cannot change type after creation
+- Improved custom project type detection with flexible regex
+
+### Documentation
+- Added Custom Docker-Compose documentation to CLAUDE.md
+- Updated technical debt documentation
+
+## [v1.2.2] - 2026-01-13
+
+### Fixed
+- Separate branch and tag fetch in deploy script to avoid false errors
+
+## [v1.2.1] - 2026-01-12
+
+### Fixed
+- Use git reset instead of pull in deploy script for cleaner updates
+- Better error handling and feedback in deploy script
+
 ## [v1.2.0] - 2026-01-11
 
 ### Added
@@ -99,6 +147,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin dashboard with user management
 - System updates from GitHub releases
 
+[v1.3.0]: https://github.com/Flexomatic81/dployr/releases/tag/v1.3.0
+[v1.2.2]: https://github.com/Flexomatic81/dployr/releases/tag/v1.2.2
+[v1.2.1]: https://github.com/Flexomatic81/dployr/releases/tag/v1.2.1
 [v1.2.0]: https://github.com/Flexomatic81/dployr/releases/tag/v1.2.0
 [v1.1.1]: https://github.com/Flexomatic81/dployr/releases/tag/v1.1.1
 [v1.1.0]: https://github.com/Flexomatic81/dployr/releases/tag/v1.1.0
