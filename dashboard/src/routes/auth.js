@@ -5,6 +5,7 @@ const emailService = require('../services/email');
 const { redirectIfAuth, requireAuth } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
 const { logger } = require('../config/logger');
+const { sanitizeReturnUrl } = require('../services/utils/security');
 
 // Show login page
 router.get('/login', redirectIfAuth, (req, res) => {
@@ -141,12 +142,12 @@ router.post('/language', async (req, res) => {
             await userService.updateUserLanguage(req.session.user.id, language);
         }
 
-        // Redirect back or to referrer
-        const referer = req.get('Referer') || '/';
+        // Redirect back to referrer (sanitized to prevent open redirect)
+        const referer = sanitizeReturnUrl(req.get('Referer'), '/');
         res.redirect(referer);
     } catch (error) {
         logger.error('Language change error', { error: error.message });
-        const referer = req.get('Referer') || '/';
+        const referer = sanitizeReturnUrl(req.get('Referer'), '/');
         res.redirect(referer);
     }
 });

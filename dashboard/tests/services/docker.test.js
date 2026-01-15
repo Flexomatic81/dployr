@@ -36,6 +36,8 @@ const { exec } = require('child_process');
 describe('Docker Service', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Invalidate container cache between tests
+        dockerService.invalidateContainerCache();
     });
 
     describe('getUserContainers', () => {

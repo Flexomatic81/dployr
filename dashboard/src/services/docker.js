@@ -5,6 +5,43 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 const HOST_USERS_PATH = process.env.HOST_USERS_PATH || '/opt/dployr/users';
 
+// Container list cache configuration
+const CONTAINER_CACHE_TTL = 5000; // 5 seconds TTL
+let containerCache = null;
+let containerCacheTime = 0;
+
+/**
+ * Gets all containers with caching to reduce Docker API calls
+ * @returns {Promise<Array>} List of all containers
+ */
+async function getAllContainersCached() {
+    const now = Date.now();
+    if (containerCache && (now - containerCacheTime) < CONTAINER_CACHE_TTL) {
+        return containerCache;
+    }
+
+    try {
+        containerCache = await docker.listContainers({ all: true });
+        containerCacheTime = now;
+        return containerCache;
+    } catch (error) {
+        logger.error('Error fetching containers', { error: error.message });
+        // Return cached data if available, even if stale
+        if (containerCache) {
+            return containerCache;
+        }
+        return [];
+    }
+}
+
+/**
+ * Invalidates the container cache (call after state-changing operations)
+ */
+function invalidateContainerCache() {
+    containerCache = null;
+    containerCacheTime = 0;
+}
+
 // Converts container path to host path for Docker commands
 function toHostPath(containerPath) {
     if (containerPath.startsWith(USERS_PATH)) {
@@ -15,34 +52,24 @@ function toHostPath(containerPath) {
 
 // Get container list for a user
 async function getUserContainers(systemUsername) {
-    try {
-        const containers = await docker.listContainers({ all: true });
+    const containers = await getAllContainersCached();
 
-        // Filter containers belonging to the user (based on container name)
-        return containers.filter(container => {
-            const name = container.Names[0].replace('/', '');
-            return name.startsWith(systemUsername + '-') ||
-                   container.Labels['com.webserver.user'] === systemUsername;
-        });
-    } catch (error) {
-        logger.error('Error fetching containers', { error: error.message });
-        return [];
-    }
+    // Filter containers belonging to the user (based on container name)
+    return containers.filter(container => {
+        const name = container.Names[0].replace('/', '');
+        return name.startsWith(systemUsername + '-') ||
+               container.Labels['com.webserver.user'] === systemUsername;
+    });
 }
 
 // Get container status for a project
 async function getProjectContainers(projectName) {
-    try {
-        const containers = await docker.listContainers({ all: true });
+    const containers = await getAllContainersCached();
 
-        return containers.filter(container => {
-            const name = container.Names[0].replace('/', '');
-            return name === projectName || name.startsWith(projectName + '-');
-        });
-    } catch (error) {
-        logger.error('Error fetching project containers', { error: error.message });
-        return [];
-    }
+    return containers.filter(container => {
+        const name = container.Names[0].replace('/', '');
+        return name === projectName || name.startsWith(projectName + '-');
+    });
 }
 
 // Start container
@@ -50,6 +77,7 @@ async function startContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
         await container.start();
+        invalidateContainerCache();
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -61,6 +89,7 @@ async function stopContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
         await container.stop();
+        invalidateContainerCache();
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -72,6 +101,7 @@ async function restartContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
         await container.restart();
+        invalidateContainerCache();
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -108,6 +138,7 @@ async function startProject(projectPath, options = {}) {
     const buildFlag = options.build ? ' --build' : '';
     return new Promise((resolve, reject) => {
         exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d${buildFlag}`, (error, stdout, stderr) => {
+            invalidateContainerCache();
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {
@@ -123,6 +154,7 @@ async function stopProject(projectPath) {
     const hostPath = toHostPath(projectPath);
     return new Promise((resolve, reject) => {
         exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" down`, (error, stdout, stderr) => {
+            invalidateContainerCache();
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {
@@ -138,6 +170,7 @@ async function restartProject(projectPath) {
     const hostPath = toHostPath(projectPath);
     return new Promise((resolve, reject) => {
         exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" restart`, (error, stdout, stderr) => {
+            invalidateContainerCache();
             if (error) {
                 reject(new Error(stderr || error.message));
             } else {
@@ -252,5 +285,7 @@ module.exports = {
     getProjectServices,
     getServiceLogs,
     restartService,
-    rebuildProject
+    rebuildProject,
+    // Cache management (for testing)
+    invalidateContainerCache
 };

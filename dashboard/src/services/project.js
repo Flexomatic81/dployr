@@ -147,231 +147,253 @@ async function detectTemplateType(projectPath) {
     }
 }
 
-// Analyze custom docker-compose.yml to extract service info
-// Returns: { services: [...], databases: [...], appTechnology: string|null, ports: [...] }
-async function analyzeCustomDockerCompose(projectPath) {
+// Known database image patterns
+const DATABASE_PATTERNS = {
+    'mysql': { name: 'MySQL', icon: 'bi-database' },
+    'mariadb': { name: 'MariaDB', icon: 'bi-database' },
+    'postgres': { name: 'PostgreSQL', icon: 'bi-database-fill' },
+    'mongo': { name: 'MongoDB', icon: 'bi-database' },
+    'redis': { name: 'Redis', icon: 'bi-lightning' },
+    'memcached': { name: 'Memcached', icon: 'bi-memory' }
+};
+
+// Known app technology patterns (for images and Dockerfile FROM)
+const APP_PATTERNS = {
+    'node': 'Node.js',
+    'php': 'PHP',
+    'python': 'Python',
+    'ruby': 'Ruby',
+    'golang': 'Go',
+    'go:': 'Go',
+    'rust': 'Rust',
+    'openjdk': 'Java',
+    'eclipse-temurin': 'Java',
+    'amazoncorretto': 'Java',
+    'dotnet': '.NET',
+    'mcr.microsoft.com/dotnet': '.NET',
+    'nginx': 'Nginx',
+    'apache': 'Apache',
+    'httpd': 'Apache',
+    'caddy': 'Caddy',
+    'composer': 'PHP'
+};
+
+/**
+ * Detects technology from a Docker image name
+ */
+function detectTechFromImage(image) {
+    const imageLower = image.toLowerCase();
+    for (const [pattern, tech] of Object.entries(APP_PATTERNS)) {
+        if (imageLower.includes(pattern)) {
+            return tech;
+        }
+    }
+    return null;
+}
+
+/**
+ * Detects database type from a Docker image name
+ */
+function detectDatabaseFromImage(image, serviceName) {
+    const imageLower = image.toLowerCase();
+    for (const [pattern, dbInfo] of Object.entries(DATABASE_PATTERNS)) {
+        if (imageLower.includes(pattern)) {
+            return {
+                service: serviceName,
+                type: dbInfo.name,
+                icon: dbInfo.icon,
+                image
+            };
+        }
+    }
+    return null;
+}
+
+/**
+ * Resolves a Dockerfile path from build context
+ */
+function resolveDockerfilePath(projectPath, buildContext, dockerfile) {
+    if (buildContext.startsWith('./') || buildContext.startsWith('../')) {
+        return path.join(projectPath, buildContext, dockerfile);
+    } else if (buildContext === '.') {
+        return path.join(projectPath, dockerfile);
+    }
+    return path.join(projectPath, buildContext, dockerfile);
+}
+
+/**
+ * Detects app technology from Dockerfile content
+ */
+async function detectTechFromDockerfile(dockerfilePath) {
+    try {
+        const content = await fs.readFile(dockerfilePath, 'utf8');
+        const fromMatches = content.match(/^FROM\s+([^\s]+)/gmi);
+
+        if (fromMatches) {
+            for (const fromLine of fromMatches) {
+                const baseImage = fromLine.replace(/^FROM\s+/i, '').trim();
+                const tech = detectTechFromImage(baseImage);
+                if (tech) return tech;
+            }
+        }
+    } catch {
+        // Dockerfile not found or not readable
+    }
+    return null;
+}
+
+/**
+ * Parses docker-compose.yml content and extracts service information
+ */
+function parseComposeServices(content) {
     const result = {
+        services: [],
+        databases: [],
+        appTechnology: null,
+        ports: [],
+        buildContexts: []
+    };
+
+    const lines = content.split('\n');
+    let inServices = false;
+    let currentService = null;
+    let serviceIndent = 0;
+    let inBuild = false;
+    let buildIndent = 0;
+    let currentBuildContext = null;
+    let currentDockerfile = 'Dockerfile';
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+
+        // Detect services section
+        if (trimmed === 'services:') {
+            inServices = true;
+            continue;
+        }
+
+        // Exit services section on same-level key
+        if (inServices && !line.startsWith(' ') && !line.startsWith('\t') && trimmed && !trimmed.startsWith('#')) {
+            inServices = false;
+        }
+
+        if (!inServices) continue;
+
+        const leadingSpaces = line.length - line.trimStart().length;
+
+        // Service name at indent level 2
+        if (leadingSpaces === 2 && trimmed.endsWith(':') && !trimmed.includes(' ')) {
+            // Save previous service's build context
+            if (currentService && currentBuildContext) {
+                result.buildContexts.push({
+                    service: currentService,
+                    context: currentBuildContext,
+                    dockerfile: currentDockerfile
+                });
+            }
+            currentService = trimmed.slice(0, -1);
+            serviceIndent = leadingSpaces;
+            result.services.push(currentService);
+            inBuild = false;
+            currentBuildContext = null;
+            currentDockerfile = 'Dockerfile';
+            continue;
+        }
+
+        // Properties within current service
+        if (currentService && leadingSpaces > serviceIndent) {
+            // Build section
+            if (trimmed === 'build:' || trimmed.startsWith('build: ')) {
+                inBuild = true;
+                buildIndent = leadingSpaces;
+                if (trimmed.startsWith('build: ')) {
+                    currentBuildContext = trimmed.replace('build:', '').trim().replace(/["']/g, '');
+                    inBuild = false;
+                }
+                continue;
+            }
+
+            // Build section properties
+            if (inBuild && leadingSpaces > buildIndent) {
+                const contextMatch = trimmed.match(/^context:\s*["']?([^"'\s]+)/);
+                if (contextMatch) currentBuildContext = contextMatch[1];
+                const dockerfileMatch = trimmed.match(/^dockerfile:\s*["']?([^"'\s]+)/);
+                if (dockerfileMatch) currentDockerfile = dockerfileMatch[1];
+            } else if (inBuild && leadingSpaces <= buildIndent) {
+                inBuild = false;
+            }
+
+            // Image
+            const imageMatch = trimmed.match(/^image:\s*["']?([^"'\s]+)/);
+            if (imageMatch) {
+                const dbInfo = detectDatabaseFromImage(imageMatch[1], currentService);
+                if (dbInfo) {
+                    result.databases.push(dbInfo);
+                }
+                if (!result.appTechnology) {
+                    result.appTechnology = detectTechFromImage(imageMatch[1]);
+                }
+            }
+
+            // Ports
+            const portsMatch = trimmed.match(/^-\s*["']?(\d+):(\d+)/);
+            if (portsMatch) {
+                result.ports.push({ host: portsMatch[1], container: portsMatch[2] });
+            }
+        }
+    }
+
+    // Save last service's build context
+    if (currentService && currentBuildContext) {
+        result.buildContexts.push({
+            service: currentService,
+            context: currentBuildContext,
+            dockerfile: currentDockerfile
+        });
+    }
+
+    return result;
+}
+
+/**
+ * Analyzes custom docker-compose.yml to extract service info
+ * Returns: { services: [...], databases: [...], appTechnology: string|null, ports: [...] }
+ */
+async function analyzeCustomDockerCompose(projectPath) {
+    const emptyResult = {
         services: [],
         databases: [],
         appTechnology: null,
         ports: []
     };
 
-    // Known database image patterns
-    const databasePatterns = {
-        'mysql': { name: 'MySQL', icon: 'bi-database' },
-        'mariadb': { name: 'MariaDB', icon: 'bi-database' },
-        'postgres': { name: 'PostgreSQL', icon: 'bi-database-fill' },
-        'mongo': { name: 'MongoDB', icon: 'bi-database' },
-        'redis': { name: 'Redis', icon: 'bi-lightning' },
-        'memcached': { name: 'Memcached', icon: 'bi-memory' }
-    };
-
-    // Known app technology patterns (for images and Dockerfile FROM)
-    const appPatterns = {
-        'node': 'Node.js',
-        'php': 'PHP',
-        'python': 'Python',
-        'ruby': 'Ruby',
-        'golang': 'Go',
-        'go:': 'Go',
-        'rust': 'Rust',
-        'openjdk': 'Java',
-        'eclipse-temurin': 'Java',
-        'amazoncorretto': 'Java',
-        'dotnet': '.NET',
-        'mcr.microsoft.com/dotnet': '.NET',
-        'nginx': 'Nginx',
-        'apache': 'Apache',
-        'httpd': 'Apache',
-        'caddy': 'Caddy',
-        'composer': 'PHP'
-    };
-
-    // Helper to detect technology from image string
-    const detectTechFromImage = (image) => {
-        const imageLower = image.toLowerCase();
-        for (const [pattern, tech] of Object.entries(appPatterns)) {
-            if (imageLower.includes(pattern)) {
-                return tech;
-            }
-        }
-        return null;
-    };
-
     try {
         const composePath = path.join(projectPath, 'docker-compose.yml');
         const content = await fs.readFile(composePath, 'utf8');
 
-        // Track build contexts for later Dockerfile analysis
-        const buildContexts = [];
+        const parsed = parseComposeServices(content);
 
-        // Simple YAML parsing for services section
-        const lines = content.split('\n');
-        let inServices = false;
-        let currentService = null;
-        let serviceIndent = 0;
-        let inBuild = false;
-        let buildIndent = 0;
-        let currentBuildContext = null;
-        let currentDockerfile = 'Dockerfile';
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const trimmed = line.trim();
-
-            // Detect services section
-            if (trimmed === 'services:') {
-                inServices = true;
-                continue;
-            }
-
-            // Exit services section on same-level key
-            if (inServices && !line.startsWith(' ') && !line.startsWith('\t') && trimmed && !trimmed.startsWith('#')) {
-                inServices = false;
-            }
-
-            if (!inServices) continue;
-
-            // Detect service name (indented key with colon at service level, typically 2 spaces)
-            // Service names are direct children of 'services:', so they should be at consistent indent
-            const leadingSpaces = line.length - line.trimStart().length;
-
-            // A service name must be at indent level 2 (direct child of services:) and end with just ':'
-            // This excludes nested properties like 'build:', 'ports:', etc. which are at level 4+
-            if (leadingSpaces === 2 && trimmed.endsWith(':') && !trimmed.includes(' ')) {
-                // Save previous service's build context if any
-                if (currentService && currentBuildContext) {
-                    buildContexts.push({
-                        service: currentService,
-                        context: currentBuildContext,
-                        dockerfile: currentDockerfile
-                    });
-                }
-                currentService = trimmed.slice(0, -1);
-                serviceIndent = leadingSpaces;
-                result.services.push(currentService);
-                inBuild = false;
-                currentBuildContext = null;
-                currentDockerfile = 'Dockerfile';
-                continue;
-            }
-
-            // Look for image, build, or ports within current service
-            if (currentService && leadingSpaces > serviceIndent) {
-                // Detect build section
-                if (trimmed === 'build:' || trimmed.startsWith('build: ')) {
-                    inBuild = true;
-                    buildIndent = leadingSpaces;
-                    // Short form: build: ./path
-                    if (trimmed.startsWith('build: ')) {
-                        currentBuildContext = trimmed.replace('build:', '').trim().replace(/["']/g, '');
-                        inBuild = false; // No nested properties expected
-                    }
-                    continue;
-                }
-
-                // Parse build section properties
-                if (inBuild && leadingSpaces > buildIndent) {
-                    const contextMatch = trimmed.match(/^context:\s*["']?([^"'\s]+)/);
-                    if (contextMatch) {
-                        currentBuildContext = contextMatch[1];
-                    }
-                    const dockerfileMatch = trimmed.match(/^dockerfile:\s*["']?([^"'\s]+)/);
-                    if (dockerfileMatch) {
-                        currentDockerfile = dockerfileMatch[1];
-                    }
-                } else if (inBuild && leadingSpaces <= buildIndent) {
-                    inBuild = false;
-                }
-
-                // Check for image
-                const imageMatch = trimmed.match(/^image:\s*["']?([^"'\s]+)/);
-                if (imageMatch) {
-                    const image = imageMatch[1].toLowerCase();
-
-                    // Check for database
-                    for (const [pattern, dbInfo] of Object.entries(databasePatterns)) {
-                        if (image.includes(pattern)) {
-                            result.databases.push({
-                                service: currentService,
-                                type: dbInfo.name,
-                                icon: dbInfo.icon,
-                                image: imageMatch[1]
-                            });
-                            break;
-                        }
-                    }
-
-                    // Check for app technology (if not already set)
-                    if (!result.appTechnology) {
-                        const tech = detectTechFromImage(image);
-                        if (tech) {
-                            result.appTechnology = tech;
-                        }
-                    }
-                }
-
-                // Check for ports
-                const portsMatch = trimmed.match(/^-\s*["']?(\d+):(\d+)/);
-                if (portsMatch) {
-                    result.ports.push({
-                        host: portsMatch[1],
-                        container: portsMatch[2]
-                    });
+        // If no app technology detected from images, check Dockerfiles
+        if (!parsed.appTechnology && parsed.buildContexts.length > 0) {
+            for (const build of parsed.buildContexts) {
+                const dockerfilePath = resolveDockerfilePath(projectPath, build.context, build.dockerfile);
+                const tech = await detectTechFromDockerfile(dockerfilePath);
+                if (tech) {
+                    parsed.appTechnology = tech;
+                    break;
                 }
             }
         }
 
-        // Save last service's build context if any
-        if (currentService && currentBuildContext) {
-            buildContexts.push({
-                service: currentService,
-                context: currentBuildContext,
-                dockerfile: currentDockerfile
-            });
-        }
-
-        // If no app technology detected yet, analyze Dockerfiles from build contexts
-        if (!result.appTechnology && buildContexts.length > 0) {
-            for (const build of buildContexts) {
-                try {
-                    // Resolve build context path relative to project
-                    let dockerfilePath;
-                    if (build.context.startsWith('./') || build.context.startsWith('../')) {
-                        dockerfilePath = path.join(projectPath, build.context, build.dockerfile);
-                    } else if (build.context === '.') {
-                        dockerfilePath = path.join(projectPath, build.dockerfile);
-                    } else {
-                        dockerfilePath = path.join(projectPath, build.context, build.dockerfile);
-                    }
-
-                    const dockerfileContent = await fs.readFile(dockerfilePath, 'utf8');
-
-                    // Look for FROM statements in Dockerfile
-                    const fromMatches = dockerfileContent.match(/^FROM\s+([^\s]+)/gmi);
-                    if (fromMatches) {
-                        for (const fromLine of fromMatches) {
-                            const baseImage = fromLine.replace(/^FROM\s+/i, '').trim();
-                            const tech = detectTechFromImage(baseImage);
-                            if (tech) {
-                                result.appTechnology = tech;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (result.appTechnology) break;
-                } catch {
-                    // Dockerfile not found or not readable, continue
-                }
-            }
-        }
-
-        return result;
+        return {
+            services: parsed.services,
+            databases: parsed.databases,
+            appTechnology: parsed.appTechnology,
+            ports: parsed.ports
+        };
     } catch (error) {
         logger.debug('Could not analyze docker-compose.yml', { projectPath, error: error.message });
-        return result;
+        return emptyResult;
     }
 }
 

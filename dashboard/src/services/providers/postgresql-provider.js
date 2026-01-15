@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { generatePassword } = require('../utils/crypto');
+const { generatePassword, escapeSqlString, escapeShellArg } = require('../utils/crypto');
 const { assertValidSqlIdentifier } = require('../utils/security');
 
 const execAsync = promisify(exec);
@@ -52,15 +52,16 @@ async function createDatabase(systemUsername, databaseName) {
         );
 
         // Create user or update password
+        // Password is escaped to prevent SQL injection
+        const escapedPassword = escapeSqlString(dbPassword);
         if (userExists.rows.length === 0) {
-            // Password must be escaped for SQL
             await pool.query(
-                `CREATE USER "${dbUser}" WITH PASSWORD '${dbPassword}'`
+                `CREATE USER "${dbUser}" WITH PASSWORD '${escapedPassword}'`
             );
         } else {
             // User already exists - update password
             await pool.query(
-                `ALTER USER "${dbUser}" WITH PASSWORD '${dbPassword}'`
+                `ALTER USER "${dbUser}" WITH PASSWORD '${escapedPassword}'`
             );
         }
 
@@ -164,7 +165,9 @@ async function dumpDatabase(databaseName, username, password, outputPath) {
     assertValidSqlIdentifier(username, 'username');
 
     // Use pg_dump with PGPASSWORD env variable for authentication
-    const command = `PGPASSWORD="${password}" pg_dump -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -F p -b -v "${databaseName}" > "${outputPath}"`;
+    // Password is escaped to prevent shell injection
+    const escapedPassword = escapeShellArg(password);
+    const command = `PGPASSWORD="${escapedPassword}" pg_dump -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -F p -b -v "${databaseName}" > "${outputPath}"`;
 
     try {
         await execAsync(command, {
@@ -190,7 +193,9 @@ async function restoreDatabase(databaseName, username, password, inputPath) {
     assertValidSqlIdentifier(databaseName, 'database name');
     assertValidSqlIdentifier(username, 'username');
 
-    const command = `PGPASSWORD="${password}" psql -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -d "${databaseName}" -f "${inputPath}"`;
+    // Password is escaped to prevent shell injection
+    const escapedPassword = escapeShellArg(password);
+    const command = `PGPASSWORD="${escapedPassword}" psql -h ${DB_HOST} -p ${DB_PORT} -U "${username}" -d "${databaseName}" -f "${inputPath}"`;
 
     try {
         await execAsync(command, {

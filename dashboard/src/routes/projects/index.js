@@ -28,6 +28,170 @@ const autoDeployRouter = require('./autodeploy');
 const webhookRouter = require('./webhook');
 const sharingRouter = require('./sharing');
 
+// Type mapping from detected types to template names
+const TYPE_TO_TEMPLATE = {
+    static: 'static-website',
+    php: 'php-website',
+    nodejs: 'nodejs-app',
+    laravel: 'laravel',
+    'nodejs-static': 'nodejs-static',
+    nextjs: 'nextjs'
+};
+
+/**
+ * Handles async/sync project operations (start/stop/restart)
+ * Centralizes the common pattern for project lifecycle operations
+ */
+async function handleProjectOperation(req, res, operation, operationName, statusMessage, options = {}) {
+    const project = req.projectAccess.project;
+    const projectName = req.params.name;
+    const isAsync = req.query.async === 'true';
+
+    if (isAsync) {
+        // Execute in background and return immediately
+        operation()
+            .then(() => {
+                logger.info(`Project ${operationName} successfully (async)`, { name: projectName });
+            })
+            .catch(error => {
+                logger.error(`Error ${operationName} project (async)`, { name: projectName, error: error.message });
+            });
+
+        return res.json({ status: operationName.replace('ed', 'ing'), message: statusMessage });
+    }
+
+    // Synchronous execution
+    try {
+        await operation();
+        req.flash('success', req.t(`projects:flash.${operationName}`, { name: projectName }));
+        res.redirect(`/projects/${projectName}`);
+    } catch (error) {
+        logger.error(`Error ${operationName} project`, { error: error.message });
+        const actionKey = options.actionKey || `common:buttons.${operationName.replace('ed', '')}`;
+        req.flash('error', req.t('common:errors.actionFailed', { action: req.t(actionKey), error: error.message }));
+        res.redirect(`/projects/${projectName}`);
+    }
+}
+
+/**
+ * Loads all data needed for the project detail view
+ * Centralizes data fetching logic and handles permission-based data loading
+ */
+async function loadProjectViewData(req, access, projectName) {
+    const project = access.project;
+    const systemUsername = access.systemUsername;
+    const userId = req.session.user.id;
+    const userSystemUsername = req.session.user.system_username;
+
+    // Basic project data (always loaded)
+    const [gitStatus, envContent, envExample] = await Promise.all([
+        gitService.getGitStatus(project.path),
+        projectService.readEnvFile(systemUsername, projectName),
+        projectService.checkEnvExample(systemUsername, projectName)
+    ]);
+
+    // Type detection
+    const detectedType = gitService.detectProjectType(project.path);
+    const detectedTemplateType = TYPE_TO_TEMPLATE[detectedType] || 'static-website';
+    const typeMismatch = project.templateType !== detectedTemplateType;
+
+    // Permission-gated data: manage+ permission
+    let userDatabases = [];
+    let projectBackups = [];
+    let databaseBackups = [];
+    let linkedDatabase = null;
+
+    const hasManagePermission = access.isOwner || access.permission === 'manage' || access.permission === 'full';
+    if (hasManagePermission) {
+        userDatabases = await projectService.getUserDbCredentials(userSystemUsername);
+        projectBackups = await backupService.getProjectBackups(userId, projectName, 3);
+
+        linkedDatabase = await projectService.getLinkedDatabase(userSystemUsername, projectName, userDatabases);
+        if (linkedDatabase) {
+            databaseBackups = await backupService.getDatabaseBackups(userId, [linkedDatabase.database], 3);
+        }
+    }
+
+    // Permission-gated data: owner only (Git features)
+    let autoDeployConfig = null;
+    let deploymentHistory = [];
+    let webhookConfig = null;
+    let webhookSecret = null;
+
+    if (access.isOwner && gitStatus && gitStatus.connected) {
+        [autoDeployConfig, webhookConfig] = await Promise.all([
+            autoDeployService.getAutoDeployConfig(userId, projectName),
+            autoDeployService.getWebhookConfig(userId, projectName)
+        ]);
+
+        if (autoDeployConfig || webhookConfig) {
+            deploymentHistory = await autoDeployService.getDeploymentHistory(userId, projectName, 5);
+        }
+
+        // One-time webhook secret display
+        if (req.session.webhookSecret && req.session.webhookSecret.projectName === projectName) {
+            webhookSecret = req.session.webhookSecret;
+            delete req.session.webhookSecret;
+        }
+    }
+
+    // Permission-gated data: owner only (sharing)
+    let projectShares = [];
+    let availableUsers = [];
+
+    if (access.isOwner) {
+        [projectShares, availableUsers] = await Promise.all([
+            sharingService.getProjectShares(userId, projectName),
+            sharingService.getAllUsersExcept(userId)
+        ]);
+        const sharedUserIds = projectShares.map(s => s.shared_with_id);
+        availableUsers = availableUsers.filter(u => !sharedUserIds.includes(u.id));
+    }
+
+    // Permission-gated data: full permission (NPM domains)
+    const npmEnabled = proxyService.isEnabled();
+    let projectDomains = [];
+
+    if (npmEnabled && (access.isOwner || access.permission === 'full')) {
+        const ownerId = access.isOwner ? userId : access.ownerId;
+        projectDomains = await proxyService.getProjectDomains(ownerId, projectName);
+    }
+
+    // Workspace data (user's own workspace)
+    const workspace = await workspaceService.getWorkspace(userId, projectName);
+
+    return {
+        // Basic data
+        project,
+        gitStatus,
+        detectedType,
+        detectedTemplateType,
+        typeMismatch,
+        envContent,
+        envExample,
+        // Databases
+        userDatabases,
+        linkedDatabase,
+        // Auto-deploy & webhooks
+        autoDeployConfig,
+        deploymentHistory,
+        webhookConfig,
+        webhookSecret,
+        // Sharing
+        projectAccess: access,
+        projectShares,
+        availableUsers,
+        // NPM
+        npmEnabled,
+        projectDomains,
+        // Backups
+        projectBackups,
+        databaseBackups,
+        // Workspace
+        workspace
+    };
+}
+
 // Filter out requests for static files that shouldn't reach project routes
 // These are typically browser DevTools or extensions looking for source maps
 router.use('/:name', (req, res, next) => {
@@ -215,138 +379,17 @@ router.post('/from-git', requireAuth, validate('createProjectFromGit'), async (r
 // Show single project
 router.get('/:name', requireAuth, getProjectAccess(), async (req, res) => {
     try {
-        const access = req.projectAccess;
-        const project = access.project;
-        const systemUsername = access.systemUsername;
-
-        // Fetch Git status
-        const gitStatus = await gitService.getGitStatus(project.path);
-
-        // Auto-detect project type and compare with current
-        const detectedType = gitService.detectProjectType(project.path);
-
-        // Mapping from detected types to template names
-        const typeToTemplate = {
-            static: 'static-website',
-            php: 'php-website',
-            nodejs: 'nodejs-app',
-            laravel: 'laravel',
-            'nodejs-static': 'nodejs-static',
-            nextjs: 'nextjs'
-        };
-
-        const detectedTemplateType = typeToTemplate[detectedType] || 'static-website';
-        const typeMismatch = project.templateType !== detectedTemplateType;
-
-        // Load environment variables
-        const envContent = await projectService.readEnvFile(systemUsername, req.params.name);
-
-        // Check for .env.example
-        const envExample = await projectService.checkEnvExample(systemUsername, req.params.name);
-
-        // Load user's databases (only for owner or manage/full permission)
-        let userDatabases = [];
-        if (access.isOwner || access.permission === 'manage' || access.permission === 'full') {
-            userDatabases = await projectService.getUserDbCredentials(req.session.user.system_username);
-        }
-
-        // Load auto-deploy and webhook config (only for owner with Git projects)
-        let autoDeployConfig = null;
-        let deploymentHistory = [];
-        let webhookConfig = null;
-        let webhookSecret = null;
-        if (access.isOwner && gitStatus && gitStatus.connected) {
-            // Auto-deploy (polling) and webhook are independent features
-            autoDeployConfig = await autoDeployService.getAutoDeployConfig(req.session.user.id, req.params.name);
-            webhookConfig = await autoDeployService.getWebhookConfig(req.session.user.id, req.params.name);
-
-            // Load deployment history if either auto-deploy or webhook is configured
-            if (autoDeployConfig || webhookConfig) {
-                deploymentHistory = await autoDeployService.getDeploymentHistory(req.session.user.id, req.params.name, 5);
-            }
-
-            // Check for one-time secret display from session
-            if (req.session.webhookSecret && req.session.webhookSecret.projectName === req.params.name) {
-                webhookSecret = req.session.webhookSecret;
-                delete req.session.webhookSecret; // Clear after displaying once
-            }
-        }
-
-        // Load sharing information (only for owner)
-        let projectShares = [];
-        let availableUsers = [];
-        if (access.isOwner) {
-            projectShares = await sharingService.getProjectShares(req.session.user.id, req.params.name);
-            availableUsers = await sharingService.getAllUsersExcept(req.session.user.id);
-            // Remove users who already have access from the list
-            const sharedUserIds = projectShares.map(s => s.shared_with_id);
-            availableUsers = availableUsers.filter(u => !sharedUserIds.includes(u.id));
-        }
-
-        // Load NPM domains (only for owner or full permission)
-        const npmEnabled = proxyService.isEnabled();
-        let projectDomains = [];
-        if (npmEnabled && (access.isOwner || access.permission === 'full')) {
-            const ownerId = access.isOwner ? req.session.user.id : access.ownerId;
-            projectDomains = await proxyService.getProjectDomains(ownerId, req.params.name);
-        }
-
-        // Load backup history (for manage permission or higher)
-        let projectBackups = [];
-        let databaseBackups = [];
-        let linkedDatabase = null;
-        if (access.isOwner || access.permission === 'manage' || access.permission === 'full') {
-            projectBackups = await backupService.getProjectBackups(req.session.user.id, req.params.name, 3);
-
-            // Detect linked database from project .env
-            linkedDatabase = await projectService.getLinkedDatabase(
-                req.session.user.system_username,
-                req.params.name,
-                userDatabases
-            );
-
-            // Load database backups only for linked database
-            if (linkedDatabase) {
-                databaseBackups = await backupService.getDatabaseBackups(req.session.user.id, [linkedDatabase.database], 3);
-            }
-        }
-
-        // Load workspace for this project (if exists)
-        const workspace = await workspaceService.getWorkspace(req.session.user.id, req.params.name);
+        const viewData = await loadProjectViewData(req, req.projectAccess, req.params.name);
 
         res.render('projects/show', {
-            title: project.name,
-            project,
-            gitStatus,
-            detectedType,
-            detectedTemplateType,
-            typeMismatch,
-            envContent,
-            envExample,
-            userDatabases,
-            autoDeployConfig,
-            deploymentHistory,
-            webhookConfig,
-            webhookSecret,
-            // Sharing data
-            projectAccess: access,
-            projectShares,
-            availableUsers,
+            title: viewData.project.name,
+            ...viewData,
             permissionLabels: {
                 read: 'View',
                 manage: 'Manage',
                 full: 'Full Access'
             },
-            // NPM data
-            npmEnabled,
-            projectDomains,
-            // Backup data
-            projectBackups,
-            databaseBackups,
-            linkedDatabase,
-            formatFileSize: backupService.formatFileSize,
-            // Workspace data
-            workspace
+            formatFileSize: backupService.formatFileSize
         });
     } catch (error) {
         logger.error('Error loading project', { error: error.message });
@@ -377,87 +420,34 @@ router.get('/:name/status', requireAuth, getProjectAccess(), requirePermission('
 // Start project - async API (manage or higher)
 router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     const project = req.projectAccess.project;
-    const isAsync = req.query.async === 'true';
-
-    if (isAsync) {
-        // Start in background and return immediately
-        dockerService.startProject(project.path, { build: project.isCustom })
-            .then(() => {
-                logger.info('Project started successfully (async)', { name: req.params.name });
-            })
-            .catch(error => {
-                logger.error('Error starting project (async)', { name: req.params.name, error: error.message });
-            });
-
-        return res.json({ status: 'starting', message: 'Project is starting...' });
-    }
-
-    // Synchronous start (legacy behavior)
-    try {
-        await dockerService.startProject(project.path, { build: project.isCustom });
-        req.flash('success', req.t('projects:flash.started', { name: req.params.name }));
-        res.redirect(`/projects/${req.params.name}`);
-    } catch (error) {
-        logger.error('Error starting project', { error: error.message });
-        req.flash('error', req.t('common:errors.actionFailed', { action: req.t('common:buttons.start'), error: error.message }));
-        res.redirect(`/projects/${req.params.name}`);
-    }
+    await handleProjectOperation(
+        req, res,
+        () => dockerService.startProject(project.path, { build: project.isCustom }),
+        'started',
+        'Project is starting...'
+    );
 });
 
 // Stop project - async API (manage or higher)
 router.post('/:name/stop', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     const project = req.projectAccess.project;
-    const isAsync = req.query.async === 'true';
-
-    if (isAsync) {
-        dockerService.stopProject(project.path)
-            .then(() => {
-                logger.info('Project stopped successfully (async)', { name: req.params.name });
-            })
-            .catch(error => {
-                logger.error('Error stopping project (async)', { name: req.params.name, error: error.message });
-            });
-
-        return res.json({ status: 'stopping', message: 'Project is stopping...' });
-    }
-
-    try {
-        await dockerService.stopProject(project.path);
-        req.flash('success', req.t('projects:flash.stopped', { name: req.params.name }));
-        res.redirect(`/projects/${req.params.name}`);
-    } catch (error) {
-        logger.error('Error stopping project', { error: error.message });
-        req.flash('error', req.t('common:errors.actionFailed', { action: req.t('common:buttons.stop'), error: error.message }));
-        res.redirect(`/projects/${req.params.name}`);
-    }
+    await handleProjectOperation(
+        req, res,
+        () => dockerService.stopProject(project.path),
+        'stopped',
+        'Project is stopping...'
+    );
 });
 
 // Restart project - async API (manage or higher)
 router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     const project = req.projectAccess.project;
-    const isAsync = req.query.async === 'true';
-
-    if (isAsync) {
-        dockerService.restartProject(project.path)
-            .then(() => {
-                logger.info('Project restarted successfully (async)', { name: req.params.name });
-            })
-            .catch(error => {
-                logger.error('Error restarting project (async)', { name: req.params.name, error: error.message });
-            });
-
-        return res.json({ status: 'restarting', message: 'Project is restarting...' });
-    }
-
-    try {
-        await dockerService.restartProject(project.path);
-        req.flash('success', req.t('projects:flash.restarted', { name: req.params.name }));
-        res.redirect(`/projects/${req.params.name}`);
-    } catch (error) {
-        logger.error('Error restarting project', { error: error.message });
-        req.flash('error', req.t('common:errors.actionFailed', { action: req.t('common:buttons.restart'), error: error.message }));
-        res.redirect(`/projects/${req.params.name}`);
-    }
+    await handleProjectOperation(
+        req, res,
+        () => dockerService.restartProject(project.path),
+        'restarted',
+        'Project is restarting...'
+    );
 });
 
 // Rebuild project with --build flag (manage or higher, useful for custom docker-compose)

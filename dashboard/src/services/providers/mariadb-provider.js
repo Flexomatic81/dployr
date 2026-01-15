@@ -1,7 +1,7 @@
 const mysql = require('mysql2/promise');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { generatePassword } = require('../utils/crypto');
+const { generatePassword, escapeSqlString, escapeShellArg } = require('../utils/crypto');
 const { assertValidSqlIdentifier } = require('../utils/security');
 
 const execAsync = promisify(exec);
@@ -41,13 +41,15 @@ async function createDatabase(systemUsername, databaseName) {
         );
 
         // Create user or update password if user already exists
+        // Password is escaped to prevent SQL injection
+        const escapedPassword = escapeSqlString(dbPassword);
         await rootConnection.execute(
-            `CREATE USER IF NOT EXISTS '${dbUser}'@'%' IDENTIFIED BY '${dbPassword}'`
+            `CREATE USER IF NOT EXISTS '${dbUser}'@'%' IDENTIFIED BY '${escapedPassword}'`
         );
 
         // Set password (if user already existed)
         await rootConnection.execute(
-            `ALTER USER '${dbUser}'@'%' IDENTIFIED BY '${dbPassword}'`
+            `ALTER USER '${dbUser}'@'%' IDENTIFIED BY '${escapedPassword}'`
         );
 
         // Grant privileges
@@ -145,7 +147,9 @@ async function dumpDatabase(databaseName, username, password, outputPath) {
     assertValidSqlIdentifier(username, 'username');
 
     // Use mysqldump command - available in the dashboard container
-    const command = `mysqldump -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${password}" --single-transaction --routines --triggers "${databaseName}" > "${outputPath}"`;
+    // Password is escaped to prevent shell injection
+    const escapedPassword = escapeShellArg(password);
+    const command = `mysqldump -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${escapedPassword}" --single-transaction --routines --triggers "${databaseName}" > "${outputPath}"`;
 
     try {
         await execAsync(command, { timeout: 300000 }); // 5 minute timeout
@@ -168,7 +172,9 @@ async function restoreDatabase(databaseName, username, password, inputPath) {
     assertValidSqlIdentifier(databaseName, 'database name');
     assertValidSqlIdentifier(username, 'username');
 
-    const command = `mysql -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${password}" "${databaseName}" < "${inputPath}"`;
+    // Password is escaped to prevent shell injection
+    const escapedPassword = escapeShellArg(password);
+    const command = `mysql -h ${DB_HOST} -P ${DB_PORT} -u "${username}" -p"${escapedPassword}" "${databaseName}" < "${inputPath}"`;
 
     try {
         await execAsync(command, { timeout: 300000 }); // 5 minute timeout
