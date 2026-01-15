@@ -7,11 +7,14 @@
  * - Backup code generation and verification
  */
 
-const { authenticator } = require('otplib');
+const otplib = require('otplib');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { logger } = require('../config/logger');
+
+// Get authenticator from otplib
+const authenticator = otplib.authenticator;
 
 // TOTP configuration
 const ISSUER = 'Dployr';
@@ -19,10 +22,8 @@ const BACKUP_CODE_COUNT = 10;
 const BACKUP_CODE_LENGTH = 8;
 const BCRYPT_ROUNDS = 10;
 
-// Configure otplib for better compatibility
-authenticator.options = {
-    window: 1 // Allow 1 time step before/after (±30 seconds)
-};
+// Configure otplib for better compatibility (allow ±30 seconds window)
+authenticator.options = { window: 1 };
 
 /**
  * Generates a new TOTP secret
