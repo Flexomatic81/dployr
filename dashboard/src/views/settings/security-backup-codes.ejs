@@ -34,7 +34,7 @@
                 <div class="row g-2 mb-4" id="backupCodesContainer">
                     <% backupCodes.forEach((code, index) => { %>
                         <div class="col-6 col-md-4">
-                            <div class="p-2 bg-light rounded text-center font-monospace fw-bold">
+                            <div class="backup-code p-2 border rounded text-center font-monospace fw-bold fs-5">
                                 <%= code %>
                             </div>
                         </div>
@@ -43,15 +43,15 @@
 
                 <!-- Actions -->
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-outline-primary" onclick="copyAllCodes()">
+                    <button type="button" class="btn btn-outline-primary" id="copyBtn">
                         <i class="bi bi-clipboard"></i>
                         <%= t('security:backupCodes.copy') %>
                     </button>
-                    <button type="button" class="btn btn-outline-primary" onclick="downloadCodes()">
+                    <button type="button" class="btn btn-outline-primary" id="downloadBtn">
                         <i class="bi bi-download"></i>
                         <%= t('security:backupCodes.download') %>
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="printCodes()">
+                    <button type="button" class="btn btn-outline-secondary" id="printBtn">
                         <i class="bi bi-printer"></i>
                         <%= t('security:backupCodes.print') %>
                     </button>
@@ -87,43 +87,57 @@
 </div>
 
 <script>
-const backupCodes = <%= JSON.stringify(backupCodes) %>;
+const backupCodes = <%- JSON.stringify(backupCodes) %>;
 
-function copyAllCodes() {
-    const text = backupCodes.join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-        const btn = event.target.closest('button');
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check"></i> <%= t("common:flash.copied") %>';
-        setTimeout(() => btn.innerHTML = originalHtml, 2000);
+document.addEventListener('DOMContentLoaded', function() {
+    // Copy button
+    document.getElementById('copyBtn').addEventListener('click', function() {
+        const btn = this;
+        const text = backupCodes.join('\n');
+        navigator.clipboard.writeText(text).then(function() {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check"></i> <%= t("common:flash.copied") %>';
+            setTimeout(function() { btn.innerHTML = originalHtml; }, 2000);
+        }).catch(function(err) {
+            console.error('Copy failed:', err);
+            alert('Kopieren fehlgeschlagen');
+        });
     });
-}
 
-function downloadCodes() {
-    const text = 'Dployr Backup Codes\n' +
-                 '==================\n\n' +
-                 'Generated: ' + new Date().toISOString() + '\n\n' +
-                 backupCodes.join('\n') + '\n\n' +
-                 'Important: Each code can only be used once.\n' +
-                 'Keep these codes in a safe place.';
+    // Download button
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        const text = 'Dployr Backup Codes\n' +
+                     '==================\n\n' +
+                     'Generated: ' + new Date().toISOString() + '\n\n' +
+                     backupCodes.join('\n') + '\n\n' +
+                     'Important: Each code can only be used once.\n' +
+                     'Keep these codes in a safe place.';
 
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'dployr-backup-codes.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'dployr-backup-codes.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
 
-function printCodes() {
-    window.print();
-}
+    // Print button
+    document.getElementById('printBtn').addEventListener('click', function() {
+        window.print();
+    });
+});
 </script>
 
 <style>
+.backup-code {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    letter-spacing: 0.1em;
+}
+
 @media print {
     .navbar, .sidebar, .btn, .alert-warning, header, footer {
         display: none !important;
@@ -131,6 +145,11 @@ function printCodes() {
     .card {
         border: 1px solid #000 !important;
         box-shadow: none !important;
+    }
+    .backup-code {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
     }
 }
 </style>
