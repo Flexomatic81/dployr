@@ -149,6 +149,17 @@ app.use(methodOverride('_method'));
 let sessionStore = null;
 let setupComplete = false;
 
+// Synchronous check for setup complete (used at startup)
+function checkSetupCompleteSync() {
+    try {
+        const fs = require('fs');
+        fs.accessSync('/app/infrastructure/.setup-complete');
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 async function checkSetupComplete() {
     try {
         const fs = require('fs').promises;
@@ -158,6 +169,9 @@ async function checkSetupComplete() {
         return false;
     }
 }
+
+// Check setup status synchronously at startup
+setupComplete = checkSetupCompleteSync();
 
 function createSessionStore() {
     if (sessionStore) return sessionStore;
@@ -249,10 +263,12 @@ async function validateWebSocketSession(req) {
     }
 }
 
-// Session Setup - initially with memory store, upgraded after setup
+// Session Setup - use MySQL store if setup is complete, otherwise memory store
+// Note: createSessionStore() will create the store if setupComplete is true
+const initialSessionStore = createSessionStore();
 app.use(session({
     secret: process.env.SESSION_SECRET || 'change-this-secret',
-    store: null, // Start with memory store, will be upgraded in start()
+    store: initialSessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
