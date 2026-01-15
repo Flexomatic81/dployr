@@ -7,14 +7,11 @@
  * - Backup code generation and verification
  */
 
-const otplib = require('otplib');
+const { TOTP, Secret } = require('otpauth');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { logger } = require('../config/logger');
-
-// Get authenticator from otplib
-const authenticator = otplib.authenticator;
 
 // TOTP configuration
 const ISSUER = 'Dployr';
@@ -22,31 +19,47 @@ const BACKUP_CODE_COUNT = 10;
 const BACKUP_CODE_LENGTH = 8;
 const BCRYPT_ROUNDS = 10;
 
-// Configure otplib for better compatibility (allow ±30 seconds window)
-authenticator.options = { window: 1 };
-
 /**
  * Generates a new TOTP secret
  * @returns {string} Base32-encoded secret
  */
 function generateSecret() {
-    return authenticator.generateSecret();
+    const secret = new Secret({ size: 20 });
+    return secret.base32;
+}
+
+/**
+ * Creates a TOTP instance from a secret
+ * @param {string} username - User's username
+ * @param {string} base32Secret - Base32-encoded secret
+ * @returns {TOTP} TOTP instance
+ */
+function createTOTP(username, base32Secret) {
+    return new TOTP({
+        issuer: ISSUER,
+        label: username,
+        secret: Secret.fromBase32(base32Secret),
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30
+    });
 }
 
 /**
  * Generates an otpauth URI for authenticator apps
  * @param {string} username - User's username
- * @param {string} secret - TOTP secret
+ * @param {string} secret - TOTP secret (base32)
  * @returns {string} otpauth URI
  */
 function generateOtpauthUri(username, secret) {
-    return authenticator.keyuri(username, ISSUER, secret);
+    const totp = createTOTP(username, secret);
+    return totp.toString();
 }
 
 /**
  * Generates a QR code as data URL for the otpauth URI
  * @param {string} username - User's username
- * @param {string} secret - TOTP secret
+ * @param {string} secret - TOTP secret (base32)
  * @returns {Promise<string>} Data URL of QR code image
  */
 async function generateQRCode(username, secret) {
@@ -70,7 +83,7 @@ async function generateQRCode(username, secret) {
 /**
  * Verifies a TOTP code against a secret
  * @param {string} code - 6-digit TOTP code
- * @param {string} secret - TOTP secret
+ * @param {string} secret - TOTP secret (base32)
  * @returns {boolean} True if code is valid
  */
 function verifyCode(code, secret) {
@@ -78,11 +91,21 @@ function verifyCode(code, secret) {
         return false;
     }
 
-    // Normalize code (remove spaces, ensure string)
-    const normalizedCode = String(code).replace(/\s/g, '');
+    // Normalize code (remove spaces and dashes, ensure string)
+    const normalizedCode = String(code).replace(/[\s-]/g, '');
 
     try {
-        return authenticator.verify({ token: normalizedCode, secret });
+        const totp = new TOTP({
+            secret: Secret.fromBase32(secret),
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30
+        });
+
+        // validate returns null if invalid, or the delta (time difference) if valid
+        // window: 1 allows ±30 seconds
+        const delta = totp.validate({ token: normalizedCode, window: 1 });
+        return delta !== null;
     } catch (error) {
         logger.warn('TOTP verification error', { error: error.message });
         return false;
@@ -130,8 +153,8 @@ async function verifyBackupCode(code, hashedCodes) {
         return { valid: false, index: -1 };
     }
 
-    // Normalize code
-    const normalizedCode = String(code).replace(/\s/g, '').toUpperCase();
+    // Normalize code (remove spaces and dashes)
+    const normalizedCode = String(code).replace(/[\s-]/g, '').toUpperCase();
 
     // Check against all stored hashes
     for (let i = 0; i < hashedCodes.length; i++) {
