@@ -120,7 +120,7 @@ dashboard/src/
 │   │   └── postgresql-provider.js
 │   └── utils/          # Shared utility functions
 │       ├── nginx.js    # Nginx config generation
-│       ├── crypto.js   # Password generation
+│       ├── crypto.js   # Password generation, SQL/shell escaping
 │       ├── security.js # Security utilities (blocked files, URL sanitization)
 │       └── webhook.js  # Webhook signature validation
 ├── views/              # EJS templates with express-ejs-layouts
@@ -903,7 +903,7 @@ The project detail page shows a "Backup Database" button only if the project has
 | Module | Purpose |
 |--------|---------|
 | `utils/nginx.js` | `generateNginxConfig()` for static website nginx config |
-| `utils/crypto.js` | `generatePassword()` for secure password generation |
+| `utils/crypto.js` | `generatePassword()`, `escapeSqlString()`, `escapeShellArg()` for secure operations |
 | `utils/security.js` | `removeBlockedFiles()`, `sanitizeReturnUrl()` for security |
 | `utils/webhook.js` | Webhook signature validation, provider detection, payload parsing |
 
@@ -949,26 +949,16 @@ Known issues and improvements identified during code reviews that require more e
 **Improvement:** Add explicit `allocated_ports` table for better tracking and debugging.
 **Complexity:** Requires database schema changes and migration.
 
-### 2. SQL Injection Risk in Database Providers
-**Location:** `services/providers/mariadb-provider.js`, `postgresql-provider.js`
-**Issue:** Database/user names are interpolated into SQL strings. While usernames are validated at input, explicit validation before SQL execution would add defense-in-depth.
-**Improvement:** Add explicit `isValidIdentifier()` check before all dynamic SQL.
-
-### 3. Git Credentials Security
+### 2. Git Credentials Security
 **Location:** `services/git.js`
 **Issue:** Git access tokens are stored in plain text in the database (`git_url` field).
 **Improvement:** Encrypt tokens at rest using the existing encryption service, or migrate to SSH key-based authentication.
 
-### 4. Docker Status Caching
-**Location:** `services/docker.js`
-**Issue:** Every status check queries Docker API directly, which can be slow with many containers.
-**Improvement:** Implement short-lived cache (5-10 seconds) for container status to reduce API calls.
-
-### 5. Batch Query for Workspace Previews
+### 3. Batch Query for Workspace Previews
 **Location:** `services/preview.js`
 **Issue:** Loading previews for multiple workspaces results in N+1 queries.
 **Improvement:** Add `getPreviewsForWorkspaces(workspaceIds)` function for batch loading.
 
-### 6. Standardized Error Handling Class
+### 4. Standardized Error Handling Class
 **Issue:** Error handling is inconsistent across services (some throw, some return null, some log silently).
 **Improvement:** Create `AppError` class hierarchy with error codes, HTTP status mapping, and consistent logging.
