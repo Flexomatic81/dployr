@@ -466,12 +466,13 @@
         }
       },
       "docker": {
-        "q": "Can I use custom Dockerfiles or docker-compose.yml?",
+        "q": "Can I use custom docker-compose.yml files?",
         "a": {
-          "intro": "No, custom Docker configurations are not supported for security reasons.",
-          "reason": "Dployr uses predefined templates for all project types (Static, PHP, Node.js, etc.).",
-          "removed": "The following files are automatically removed: Dockerfile, docker-compose.yml, compose.yml, .dockerignore",
-          "why": "This prevents security risks such as privilege escalation or resource abuse."
+          "intro": "Yes! Dployr supports custom docker-compose.yml files for multi-container projects.",
+          "howto": "Place a docker-compose.yml in the root of your Git repository. Dployr will automatically detect it.",
+          "transforms": "Dployr applies automatic adjustments: container names are prefixed with your username, ports are remapped to available external ports, all services receive resource limits.",
+          "supported": "Supported: web servers (Nginx, Apache), databases (MySQL, PostgreSQL, MongoDB, Redis), build tools and custom images.",
+          "security": "Security restrictions: no privileged containers, no host network mode, no Docker socket mounts, no access to system directories."
         }
       }
     }

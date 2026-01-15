@@ -62,6 +62,7 @@ Deploy and manage isolated web projects on a shared Linux server through an intu
 | 🚀 **Multiple Deployment Methods** | Git repository, ZIP upload, or empty template |
 | 🔄 **Auto-Deploy** | Automatic updates via polling or webhooks |
 | 🔍 **Smart Detection** | Automatically detects Static, PHP, Node.js, Laravel, Next.js, Nuxt.js, Python |
+| 🐳 **Custom Docker-Compose** | Deploy your own multi-container environments with security validation |
 | 🗄️ **Database Support** | MariaDB and PostgreSQL with phpMyAdmin & pgAdmin |
 | 👥 **Multi-User** | User registration with admin approval workflow |
 | 🔗 **Project Sharing** | Share projects with other users (read/manage/full access) |
@@ -201,6 +202,62 @@ The dashboard offers three ways to create a project:
 #### Empty Template
 - Choose a project type (Static, PHP, Node.js, Python)
 - Start with a blank project structure
+
+#### Custom Docker-Compose (Advanced)
+
+Deploy projects with your own `docker-compose.yml` for full control over the container environment.
+
+**How it works:**
+1. Include a `docker-compose.yml` in your Git repository root
+2. Dployr automatically detects and processes it
+3. Your services are validated, secured, and deployed
+
+**Automatic transformations:**
+- Container names are prefixed with your username
+- Ports are remapped to available external ports
+- All services join the Dployr network
+- Resource limits are enforced (default: 1 CPU, 512MB RAM per service)
+- Database volumes are isolated from app files
+
+**Supported services:**
+- Web servers (Nginx, Apache, Caddy)
+- Databases (MySQL, PostgreSQL, MongoDB, Redis)
+- Build tools and custom images
+- Multi-container applications
+
+**Security restrictions:**
+- No privileged containers
+- No host network mode
+- No Docker socket mounts
+- No access to system directories (`/etc`, `/root`, `/proc`)
+
+**Example docker-compose.yml:**
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=myapp
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+```
+
+After deployment, the project detail page shows all services with their status, ports, and detected technologies.
 
 ### Managing Projects
 

@@ -881,13 +881,17 @@ DB_NAME=deine_db</code></pre>
                             </h2>
                             <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body">
-                                    <p><%= t('help:faq.questions.docker.a.intro') %></p>
-                                    <p><%= t('help:faq.questions.docker.a.reason') %></p>
-                                    <div class="alert alert-warning mb-2">
-                                        <i class="bi bi-exclamation-triangle"></i>
-                                        <strong><%= t('help:faq.questions.docker.a.removed') %></strong>
+                                    <p><strong><%= t('help:faq.questions.docker.a.intro') %></strong></p>
+                                    <p><%= t('help:faq.questions.docker.a.howto') %></p>
+                                    <p><%= t('help:faq.questions.docker.a.transforms') %></p>
+                                    <div class="alert alert-success mb-2">
+                                        <i class="bi bi-check-circle"></i>
+                                        <strong><%= t('help:faq.questions.docker.a.supported') %></strong>
                                     </div>
-                                    <p class="text-muted mb-0"><small><%= t('help:faq.questions.docker.a.why') %></small></p>
+                                    <div class="alert alert-warning mb-0">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong><%= t('help:faq.questions.docker.a.security') %></strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>

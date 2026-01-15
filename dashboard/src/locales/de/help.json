@@ -466,12 +466,13 @@
         }
       },
       "docker": {
-        "q": "Kann ich eigene Dockerfiles oder docker-compose.yml verwenden?",
+        "q": "Kann ich eigene docker-compose.yml verwenden?",
         "a": {
-          "intro": "Nein, eigene Docker-Konfigurationen werden aus Sicherheitsgründen nicht unterstützt.",
-          "reason": "Dployr verwendet vordefinierte Templates für alle Projekttypen (Static, PHP, Node.js, etc.).",
-          "removed": "Folgende Dateien werden automatisch entfernt: Dockerfile, docker-compose.yml, compose.yml, .dockerignore",
-          "why": "Dies verhindert Sicherheitsrisiken wie Privilege Escalation oder Ressourcenmissbrauch."
+          "intro": "Ja! Dployr unterstützt eigene docker-compose.yml Dateien für Multi-Container-Projekte.",
+          "howto": "Lege eine docker-compose.yml im Root deines Git-Repositories ab. Dployr erkennt sie automatisch.",
+          "transforms": "Dployr führt automatische Anpassungen durch: Container-Namen werden mit deinem Benutzernamen prefixed, Ports werden auf verfügbare externe Ports umgemapped, alle Services bekommen Ressourcenlimits.",
+          "supported": "Unterstützt werden: Web-Server (Nginx, Apache), Datenbanken (MySQL, PostgreSQL, MongoDB, Redis), Build-Tools und Custom Images.",
+          "security": "Aus Sicherheitsgründen eingeschränkt: Keine privilegierten Container, kein Host-Netzwerkmodus, kein Docker-Socket-Mount, kein Zugriff auf Systemverzeichnisse."
         }
       }
     }
