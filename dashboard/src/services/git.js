@@ -5,6 +5,7 @@ const { generateNginxConfig } = require('./utils/nginx');
 const { removeBlockedFiles } = require('./utils/security');
 const { logger } = require('../config/logger');
 const composeValidator = require('./compose-validator');
+const gitCredentials = require('./gitCredentials');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -238,9 +239,23 @@ async function cloneRepository(projectPath, repoUrl, token = null) {
 
 /**
  * Saves credentials for a repository
+ * Now stores encrypted in database and writes temporary file for Git operations
+ * @param {string} projectPath - Project path
+ * @param {string} repoUrl - Repository URL
+ * @param {string} token - Access token
+ * @param {number} userId - User ID (optional, for encrypted storage)
+ * @param {string} projectName - Project name (optional, for encrypted storage)
  */
-async function saveCredentials(projectPath, repoUrl, token) {
+async function saveCredentials(projectPath, repoUrl, token, userId = null, projectName = null) {
     const gitPath = getGitPath(projectPath);
+
+    // If userId provided, store encrypted in database
+    if (userId && projectName && token) {
+        await gitCredentials.saveCredentials(userId, projectName, repoUrl, token);
+        logger.debug('Git credentials stored encrypted in database', { projectName });
+    }
+
+    // Write temporary file for immediate Git operations
     const credentialsPath = path.join(gitPath, '.git-credentials');
     const url = new URL(repoUrl);
     const credentialLine = `https://${token}@${url.host}${url.pathname}`;
@@ -312,13 +327,25 @@ function adjustDockerCompose(projectPath) {
 
 /**
  * Pulls the latest changes from remote
+ * @param {string} projectPath - Project path
+ * @param {number} userId - User ID (optional, for encrypted credential lookup)
+ * @param {string} projectName - Project name (optional, for encrypted credential lookup)
  */
-async function pullChanges(projectPath) {
+async function pullChanges(projectPath, userId = null, projectName = null) {
     if (!isGitRepository(projectPath)) {
         throw new Error('Not a Git repository');
     }
 
     const gitPath = getGitPath(projectPath);
+
+    // If credentials are stored encrypted, provision them temporarily
+    let cleanup = () => {};
+    if (userId && projectName) {
+        const creds = await gitCredentials.getCredentials(userId, projectName);
+        if (creds && creds.token) {
+            cleanup = gitCredentials.writeTemporaryCredentials(gitPath, creds.repoUrl, creds.token);
+        }
+    }
 
     try {
         const git = simpleGit(gitPath);
@@ -337,13 +364,18 @@ async function pullChanges(projectPath) {
     } catch (err) {
         const cleanError = (err.message || '').replace(/https:\/\/[^@]+@/g, 'https://***@');
         throw new Error(`Git pull failed: ${cleanError}`);
+    } finally {
+        cleanup();
     }
 }
 
 /**
  * Removes the Git connection from a project
+ * @param {string} projectPath - Project path
+ * @param {number} userId - User ID (optional, to also delete encrypted credentials)
+ * @param {string} projectName - Project name (optional, to also delete encrypted credentials)
  */
-function disconnectRepository(projectPath) {
+async function disconnectRepository(projectPath, userId = null, projectName = null) {
     const gitPath = getGitPath(projectPath);
     const gitDir = path.join(gitPath, '.git');
     const credentialsFile = path.join(gitPath, '.git-credentials');
@@ -354,6 +386,11 @@ function disconnectRepository(projectPath) {
 
     if (fs.existsSync(credentialsFile)) {
         fs.unlinkSync(credentialsFile);
+    }
+
+    // Also delete encrypted credentials from database
+    if (userId && projectName) {
+        await gitCredentials.deleteCredentials(userId, projectName);
     }
 
     return { success: true, message: 'Git connection removed' };
@@ -896,5 +933,9 @@ module.exports = {
     createProjectFromGit,
     detectProjectType,
     generateDockerCompose,
-    generateNginxConfig
+    generateNginxConfig,
+    // Re-export gitCredentials functions for external use
+    saveCredentials,
+    migrateCredentials: gitCredentials.migrateFromFile,
+    hasEncryptedCredentials: gitCredentials.hasCredentials
 };

@@ -473,4 +473,102 @@ describe('Preview Service', () => {
             expect(bcrypt.hash).toHaveBeenCalledWith('secret123', 10);
         });
     });
+
+    describe('getPreviewsForWorkspaces', () => {
+        it('should return empty map when no workspaceIds provided', async () => {
+            const result = await previewService.getPreviewsForWorkspaces([], 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.size).toBe(0);
+        });
+
+        it('should return empty map when workspaceIds is null', async () => {
+            const result = await previewService.getPreviewsForWorkspaces(null, 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.size).toBe(0);
+        });
+
+        it('should return previews grouped by workspace_id', async () => {
+            const mockPreviews = [
+                { id: 1, workspace_id: 10, preview_hash: 'hash1' },
+                { id: 2, workspace_id: 10, preview_hash: 'hash2' },
+                { id: 3, workspace_id: 20, preview_hash: 'hash3' }
+            ];
+
+            mockPool.query.mockResolvedValueOnce([mockPreviews]);
+
+            const result = await previewService.getPreviewsForWorkspaces([10, 20, 30], 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.get(10)).toHaveLength(2);
+            expect(result.get(20)).toHaveLength(1);
+            expect(result.get(30)).toHaveLength(0); // No previews for workspace 30
+        });
+
+        it('should initialize empty arrays for all requested workspace IDs', async () => {
+            mockPool.query.mockResolvedValueOnce([[]]);
+
+            const result = await previewService.getPreviewsForWorkspaces([1, 2, 3], 1);
+
+            expect(result.get(1)).toEqual([]);
+            expect(result.get(2)).toEqual([]);
+            expect(result.get(3)).toEqual([]);
+        });
+
+        it('should return empty map on database error', async () => {
+            mockPool.query.mockRejectedValueOnce(new Error('Database error'));
+
+            const result = await previewService.getPreviewsForWorkspaces([1, 2], 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.get(1)).toEqual([]);
+            expect(result.get(2)).toEqual([]);
+        });
+    });
+
+    describe('getPreviewCountsForWorkspaces', () => {
+        it('should return empty map when no workspaceIds provided', async () => {
+            const result = await previewService.getPreviewCountsForWorkspaces([], 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.size).toBe(0);
+        });
+
+        it('should return counts grouped by workspace_id', async () => {
+            const mockCounts = [
+                { workspace_id: 10, count: 3 },
+                { workspace_id: 20, count: 1 }
+            ];
+
+            mockPool.query.mockResolvedValueOnce([mockCounts]);
+
+            const result = await previewService.getPreviewCountsForWorkspaces([10, 20, 30], 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.get(10)).toBe(3);
+            expect(result.get(20)).toBe(1);
+            expect(result.get(30)).toBe(0); // No previews for workspace 30
+        });
+
+        it('should initialize zeros for all requested workspace IDs', async () => {
+            mockPool.query.mockResolvedValueOnce([[]]);
+
+            const result = await previewService.getPreviewCountsForWorkspaces([1, 2, 3], 1);
+
+            expect(result.get(1)).toBe(0);
+            expect(result.get(2)).toBe(0);
+            expect(result.get(3)).toBe(0);
+        });
+
+        it('should return zeros on database error', async () => {
+            mockPool.query.mockRejectedValueOnce(new Error('Database error'));
+
+            const result = await previewService.getPreviewCountsForWorkspaces([1, 2], 1);
+
+            expect(result).toBeInstanceOf(Map);
+            expect(result.get(1)).toBe(0);
+            expect(result.get(2)).toBe(0);
+        });
+    });
 });

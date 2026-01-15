@@ -481,6 +481,26 @@ async function initDatabase() {
         }
 
         // ============================================================
+        // GIT CREDENTIALS TABLE (encrypted storage)
+        // ============================================================
+
+        // Git credentials table - encrypted storage of Git tokens
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS git_credentials (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                project_name VARCHAR(100) NOT NULL,
+                repo_url VARCHAR(500) NOT NULL,
+                token_encrypted VARBINARY(1024) NULL,
+                token_iv VARBINARY(16) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES dashboard_users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_project_creds (user_id, project_name)
+            )
+        `);
+
+        // ============================================================
         // PROJECT PORTS TABLE (for multi-container projects)
         // ============================================================
 

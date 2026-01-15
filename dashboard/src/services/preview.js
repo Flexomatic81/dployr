@@ -374,6 +374,108 @@ async function getWorkspacePreviews(workspaceId, userId) {
 }
 
 /**
+ * Gets previews for multiple workspaces in a single query (batch loading)
+ * Reduces N+1 queries when loading workspace lists
+ *
+ * @param {number[]} workspaceIds - Array of workspace IDs
+ * @param {number} userId - User ID
+ * @returns {Promise<Map<number, Array>>} Map of workspaceId -> previews array
+ */
+async function getPreviewsForWorkspaces(workspaceIds, userId) {
+    if (!workspaceIds || workspaceIds.length === 0) {
+        return new Map();
+    }
+
+    try {
+        // Create placeholders for IN clause
+        const placeholders = workspaceIds.map(() => '?').join(',');
+
+        const [previews] = await pool.query(
+            `SELECT * FROM preview_environments
+             WHERE workspace_id IN (${placeholders}) AND user_id = ?
+             ORDER BY workspace_id, created_at DESC`,
+            [...workspaceIds, userId]
+        );
+
+        // Group previews by workspace_id
+        const previewMap = new Map();
+
+        // Initialize map with empty arrays for all requested workspaceIds
+        for (const id of workspaceIds) {
+            previewMap.set(id, []);
+        }
+
+        // Populate map with actual previews
+        for (const preview of previews) {
+            const list = previewMap.get(preview.workspace_id);
+            if (list) {
+                list.push(preview);
+            }
+        }
+
+        return previewMap;
+
+    } catch (error) {
+        logger.error('Failed to get previews for workspaces:', error);
+        // Return empty map on error
+        const emptyMap = new Map();
+        for (const id of workspaceIds) {
+            emptyMap.set(id, []);
+        }
+        return emptyMap;
+    }
+}
+
+/**
+ * Gets preview counts for multiple workspaces in a single query
+ * Useful for displaying preview count badges without loading full preview data
+ *
+ * @param {number[]} workspaceIds - Array of workspace IDs
+ * @param {number} userId - User ID
+ * @returns {Promise<Map<number, number>>} Map of workspaceId -> preview count
+ */
+async function getPreviewCountsForWorkspaces(workspaceIds, userId) {
+    if (!workspaceIds || workspaceIds.length === 0) {
+        return new Map();
+    }
+
+    try {
+        const placeholders = workspaceIds.map(() => '?').join(',');
+
+        const [rows] = await pool.query(
+            `SELECT workspace_id, COUNT(*) as count
+             FROM preview_environments
+             WHERE workspace_id IN (${placeholders})
+               AND user_id = ?
+               AND status IN ('creating', 'running')
+             GROUP BY workspace_id`,
+            [...workspaceIds, userId]
+        );
+
+        // Initialize map with zeros
+        const countMap = new Map();
+        for (const id of workspaceIds) {
+            countMap.set(id, 0);
+        }
+
+        // Populate with actual counts
+        for (const row of rows) {
+            countMap.set(row.workspace_id, row.count);
+        }
+
+        return countMap;
+
+    } catch (error) {
+        logger.error('Failed to get preview counts:', error);
+        const emptyMap = new Map();
+        for (const id of workspaceIds) {
+            emptyMap.set(id, 0);
+        }
+        return emptyMap;
+    }
+}
+
+/**
  * Gets preview by hash
  *
  * @param {string} previewHash - Preview Hash
@@ -477,6 +579,8 @@ module.exports = {
     extendPreview,
     cleanupExpiredPreviews,
     getWorkspacePreviews,
+    getPreviewsForWorkspaces,
+    getPreviewCountsForWorkspaces,
     getPreviewByHash,
     validatePreviewAccess,
     PREVIEW_STATUS

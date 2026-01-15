@@ -115,6 +115,7 @@ dashboard/src/
 │   ├── preview.js      # Preview environment management
 │   ├── encryption.js   # AES-256-GCM encryption for API keys
 │   ├── portManager.js  # Dynamic port allocation for workspaces
+│   ├── gitCredentials.js # Encrypted Git token storage
 │   ├── providers/      # Database-specific implementations
 │   │   ├── mariadb-provider.js
 │   │   └── postgresql-provider.js
@@ -123,9 +124,12 @@ dashboard/src/
 │       ├── crypto.js   # Password generation, SQL/shell escaping
 │       ├── security.js # Security utilities (blocked files, URL sanitization)
 │       └── webhook.js  # Webhook signature validation
+├── errors/             # Standardized error classes
+│   └── AppError.js     # AppError hierarchy (ValidationError, NotFoundError, etc.)
 ├── views/              # EJS templates with express-ejs-layouts
 └── tests/              # Unit tests (Jest)
     ├── services/       # Service tests
+    ├── errors/         # Error class tests
     └── middleware/     # Middleware tests
 ```
 
@@ -887,6 +891,22 @@ The project detail page shows a "Backup Database" button only if the project has
 | `preview.js` | Preview environment management for workspaces |
 | `encryption.js` | AES-256-GCM encryption for API keys |
 | `portManager.js` | Dynamic port allocation for workspace containers |
+| `gitCredentials.js` | Encrypted Git token storage, temporary credential provisioning |
+
+## Error Classes
+
+| Class | HTTP Code | Purpose |
+|-------|-----------|---------|
+| `AppError` | varies | Base error class with status code mapping |
+| `ValidationError` | 400 | Input validation failures |
+| `AuthenticationError` | 401 | Authentication required |
+| `AuthorizationError` | 403 | Insufficient permissions |
+| `NotFoundError` | 404 | Resource not found |
+| `ConflictError` | 409 | Resource conflicts (duplicates) |
+| `DatabaseError` | 500 | Database operation failures |
+| `ExternalServiceError` | 502 | External service failures |
+| `RateLimitError` | 429 | Too many requests |
+| `DockerError` | 500 | Docker operation failures |
 
 ## Middleware
 
@@ -949,16 +969,3 @@ Known issues and improvements identified during code reviews that require more e
 **Improvement:** Add explicit `allocated_ports` table for better tracking and debugging.
 **Complexity:** Requires database schema changes and migration.
 
-### 2. Git Credentials Security
-**Location:** `services/git.js`
-**Issue:** Git access tokens are stored in plain text in the database (`git_url` field).
-**Improvement:** Encrypt tokens at rest using the existing encryption service, or migrate to SSH key-based authentication.
-
-### 3. Batch Query for Workspace Previews
-**Location:** `services/preview.js`
-**Issue:** Loading previews for multiple workspaces results in N+1 queries.
-**Improvement:** Add `getPreviewsForWorkspaces(workspaceIds)` function for batch loading.
-
-### 4. Standardized Error Handling Class
-**Issue:** Error handling is inconsistent across services (some throw, some return null, some log silently).
-**Improvement:** Create `AppError` class hierarchy with error codes, HTTP status mapping, and consistent logging.
