@@ -175,6 +175,7 @@ document.getElementById('testConnectionBtn').addEventListener('click', async fun
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': csrfToken
             }
         });
@@ -218,6 +219,7 @@ document.getElementById('sendTestEmailConfirmBtn').addEventListener('click', asy
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({ email })

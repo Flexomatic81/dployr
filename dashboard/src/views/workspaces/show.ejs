@@ -156,6 +156,7 @@ async function startWorkspace(btn) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': '<%= csrfToken %>'
             }
         });
@@ -187,6 +188,7 @@ async function stopWorkspace(btn) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': '<%= csrfToken %>'
             }
         });
@@ -215,6 +217,7 @@ async function deleteWorkspace() {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': '<%= csrfToken %>'
             }
         });

@@ -175,6 +175,7 @@ async function testAnthropicKey() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': '<%= csrfToken %>'
             }
         });
@@ -202,6 +203,7 @@ async function deleteAnthropicKey() {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': '<%= csrfToken %>'
             }
         });

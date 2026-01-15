@@ -80,7 +80,9 @@
 
     async function refreshLogs() {
         try {
-            const response = await fetch(`/logs/${projectName}/api?lines=200`);
+            const response = await fetch(`/logs/${projectName}/api?lines=200`, {
+                headers: { 'Accept': 'application/json' }
+            });
             const data = await response.json();
 
             data.containerLogs.forEach(container => {

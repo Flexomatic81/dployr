@@ -283,7 +283,8 @@
             await fetch('/setup/language', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({ language: lang })
             });
@@ -420,7 +421,8 @@
             const response = await fetch('/setup/run', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream, application/json'
                 },
                 body: JSON.stringify(setupData)
             });
@@ -508,7 +510,9 @@
         try {
             // Try to check setup status via port 3000 (always available)
             const port3000Url = window.location.protocol + '//' + window.location.hostname + ':3000/setup/status';
-            const response = await fetch(port3000Url, { timeout: 5000 });
+            const response = await fetch(port3000Url, {
+                headers: { 'Accept': 'application/json' }
+            });
             const status = await response.json();
 
             if (status.setupComplete) {

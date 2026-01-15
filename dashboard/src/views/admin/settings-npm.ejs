@@ -262,7 +262,9 @@ async function updateContainerStatus() {
     const restartBtn = document.getElementById('restartBtn');
 
     try {
-        const response = await fetch('/admin/settings/npm/status');
+        const response = await fetch('/admin/settings/npm/status', {
+            headers: { 'Accept': 'application/json' }
+        });
         const data = await response.json();
 
         if (data.running) {
@@ -313,6 +315,7 @@ async function containerAction(action, btn) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': csrfToken
             }
         });
@@ -369,6 +372,7 @@ document.getElementById('testConnectionBtn').addEventListener('click', async fun
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': csrfToken
             }
         });
@@ -413,6 +417,7 @@ document.getElementById('recreateBtn').addEventListener('click', async function(
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-Token': csrfToken
             }
         });
@@ -455,7 +460,9 @@ async function fetchLogs() {
         refreshBtn.disabled = true;
         refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-        const response = await fetch('/admin/settings/npm/logs?lines=100');
+        const response = await fetch('/admin/settings/npm/logs?lines=100', {
+            headers: { 'Accept': 'application/json' }
+        });
         const data = await response.json();
 
         if (data.success && data.logs) {
@@ -495,7 +502,9 @@ async function fetchOperationLogs() {
         refreshBtn.disabled = true;
         refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-        const response = await fetch('/admin/settings/npm/operation-logs?lines=50');
+        const response = await fetch('/admin/settings/npm/operation-logs?lines=50', {
+            headers: { 'Accept': 'application/json' }
+        });
         const data = await response.json();
 
         if (data.success && data.logs) {
@@ -556,6 +565,7 @@ if (configureDashboardDomainBtn) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({
@@ -601,6 +611,7 @@ if (removeDashboardDomainBtn) {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-Token': csrfToken
                 }
             });

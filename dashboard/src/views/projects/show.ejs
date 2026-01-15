@@ -1613,7 +1613,9 @@ async function projectAction(action) {
         const response = await fetch(`/projects/${PROJECT_NAME}/${action}?async=true`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-Token': '<%= csrfToken %>'
             }
         });
 
