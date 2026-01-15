@@ -11,7 +11,7 @@ const proxyService = require('../../services/proxy');
 const emailService = require('../../services/email');
 const userService = require('../../services/user');
 const { logger } = require('../../config/logger');
-const pool = require('../../config/database');
+const { pool } = require('../../config/database');
 
 const ENV_PATH = '/app/.env';
 const SETUP_MARKER_PATH = '/app/infrastructure/.setup-complete';
