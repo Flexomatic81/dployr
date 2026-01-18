@@ -1,116 +1,91 @@
 ---
-description: Run comprehensive codebase consistency checks (language, code quality, security, documentation)
+description: Quick lint check - language, i18n, code style (fast, CI-friendly)
 allowed-tools: Grep, Glob, Read, Bash
 ---
 
-# Dployr Codebase Consistency Check
+# Dployr Quick Check (Lint)
 
-Run all consistency checks on the Dployr codebase and report findings.
+Fast automated checks for common issues. Run frequently, before commits, or in CI.
+**Target runtime: < 1 minute**
 
-## 1. Language / Code Style Checks
+## 1. Language / Code Style
 
-### German comments in code files (.js, .ejs, .sh, .yml)
-Search for German text patterns in comments:
-- `// [German words with umlauts]`
-- `/* [German text] */`
-- `<%# [German text] %>`
-- `<!-- [German text] -->`
-- `# [German text]` in .sh and .yml files
+### German in Code (should be English)
+Search for German text in comments and logs:
+- Comments: `// [German]`, `/* [German] */`, `<%# [German] %>`
+- Logger calls: `logger.(info|warn|error|debug)` with German text
+- Shell scripts: `echo` with German text
 
-Common German words to search:
-- Umlauts: ä, ö, ü, Ä, Ö, Ü, ß
-- Common words: "und", "oder", "wenn", "dann", "nicht", "wird", "werden", "ist", "sind", "kann", "muss", "Funktion", "Prüfen", "erstellt", "geladen", "gestartet", "Fehler"
+German indicators: ä, ö, ü, ß, common words (und, oder, wenn, dann, nicht, wird, werden, ist, sind, kann, muss, Fehler, Funktion, Prüfen)
 
-### German log messages
-Search for `logger.(info|warn|error|debug)` with German text.
+**Exception**: User-facing UI text (flash messages, EJS templates) should be German.
 
-### German echo messages in shell scripts
-Search for `echo` with German text in .sh files.
+### console.log Usage
+Search for `console.log` in `dashboard/src/**/*.js` - should use `logger` instead.
 
-### German comments in .env.example
-Check comments are in English.
+### TODO/FIXME Comments
+Search for `TODO`, `FIXME`, `HACK`, `XXX` - report but don't fail.
 
-## 2. Code Quality Checks
+## 2. i18n Consistency
 
-### console.log usage (should use logger instead)
-Search for `console.log` in dashboard/src/**/*.js files.
+### Missing Translation Keys
+Compare keys between `dashboard/src/locales/de/*.json` and `en/*.json`:
+1. For each file, verify both languages have matching keys
+2. Report missing keys with path (e.g., `projects.json: actions.delete`)
 
-### TODO/FIXME comments
-Search for `TODO`, `FIXME`, `HACK`, `XXX` comments.
+### Empty Translation Values
+Search for `""` empty strings in translation files.
 
-### Commented-out code blocks
-Look for patterns like `// const`, `// function`, `// if (`, etc.
+### Placeholder Mismatch
+Check `{{variable}}` placeholders match between DE and EN.
 
-### Missing error handling
-Check for `await` without try/catch in route handlers.
+## 3. Security Quick Checks
 
-## 3. Security Checks
+### Hardcoded Secrets
+Search for patterns (exclude .env.example, tests):
+- `password = "` or `password: "` with actual values
+- `secret = "` or `secret: "` with actual values
+- `token = "` with actual values
 
-### Personal data in code
-Search for real names, usernames, email addresses in:
-- Shell scripts (examples, default values)
-- Configuration files
-- Comments and documentation
-Common patterns: names in DEFAULT_USER, example commands, email addresses.
-
-### Hardcoded secrets/passwords
-Search for patterns like:
-- `password = "` or `password: "`
-- `secret = "` or `secret: "`
-- `token = "` or `token: "`
-(Exclude .env.example and test files)
-
-### eval() usage
+### eval() Usage
 Search for `eval(` in .js files.
 
-### SQL string concatenation
-Search for patterns that might indicate SQL injection risk.
+## 4. Git Status
 
-## 4. Documentation Checks
+### Uncommitted Changes
+```bash
+git status --porcelain
+```
 
-### CLAUDE.md accuracy
-Check if key files mentioned in CLAUDE.md still exist:
-- All files in the "Key Files" table
-- All services mentioned
-- All middleware mentioned
-
-### Unused exports
-Check if exported functions in services are actually used.
-
-## 5. Translation Consistency (i18n)
-
-### Missing translations (German ↔ English)
-Compare translation keys between `dashboard/src/locales/de/*.json` and `dashboard/src/locales/en/*.json`:
-
-1. For each JSON file in `de/` directory, check if corresponding file exists in `en/`
-2. For each key in German file, verify it exists in English file
-3. For each key in English file, verify it exists in German file
-4. Report missing keys with file and key path (e.g., `projects.json: actions.delete`)
-
-### Empty translation values
-Search for empty strings `""` or placeholder text in translation files.
-
-### Inconsistent placeholders
-Check that interpolation variables (e.g., `{{name}}`, `{{count}}`) match between DE and EN versions.
-
-### Unused translation keys
-Compare translation keys against actual usage in:
-- EJS templates: `t('namespace:key')` or `t('key')`
-- JavaScript files: `req.t('key')`, `res.locals.t('key')`
-
-## 6. Git Status
-
-### Uncommitted changes
-Run `git status --porcelain` to check for uncommitted work.
-
-### Large untracked files
-Check for large files that shouldn't be committed.
+### Large Untracked Files
+Check for files > 1MB that shouldn't be committed.
 
 ## Output Format
 
-For each category, report:
-- ✅ Pass - No issues found
-- ⚠️ Warning - N issues found (list them)
-- ❌ Error - Critical issues that need immediate attention
+```
+=== Dployr Quick Check ===
 
-Provide file:line references for each finding.
+Language/Style:
+  ✅ No German in code comments
+  ⚠️ 2x console.log found
+  ℹ️ 3x TODO comments
+
+i18n:
+  ✅ All translation keys present
+  ⚠️ 1x empty translation value
+
+Security:
+  ✅ No hardcoded secrets
+  ✅ No eval() usage
+
+Git:
+  ✅ Working directory clean
+
+Summary: 2 warnings, 1 info
+```
+
+Use:
+- ✅ Pass
+- ⚠️ Warning (should fix)
+- ℹ️ Info (optional)
+- ❌ Error (must fix)

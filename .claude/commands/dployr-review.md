@@ -1,131 +1,151 @@
 ---
-description: Deep code review for architecture, best practices, security, and improvement suggestions (project)
+description: Deep code review - architecture, security, performance, tests
 allowed-tools: Grep, Glob, Read, Bash
 ---
 
-# Dployr Code Review
+# Dployr Deep Review
 
-Perform a comprehensive code review of the Dployr codebase. This is a deeper analysis than /dployr-check, focusing on architecture, patterns, and improvement opportunities.
+Comprehensive code review for architecture, security, and quality. Run before releases or major PRs.
+**Target runtime: 5-10 minutes**
+
+**Note**: Run `/dployr-check` first for quick issues. This review focuses on deeper analysis.
 
 ## 1. Architecture Review
 
 ### Service Layer Separation
-- Check that routes only handle HTTP concerns (req/res)
-- Business logic should be in services, not routes
-- Database queries should be in services or providers
+- Routes should only handle HTTP (req/res)
+- Business logic must be in services
+- Database queries in services or providers
 
-### Provider Pattern Consistency
+Check for violations:
+- Direct `db.query()` calls in route files
+- Complex logic (>10 lines) in route handlers
+
+### Provider Pattern
 - MariaDB and PostgreSQL providers should have identical interfaces
-- Check for provider-specific code leaking into database.js
+- No provider-specific code in `database.js`
 
-### Middleware Usage
-- Auth middleware applied consistently?
-- Validation middleware on all user input routes?
-- Project access middleware on all project routes?
+### Middleware Consistency
+- `requireAuth` on all protected routes?
+- `requireAdmin` on admin routes?
+- `projectAccess` on project routes?
+- Validation middleware on user input?
 
-## 2. Code Quality
-
-### Error Handling
-- All async route handlers wrapped in try/catch?
-- Errors logged with context (userId, projectName)?
-- User-friendly error messages (flash) vs technical logs?
-
-### Logging Quality
-- Appropriate log levels (info vs warn vs error)?
-- Sensitive data excluded from logs (passwords, tokens)?
-- Sufficient context for debugging?
-
-### Code Duplication
-- Similar code blocks that could be extracted to utils?
-- Repeated validation patterns?
-- Repeated database query patterns?
-
-### Function Complexity
-- Functions longer than 50 lines?
-- Deeply nested conditionals (>3 levels)?
-- Functions with too many parameters (>4)?
-
-## 3. Security Review
+## 2. Security Deep Dive
 
 ### Input Validation
-- All user inputs validated with Joi?
-- File uploads validated (type, size)?
+- All user inputs validated with Joi schemas?
+- File uploads checked (type, size, extension)?
 - URL parameters sanitized?
 
-### SQL Injection Protection
+### SQL Injection
 - All queries use parameterized statements?
 - No string concatenation in SQL?
 
+Search patterns:
+```javascript
+// Bad: `SELECT * FROM users WHERE id = ${id}`
+// Good: `SELECT * FROM users WHERE id = ?`, [id]
+```
+
 ### Authentication & Authorization
-- Protected routes have requireAuth?
-- Admin routes have requireAdmin?
-- Project routes check ownership/sharing permissions?
+- Protected routes have `requireAuth`?
+- Admin routes have `requireAdmin`?
+- Project routes check ownership/sharing?
 
 ### Path Traversal
 - User-supplied paths validated?
-- No direct file access with user input?
+- `path.join()` with user input sanitized?
 
-### Secrets Management
-- No hardcoded credentials?
-- Environment variables for all secrets?
-- .env excluded from git?
+## 3. Code Quality
+
+### Error Handling Quality
+- Async handlers wrapped in try/catch?
+- Errors logged with context (userId, projectName)?
+- User-friendly flash messages vs technical logs?
+
+### Logging Quality
+- Appropriate log levels (info/warn/error)?
+- Sensitive data excluded (passwords, tokens)?
+- Sufficient context for debugging?
+
+### Code Complexity
+- Functions > 50 lines?
+- Nested conditionals > 3 levels?
+- Functions with > 4 parameters?
+
+### Code Duplication
+- Similar code blocks that could be utils?
+- Repeated validation patterns?
+- Repeated query patterns?
 
 ## 4. Performance Review
 
-### Database Queries
-- N+1 query patterns?
-- Missing indexes suggested by query patterns?
-- Unnecessary queries in loops?
+### Database
+- N+1 query patterns (queries in loops)?
+- Missing indexes for frequent queries?
+- Unnecessary queries?
 
 ### Docker Operations
 - Blocking Docker calls that could be async?
 - Repeated container status checks?
 
 ### File Operations
-- Large file handling (streaming vs loading in memory)?
-- Temporary file cleanup?
+- Large files loaded into memory?
+- Temporary files cleaned up?
 
 ## 5. Test Coverage
 
-### Critical Paths
-- Authentication flow tested?
-- Project CRUD operations tested?
-- Database operations tested?
-
-### Edge Cases
-- Invalid input handling tested?
-- Permission denial tested?
-- Error conditions tested?
-
 ### Missing Tests
-- Services without test files?
-- Middleware without tests?
-- Utils without tests?
+Check for untested code:
+- Services without `*.test.js`
+- Middleware without tests
+- Critical paths (auth, CRUD) untested
 
-## 6. Documentation Accuracy
-
-### CLAUDE.md
-- Does it reflect current architecture?
-- Are all services documented?
-- Are all routes documented?
-
-### Code Comments
-- Complex logic explained?
-- Public APIs documented with JSDoc?
+### Test Quality
+- AAA pattern (Arrange, Act, Assert)?
+- Edge cases covered?
+- Error conditions tested?
 
 ## Output Format
 
-Provide a structured report with:
+```
+=== Dployr Deep Review ===
 
-### Summary
-- Overall code health assessment (Good / Needs Attention / Critical)
-- Top 3 priority improvements
+Overall Health: Good / Needs Attention / Critical
 
-### Detailed Findings
-For each category:
-- Findings with file:line references
-- Severity (Info / Warning / Critical)
-- Concrete improvement suggestions
+Top 3 Priorities:
+1. [Most important issue]
+2. [Second issue]
+3. [Third issue]
 
-### Action Items
-Prioritized list of recommended changes.
+--- Architecture ---
+✅ Service layer separation: Good
+⚠️ Middleware: Missing validation on 2 routes
+
+--- Security ---
+✅ SQL injection: All queries parameterized
+⚠️ Input validation: 3 routes missing Joi schemas
+
+--- Code Quality ---
+✅ Error handling: Consistent
+⚠️ Complexity: 2 functions > 50 lines
+
+--- Performance ---
+✅ No N+1 patterns found
+ℹ️ Consider caching for /api/status
+
+--- Tests ---
+⚠️ Missing tests for: workspace.js, preview.js
+
+Action Items:
+1. Add Joi validation to POST /projects/:name/share
+2. Refactor syncToProject() - 65 lines
+3. Add tests for workspace service
+```
+
+Severity levels:
+- ✅ Good
+- ℹ️ Suggestion (nice to have)
+- ⚠️ Warning (should fix)
+- ❌ Critical (must fix before release)
