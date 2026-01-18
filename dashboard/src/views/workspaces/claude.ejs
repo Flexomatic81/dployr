@@ -592,9 +592,14 @@
             btn.disabled = true;
             btn.textContent = '...';
 
-            // Send code to terminal (with Enter key - use \r for terminal)
+            // Send code to terminal, then send Enter separately
             if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: 'input', data: code + '\r' }));
+                // First send the code
+                socket.send(JSON.stringify({ type: 'input', data: code }));
+                // Then send Enter (carriage return) after a small delay
+                setTimeout(() => {
+                    socket.send(JSON.stringify({ type: 'input', data: '\r' }));
+                }, 100);
             }
 
             // Clear input
