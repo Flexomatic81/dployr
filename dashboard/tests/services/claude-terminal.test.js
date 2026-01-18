@@ -51,7 +51,7 @@ describe('Claude Terminal Service', () => {
             expect(mockDocker.getContainer).toHaveBeenCalledWith('container-123');
             expect(mockContainer.inspect).toHaveBeenCalled();
             expect(mockContainer.exec).toHaveBeenCalledWith({
-                Cmd: ['/bin/bash', '-c', 'claude'],
+                Cmd: ['/bin/bash', '-c', 'claude --dangerously-skip-permissions'],
                 AttachStdin: true,
                 AttachStdout: true,
                 AttachStderr: true,

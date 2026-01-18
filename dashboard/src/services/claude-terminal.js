@@ -48,8 +48,9 @@ async function createClaudeSession(containerId, options = {}, onAuthUrl = null, 
     }
 
     // Create exec instance that starts claude directly
+    // Use YOLO mode (--dangerously-skip-permissions) since workspace is already isolated
     const exec = await container.exec({
-        Cmd: ['/bin/bash', '-c', 'claude'],
+        Cmd: ['/bin/bash', '-c', 'claude --dangerously-skip-permissions'],
         AttachStdin: true,
         AttachStdout: true,
         AttachStderr: true,
