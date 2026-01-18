@@ -262,9 +262,33 @@ async function checkForUpdates(force = false) {
                 htmlUrl: latestRelease.htmlUrl
             };
 
+            // Check if update is needed:
+            // 1. If tags match, no update needed
+            // 2. If current tag is missing but hash matches release commit, no update needed
             if (currentVersion.tag !== latestRelease.tag) {
-                updateAvailable = true;
-                changelog = latestRelease.body;
+                // Tag mismatch - check if commit hash matches the release tag
+                let releaseCommitHash = null;
+                try {
+                    // Get the commit SHA for the release tag using git ls-remote
+                    const { stdout } = await execAsync(`git ls-remote origin refs/tags/${latestRelease.tag}`, { cwd: DPLOYR_PATH });
+                    const match = stdout.match(/^([a-f0-9]+)/);
+                    if (match) {
+                        releaseCommitHash = match[1].substring(0, 7);
+                    }
+                } catch {
+                    // If we can't get the release commit, assume update is needed
+                }
+
+                // Only mark update available if hash also doesn't match
+                if (!releaseCommitHash || currentVersion.hash !== releaseCommitHash) {
+                    updateAvailable = true;
+                    changelog = latestRelease.body;
+                } else {
+                    logger.info('Current commit matches release tag, no update needed', {
+                        currentHash: currentVersion.hash,
+                        releaseTag: latestRelease.tag
+                    });
+                }
             }
         }
     }

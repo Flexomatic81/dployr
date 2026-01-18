@@ -341,20 +341,42 @@ async function getDefaultLanguage() {
 }
 
 // Load version information (from version.json, created during Docker build)
-let versionInfo = { hash: null, date: null };
-function loadVersionInfo() {
+let versionInfo = { hash: null, date: null, tag: null };
+async function loadVersionInfo() {
+    const fs = require('fs');
+    const { execSync } = require('child_process');
+    const DPLOYR_PATH = process.env.HOST_DPLOYR_PATH || '/opt/dployr';
+
     try {
-        const fs = require('fs');
         const versionPath = path.join(__dirname, '..', 'version.json');
         if (fs.existsSync(versionPath)) {
             const data = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
             if (data.hash && data.hash !== 'unknown') {
                 versionInfo = data;
-                logger.info('Version loaded', { hash: versionInfo.hash, date: versionInfo.date });
             }
         }
     } catch (error) {
-        logger.debug('Version information not available');
+        logger.debug('Version information not available from version.json');
+    }
+
+    // If tag is missing, try to get it from git (with tag fetch first)
+    if (!versionInfo.tag && versionInfo.hash) {
+        try {
+            // Fetch tags first to ensure we have the latest
+            execSync('git fetch --tags origin 2>/dev/null || true', { cwd: DPLOYR_PATH, stdio: 'pipe' });
+            // Try to get tag for current commit
+            const tag = execSync('git describe --tags --exact-match 2>/dev/null || echo ""', { cwd: DPLOYR_PATH, stdio: 'pipe' }).toString().trim();
+            if (tag) {
+                versionInfo.tag = tag;
+                logger.info('Version tag resolved from git', { tag });
+            }
+        } catch (error) {
+            logger.debug('Could not resolve version tag from git');
+        }
+    }
+
+    if (versionInfo.hash) {
+        logger.info('Version loaded', { hash: versionInfo.hash, date: versionInfo.date, tag: versionInfo.tag || 'none' });
     }
 }
 loadVersionInfo();
