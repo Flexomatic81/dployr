@@ -270,8 +270,16 @@ async function checkForUpdates(force = false) {
                 let releaseCommitHash = null;
                 try {
                     // Get the commit SHA for the release tag using git ls-remote
-                    const { stdout } = await execAsync(`git ls-remote origin refs/tags/${latestRelease.tag}`, { cwd: DPLOYR_PATH });
-                    const match = stdout.match(/^([a-f0-9]+)/);
+                    // Use ^{} suffix to dereference annotated tags to their commit
+                    const { stdout } = await execAsync(`git ls-remote origin "refs/tags/${latestRelease.tag}^{}"`, { cwd: DPLOYR_PATH });
+                    let match = stdout.match(/^([a-f0-9]+)/);
+
+                    // If ^{} returns nothing, it's a lightweight tag - try without ^{}
+                    if (!match) {
+                        const { stdout: lightweightOutput } = await execAsync(`git ls-remote origin refs/tags/${latestRelease.tag}`, { cwd: DPLOYR_PATH });
+                        match = lightweightOutput.match(/^([a-f0-9]+)/);
+                    }
+
                     if (match) {
                         releaseCommitHash = match[1].substring(0, 7);
                     }

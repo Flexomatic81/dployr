@@ -128,8 +128,8 @@ do_deploy() {
         fi
         exit 1
     fi
-    # Fetch tags separately, ignore errors (tag conflicts are harmless)
-    git fetch --tags origin 2>/dev/null || true
+    # Fetch tags with --force to ensure remote tags overwrite local ones
+    git fetch --tags --force origin 2>/dev/null || true
 
     # Reset to remote branch - this handles diverged histories gracefully
     # Using reset instead of pull ensures updates always work regardless of local state
@@ -147,11 +147,22 @@ do_deploy() {
 
     # Get version information for build args
     export GIT_HASH=$(git rev-parse --short HEAD)
+    export GIT_FULL_HASH=$(git rev-parse HEAD)
     export GIT_DATE=$(git log -1 --format=%cd --date=format:'%d.%m.%Y')
+
     # Try multiple methods to get the tag
+    # Method 1: Local tag pointing at HEAD
     export GIT_TAG=$(git tag --points-at HEAD 2>/dev/null | head -1)
+
+    # Method 2: git describe exact match
     if [ -z "$GIT_TAG" ]; then
         export GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    fi
+
+    # Method 3: Check remote tags directly (most reliable, doesn't depend on local state)
+    if [ -z "$GIT_TAG" ]; then
+        # For annotated tags, the reference ends with ^{} and contains the commit hash
+        export GIT_TAG=$(git ls-remote --tags origin 2>/dev/null | grep "^$GIT_FULL_HASH" | sed 's/.*refs\/tags\///' | grep -v '\^{}$' | head -1)
     fi
 
     # Write version info to file (for runtime reading by dashboard)
