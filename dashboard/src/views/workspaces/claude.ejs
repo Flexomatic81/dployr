@@ -174,6 +174,66 @@
             color: #9f7aea;
         }
 
+        /* Code Input Section */
+        #code-input-section {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(107, 70, 193, 0.1);
+            border: 1px solid #6b46c1;
+            border-radius: 8px;
+        }
+        #code-input-section.visible {
+            display: block;
+        }
+        #code-input-section label {
+            display: block;
+            color: #a0aec0;
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        #code-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        #auth-code-input {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            background: #1e1e1e;
+            border: 1px solid #4a5568;
+            border-radius: 6px;
+            color: #fff;
+            outline: none;
+        }
+        #auth-code-input:focus {
+            border-color: #9f7aea;
+            box-shadow: 0 0 0 2px rgba(159, 122, 234, 0.2);
+        }
+        #auth-code-input::placeholder {
+            color: #718096;
+        }
+        #submit-code-btn {
+            background: linear-gradient(135deg, #6b46c1, #9f7aea);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        #submit-code-btn:hover {
+            background: linear-gradient(135deg, #805ad5, #b794f4);
+        }
+        #submit-code-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         /* Terminal Container */
         #terminal-container {
             width: 100%;
@@ -252,9 +312,20 @@
             <button id="auth-btn" onclick="openAuthUrl()">
                 <%= t('workspaces:claude.loginButton') %>
             </button>
+            <div id="code-input-section">
+                <label><%= t('workspaces:claude.codeInputLabel') %></label>
+                <div id="code-input-wrapper">
+                    <input type="text" id="auth-code-input"
+                           placeholder="<%= t('workspaces:claude.codeInputPlaceholder') %>"
+                           onkeypress="if(event.key==='Enter') submitAuthCode()">
+                    <button id="submit-code-btn" onclick="submitAuthCode()">
+                        <%= t('workspaces:claude.submitCode') %>
+                    </button>
+                </div>
+            </div>
             <div id="auth-alternative">
                 <%= t('workspaces:claude.alternative') %>
-                <a href="/profile#api-keys"><%= t('workspaces:claude.apiKeyLink') %></a>
+                <a href="/settings/api-keys"><%= t('workspaces:claude.apiKeyLink') %></a>
             </div>
         </div>
     </div>
@@ -494,7 +565,50 @@
                 const statusText = document.getElementById('auth-status-text');
                 statusIcon.className = 'status-icon waiting';
                 statusText.textContent = '<%= t("workspaces:claude.waitingForAuth") %>';
+
+                // Show code input section
+                showCodeInput();
             }
+        }
+
+        // Show code input section
+        function showCodeInput() {
+            const codeSection = document.getElementById('code-input-section');
+            codeSection.classList.add('visible');
+
+            // Focus the input field
+            setTimeout(() => {
+                document.getElementById('auth-code-input').focus();
+            }, 100);
+        }
+
+        // Submit auth code to terminal
+        function submitAuthCode() {
+            const input = document.getElementById('auth-code-input');
+            const code = input.value.trim();
+
+            if (!code) {
+                return;
+            }
+
+            // Disable button while sending
+            const btn = document.getElementById('submit-code-btn');
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            // Send code to terminal (with Enter key)
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'input', data: code + '\n' }));
+            }
+
+            // Clear input
+            input.value = '';
+
+            // Re-enable button after short delay
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '<%= t("workspaces:claude.submitCode") %>';
+            }, 1000);
         }
 
         // Handle successful authentication

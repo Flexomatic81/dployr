@@ -165,8 +165,11 @@
         "setupDescription": "To use Claude Code, sign in with your Claude Pro/Max subscription.",
         "waitingForAuth": "Waiting for authentication...",
         "loginButton": "Sign in to Claude",
+        "codeInputLabel": "After signing in, you will receive a code. Paste it here:",
+        "codeInputPlaceholder": "Enter code...",
+        "submitCode": "Send",
         "alternative": "Alternatively:",
-        "apiKeyLink": "Set API key in profile",
+        "apiKeyLink": "Set API key in settings",
         "authSuccess": "Sign in successful!",
         "authSuccessDesc": "You are now signed in to Claude Code.",
         "authenticated": "Authenticated"

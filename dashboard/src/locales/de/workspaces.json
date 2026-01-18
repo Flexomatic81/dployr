@@ -165,8 +165,11 @@
         "setupDescription": "Um Claude Code zu nutzen, melde dich mit deinem Claude Pro/Max Abo an.",
         "waitingForAuth": "Warte auf Anmeldung...",
         "loginButton": "Bei Claude anmelden",
+        "codeInputLabel": "Nach der Anmeldung erhältst du einen Code. Füge ihn hier ein:",
+        "codeInputPlaceholder": "Code eingeben...",
+        "submitCode": "Senden",
         "alternative": "Alternativ:",
-        "apiKeyLink": "API-Key in Profil hinterlegen",
+        "apiKeyLink": "API-Key in Einstellungen hinterlegen",
         "authSuccess": "Anmeldung erfolgreich!",
         "authSuccessDesc": "Du bist jetzt bei Claude Code angemeldet.",
         "authenticated": "Angemeldet"
