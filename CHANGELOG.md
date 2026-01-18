@@ -5,6 +5,12 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.6] - 2026-01-18
+
+### Added
+- Claude Code now starts in YOLO mode (`--dangerously-skip-permissions`) in workspace
+- Workspace container is isolated, so YOLO mode is safe and improves workflow
+
 ## [v1.4.5] - 2026-01-18
 
 ### Fixed
@@ -220,6 +226,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin dashboard with user management
 - System updates from GitHub releases
 
+[v1.4.6]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.6
 [v1.4.5]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.5
 [v1.4.4]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.4
 [v1.4.3]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.3
