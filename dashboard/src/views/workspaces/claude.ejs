@@ -439,10 +439,7 @@
                     switch (msg.type) {
                         case 'ready':
                             setStatus('connected');
-                            // Show auth panel if not authenticated
-                            if (!isAuthenticated) {
-                                showAuthPanel();
-                            }
+                            // Don't show auth panel yet - wait for auth_url if needed
                             setTimeout(() => {
                                 terminal.focus();
                                 fitAddon.fit();
@@ -455,8 +452,9 @@
                             break;
 
                         case 'auth_url':
-                            // Claude is requesting authentication
+                            // Claude is requesting authentication - NOW show the panel
                             authUrl = msg.url;
+                            showAuthPanel();
                             showAuthButton();
                             break;
 
@@ -466,14 +464,12 @@
                             break;
 
                         case 'auth_status':
-                            // Initial auth status from server
+                            // Initial auth status from server (for status dot only)
                             isAuthenticated = msg.authenticated;
                             if (isAuthenticated) {
-                                hideAuthPanel();
                                 setStatus('authenticated');
-                            } else {
-                                showAuthPanel();
                             }
+                            // Don't show auth panel based on status - wait for auth_url
                             break;
 
                         case 'exit':
