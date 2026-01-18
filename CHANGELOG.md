@@ -5,6 +5,44 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.0] - 2026-01-18
+
+### Added
+- **Two-Factor Authentication (2FA)**: Secure accounts with TOTP-based authentication
+  - QR code setup with authenticator apps (Google Authenticator, Authy, Microsoft Authenticator)
+  - 10 backup codes for account recovery
+  - Backup code regeneration in security settings
+  - 2FA verification during login flow
+- **Claude Code Panel**: Dedicated panel for Claude Code AI assistant in workspaces
+  - Integrated terminal for Claude Code CLI
+  - OAuth authentication flow with code input field
+  - Auth success detection and panel auto-hide
+- Sync button to Terminal and Claude Code panels for quick file synchronization
+- Sync progress modal showing detailed sync status in workspace views
+
+### Fixed
+- Backup codes display and button functionality improvements
+- Database pool import in admin settings
+- Switched from otplib to otpauth for better TOTP compatibility
+- Always rebuild custom projects on workspace sync
+- Terminal input: send code and Enter key separately with delay
+- Use carriage return for terminal Enter key
+- Only show auth panel when auth URL is detected
+
+### Changed
+- Restructured Claude Code skills for clarity (precommit, check, review, release)
+- Integrated test skill into review skill
+- Addressed code review action items (moved DB queries to services, split large functions)
+
+### Documentation
+- Added Security section with 2FA documentation to help page (DE/EN)
+- Added proactive skill usage instructions to CLAUDE.md
+- Added claude-terminal.js and twofa.js service references
+
+### Tests
+- Added unit tests for twofa service (32 tests)
+- Added unit tests for claude-terminal service (27 tests)
+
 ## [v1.3.0] - 2026-01-15
 
 ### Added
@@ -147,6 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin dashboard with user management
 - System updates from GitHub releases
 
+[v1.4.0]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.0
 [v1.3.0]: https://github.com/Flexomatic81/dployr/releases/tag/v1.3.0
 [v1.2.2]: https://github.com/Flexomatic81/dployr/releases/tag/v1.2.2
 [v1.2.1]: https://github.com/Flexomatic81/dployr/releases/tag/v1.2.1
