@@ -6,7 +6,6 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../config/database');
 const { logger } = require('../../config/logger');
 const workspaceService = require('../../services/workspace');
 const previewService = require('../../services/preview');
@@ -20,23 +19,9 @@ const previewService = require('../../services/preview');
  */
 router.get('/', async (req, res) => {
     try {
-        // Get all workspaces
-        const [workspaces] = await pool.query(`
-            SELECT w.*, u.username
-            FROM workspaces w
-            JOIN dashboard_users u ON w.user_id = u.id
-            WHERE w.status IN ('running', 'starting', 'stopping')
-            ORDER BY w.started_at DESC
-        `);
-
-        // Get all active previews
-        const [previews] = await pool.query(`
-            SELECT p.*, u.username
-            FROM preview_environments p
-            JOIN dashboard_users u ON p.user_id = u.id
-            WHERE p.status IN ('creating', 'running')
-            ORDER BY p.expires_at ASC
-        `);
+        // Get all workspaces and previews via services
+        const workspaces = await workspaceService.getAdminWorkspaces();
+        const previews = await previewService.getAdminPreviews();
 
         // Calculate stats
         const stats = {
@@ -52,17 +37,7 @@ router.get('/', async (req, res) => {
         };
 
         // Get global limits
-        const [limitsRows] = await pool.query(
-            'SELECT * FROM resource_limits WHERE user_id IS NULL'
-        );
-        const globalLimits = limitsRows[0] || {
-            max_workspaces: 2,
-            default_cpu: '1',
-            default_ram: '2g',
-            default_idle_timeout: 30,
-            max_previews_per_workspace: 3,
-            default_preview_lifetime_hours: 24
-        };
+        const globalLimits = await workspaceService.getGlobalLimits();
 
         // Port range
         const portRange = {
@@ -96,37 +71,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/limits', async (req, res) => {
     try {
-        const {
-            max_workspaces,
-            default_cpu,
-            default_ram,
-            default_idle_timeout,
-            max_previews_per_workspace,
-            default_preview_lifetime_hours
-        } = req.body;
-
-        // Update or insert global limits
-        await pool.query(`
-            INSERT INTO resource_limits
-                (user_id, max_workspaces, default_cpu, default_ram,
-                 default_idle_timeout, max_previews_per_workspace,
-                 default_preview_lifetime_hours)
-            VALUES (NULL, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                max_workspaces = VALUES(max_workspaces),
-                default_cpu = VALUES(default_cpu),
-                default_ram = VALUES(default_ram),
-                default_idle_timeout = VALUES(default_idle_timeout),
-                max_previews_per_workspace = VALUES(max_previews_per_workspace),
-                default_preview_lifetime_hours = VALUES(default_preview_lifetime_hours)
-        `, [
-            max_workspaces,
-            default_cpu,
-            default_ram,
-            default_idle_timeout,
-            max_previews_per_workspace,
-            default_preview_lifetime_hours
-        ]);
+        await workspaceService.setGlobalLimits(req.body);
 
         req.flash('success', req.t('admin:resources.limitsUpdated'));
         res.redirect('/admin/resources');
@@ -148,15 +93,11 @@ router.post('/limits', async (req, res) => {
 router.get('/users/:userId', async (req, res) => {
     try {
         const userId = parseInt(req.params.userId);
-
-        const [limits] = await pool.query(
-            'SELECT * FROM resource_limits WHERE user_id = ?',
-            [userId]
-        );
+        const limits = await workspaceService.getUserLimits(userId);
 
         res.json({
             success: true,
-            limits: limits[0] || null
+            limits: limits
         });
 
     } catch (error) {
@@ -174,37 +115,7 @@ router.get('/users/:userId', async (req, res) => {
 router.post('/users/:userId', async (req, res) => {
     try {
         const userId = parseInt(req.params.userId);
-        const {
-            max_workspaces,
-            default_cpu,
-            default_ram,
-            default_idle_timeout,
-            max_previews_per_workspace,
-            default_preview_lifetime_hours
-        } = req.body;
-
-        await pool.query(`
-            INSERT INTO resource_limits
-                (user_id, max_workspaces, default_cpu, default_ram,
-                 default_idle_timeout, max_previews_per_workspace,
-                 default_preview_lifetime_hours)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                max_workspaces = VALUES(max_workspaces),
-                default_cpu = VALUES(default_cpu),
-                default_ram = VALUES(default_ram),
-                default_idle_timeout = VALUES(default_idle_timeout),
-                max_previews_per_workspace = VALUES(max_previews_per_workspace),
-                default_preview_lifetime_hours = VALUES(default_preview_lifetime_hours)
-        `, [
-            userId,
-            max_workspaces,
-            default_cpu,
-            default_ram,
-            default_idle_timeout,
-            max_previews_per_workspace,
-            default_preview_lifetime_hours
-        ]);
+        await workspaceService.setUserLimits(userId, req.body);
 
         res.json({
             success: true,
@@ -233,32 +144,24 @@ router.post('/workspaces/:id/stop', async (req, res) => {
         const adminUserId = req.session.user.id;
 
         // Get workspace info
-        const [workspaces] = await pool.query(
-            'SELECT * FROM workspaces WHERE id = ?',
-            [workspaceId]
-        );
+        const workspace = await workspaceService.getWorkspaceById(workspaceId);
 
-        if (workspaces.length === 0) {
+        if (!workspace) {
             req.flash('error', req.t('workspaces:errors.notFound'));
             return res.redirect('/admin/resources');
         }
-
-        const workspace = workspaces[0];
 
         // Stop workspace
         await workspaceService.stopWorkspace(workspace.user_id, workspace.project_name);
 
         // Log admin action
-        await pool.query(`
-            INSERT INTO workspace_logs
-                (workspace_id, user_id, project_name, action, details)
-            VALUES (?, ?, ?, 'admin_force_stop', ?)
-        `, [
+        await workspaceService.logWorkspaceAction(
             workspaceId,
             adminUserId,
             workspace.project_name,
-            JSON.stringify({ admin_username: req.session.user.username })
-        ]);
+            'admin_force_stop',
+            { admin_username: req.session.user.username }
+        );
 
         req.flash('success', req.t('admin:resources.workspaceStopped'));
         res.redirect('/admin/resources');
@@ -282,17 +185,12 @@ router.post('/previews/:id/delete', async (req, res) => {
         const previewId = parseInt(req.params.id);
 
         // Get preview info
-        const [previews] = await pool.query(
-            'SELECT * FROM preview_environments WHERE id = ?',
-            [previewId]
-        );
+        const preview = await previewService.getPreviewById(previewId);
 
-        if (previews.length === 0) {
+        if (!preview) {
             req.flash('error', req.t('workspaces:preview.notFound'));
             return res.redirect('/admin/resources');
         }
-
-        const preview = previews[0];
 
         // Delete preview
         await previewService.deletePreview(previewId, preview.user_id);

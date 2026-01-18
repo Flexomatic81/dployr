@@ -369,6 +369,153 @@ async function getResourceLimits(userId) {
 }
 
 /**
+ * Gets global resource limits (admin)
+ */
+async function getGlobalLimits() {
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM resource_limits WHERE user_id IS NULL'
+        );
+
+        return rows[0] || {
+            max_workspaces: 2,
+            default_cpu: '1',
+            default_ram: '2g',
+            default_idle_timeout: 30,
+            max_previews_per_workspace: 3,
+            default_preview_lifetime_hours: 24
+        };
+    } catch (error) {
+        logger.error('Failed to get global limits', { error: error.message });
+        throw error;
+    }
+}
+
+/**
+ * Sets global resource limits (admin)
+ */
+async function setGlobalLimits(limits) {
+    try {
+        const {
+            max_workspaces,
+            default_cpu,
+            default_ram,
+            default_idle_timeout,
+            max_previews_per_workspace,
+            default_preview_lifetime_hours
+        } = limits;
+
+        await pool.query(`
+            INSERT INTO resource_limits
+                (user_id, max_workspaces, default_cpu, default_ram,
+                 default_idle_timeout, max_previews_per_workspace,
+                 default_preview_lifetime_hours)
+            VALUES (NULL, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                max_workspaces = VALUES(max_workspaces),
+                default_cpu = VALUES(default_cpu),
+                default_ram = VALUES(default_ram),
+                default_idle_timeout = VALUES(default_idle_timeout),
+                max_previews_per_workspace = VALUES(max_previews_per_workspace),
+                default_preview_lifetime_hours = VALUES(default_preview_lifetime_hours)
+        `, [
+            max_workspaces,
+            default_cpu,
+            default_ram,
+            default_idle_timeout,
+            max_previews_per_workspace,
+            default_preview_lifetime_hours
+        ]);
+
+        logger.info('Global limits updated', { limits });
+    } catch (error) {
+        logger.error('Failed to set global limits', { error: error.message });
+        throw error;
+    }
+}
+
+/**
+ * Gets user-specific limits (without fallback to global)
+ */
+async function getUserLimits(userId) {
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM resource_limits WHERE user_id = ?',
+            [userId]
+        );
+
+        return rows[0] || null;
+    } catch (error) {
+        logger.error('Failed to get user limits', { userId, error: error.message });
+        throw error;
+    }
+}
+
+/**
+ * Sets user-specific resource limits (admin)
+ */
+async function setUserLimits(userId, limits) {
+    try {
+        const {
+            max_workspaces,
+            default_cpu,
+            default_ram,
+            default_idle_timeout,
+            max_previews_per_workspace,
+            default_preview_lifetime_hours
+        } = limits;
+
+        await pool.query(`
+            INSERT INTO resource_limits
+                (user_id, max_workspaces, default_cpu, default_ram,
+                 default_idle_timeout, max_previews_per_workspace,
+                 default_preview_lifetime_hours)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                max_workspaces = VALUES(max_workspaces),
+                default_cpu = VALUES(default_cpu),
+                default_ram = VALUES(default_ram),
+                default_idle_timeout = VALUES(default_idle_timeout),
+                max_previews_per_workspace = VALUES(max_previews_per_workspace),
+                default_preview_lifetime_hours = VALUES(default_preview_lifetime_hours)
+        `, [
+            userId,
+            max_workspaces,
+            default_cpu,
+            default_ram,
+            default_idle_timeout,
+            max_previews_per_workspace,
+            default_preview_lifetime_hours
+        ]);
+
+        logger.info('User limits updated', { userId, limits });
+    } catch (error) {
+        logger.error('Failed to set user limits', { userId, error: error.message });
+        throw error;
+    }
+}
+
+/**
+ * Gets all workspaces with active statuses for admin panel
+ */
+async function getAdminWorkspaces() {
+    try {
+        const [rows] = await pool.query(`
+            SELECT w.*, u.username
+            FROM workspaces w
+            JOIN dashboard_users u ON w.user_id = u.id
+            WHERE w.status IN ('running', 'starting', 'stopping')
+            ORDER BY w.started_at DESC
+        `);
+
+        return rows;
+    } catch (error) {
+        logger.error('Failed to get admin workspaces', { error: error.message });
+        throw error;
+    }
+}
+
+/**
  * Checks if user can create a new workspace
  */
 async function canCreateWorkspace(userId) {
@@ -451,6 +598,97 @@ async function createWorkspace(userId, projectName, options = {}) {
 }
 
 /**
+ * Prepares workspace paths and ensures directories exist
+ * @private
+ */
+function prepareWorkspacePaths(systemUsername, projectName) {
+    const projectPath = path.join(USERS_PATH, systemUsername, projectName);
+    const htmlPath = path.join(projectPath, 'html');
+    const hostHtmlPath = toHostPath(htmlPath);
+    const claudeConfigPath = path.join(USERS_PATH, systemUsername, '.claude-config');
+    const hostClaudeConfigPath = toHostPath(claudeConfigPath);
+
+    // Ensure directories exist
+    if (!fs.existsSync(htmlPath)) {
+        fs.mkdirSync(htmlPath, { recursive: true });
+    }
+    if (!fs.existsSync(claudeConfigPath)) {
+        fs.mkdirSync(claudeConfigPath, { recursive: true });
+    }
+
+    return { projectPath, htmlPath, hostHtmlPath, claudeConfigPath, hostClaudeConfigPath };
+}
+
+/**
+ * Builds environment variables for workspace container
+ * @private
+ */
+async function buildWorkspaceEnv(userId, apiKey, codeServerPassword) {
+    const env = [
+        'CLAUDE_AUTO_UPDATE=false',
+        `CODE_SERVER_PASSWORD=${codeServerPassword}`
+    ];
+
+    if (apiKey) {
+        env.push(`ANTHROPIC_API_KEY=${apiKey}`);
+    }
+
+    // Add git configuration
+    const [userRows] = await pool.query(
+        'SELECT username, email FROM dashboard_users WHERE id = ?',
+        [userId]
+    );
+
+    if (userRows.length > 0) {
+        env.push(`GIT_USER_NAME=${userRows[0].username}`);
+        if (userRows[0].email) {
+            env.push(`GIT_USER_EMAIL=${userRows[0].email}`);
+        }
+    }
+
+    return env;
+}
+
+/**
+ * Creates Docker container configuration for workspace
+ * @private
+ */
+function buildContainerConfig(containerName, env, hostHtmlPath, hostClaudeConfigPath, workspace, userId, systemUsername, projectName) {
+    return {
+        name: containerName,
+        Image: WORKSPACE_IMAGE,
+        Env: env,
+        ExposedPorts: {
+            '8080/tcp': {}
+        },
+        HostConfig: {
+            Binds: [
+                `${hostHtmlPath}:/workspace`,
+                `${hostClaudeConfigPath}:/claude-config`
+            ],
+            Memory: parseMemoryLimit(workspace.ram_limit),
+            NanoCpus: parseCpuLimit(workspace.cpu_limit),
+            RestartPolicy: { Name: 'unless-stopped' },
+            SecurityOpt: ['no-new-privileges:true'],
+            CapDrop: ['ALL'],
+            CapAdd: ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
+            ReadonlyRootfs: false
+        },
+        NetworkingConfig: {
+            EndpointsConfig: {
+                [WORKSPACE_NETWORK]: {}
+            }
+        },
+        Labels: {
+            'com.dployr.type': 'workspace',
+            'com.dployr.user': systemUsername,
+            'com.dployr.user_id': userId.toString(),
+            'com.dployr.project': projectName
+        }
+    };
+}
+
+/**
  * Starts a workspace container
  * @param {number} userId - User ID
  * @param {string} projectName - Project name
@@ -460,7 +698,7 @@ async function startWorkspace(userId, projectName, systemUsername) {
     let workspaceId = null;
 
     try {
-        // Get workspace
+        // Get and validate workspace
         const workspace = await getWorkspace(userId, projectName);
         if (!workspace) {
             throw new Error('Workspace not found');
@@ -468,7 +706,6 @@ async function startWorkspace(userId, projectName, systemUsername) {
 
         workspaceId = workspace.id;
 
-        // Check if already running
         if (workspace.status === STATUS.RUNNING) {
             return workspace;
         }
@@ -479,27 +716,22 @@ async function startWorkspace(userId, projectName, systemUsername) {
             [STATUS.STARTING, workspaceId]
         );
 
-        // Allocate port
-        const port = await portManager.allocatePort();
-
-        // Generate container name
-        const containerName = getContainerName(userId, projectName);
-
-        // Get project path - mount only html/ folder for security
-        // This prevents users from editing docker-compose.yml, system .env, or nginx configs
-        const projectPath = path.join(USERS_PATH, systemUsername, projectName);
-        const htmlPath = path.join(projectPath, 'html');
-        const hostHtmlPath = toHostPath(htmlPath);
-
-        // Ensure html directory exists
-        if (!fs.existsSync(htmlPath)) {
-            fs.mkdirSync(htmlPath, { recursive: true });
+        // Verify workspace image exists
+        try {
+            await docker.getImage(WORKSPACE_IMAGE).inspect();
+        } catch (error) {
+            throw new Error(`Workspace image ${WORKSPACE_IMAGE} not found. Please build it first.`);
         }
 
-        // Generate CLAUDE.md if it doesn't exist
+        // Prepare paths and directories
+        const { htmlPath, hostHtmlPath, hostClaudeConfigPath } = prepareWorkspacePaths(
+            systemUsername, projectName
+        );
+
+        // Generate CLAUDE.md if needed
         await generateClaudeMd(htmlPath, projectName, systemUsername);
 
-        // Get user's API key if configured
+        // Get API key if configured
         let apiKey = null;
         try {
             apiKey = await getDecryptedApiKey(userId, 'anthropic');
@@ -507,100 +739,26 @@ async function startWorkspace(userId, projectName, systemUsername) {
             logger.debug('No API key configured for user', { userId });
         }
 
-        // Generate secure code-server password
+        // Generate credentials
+        const port = await portManager.allocatePort();
+        const containerName = getContainerName(userId, projectName);
         const codeServerPassword = crypto.randomBytes(32).toString('base64');
 
-        // Build environment variables
-        const env = [
-            // Disable Claude Code auto-update to prevent startup errors in container
-            'CLAUDE_AUTO_UPDATE=false'
-        ];
-
-        if (apiKey) {
-            env.push(`ANTHROPIC_API_KEY=${apiKey}`);
-        }
-
-        // Add code-server password for authentication
-        env.push(`CODE_SERVER_PASSWORD=${codeServerPassword}`);
-
-        // Add git configuration
-        const [userRows] = await pool.query(
-            'SELECT username, email FROM dashboard_users WHERE id = ?',
-            [userId]
+        // Build environment and container config
+        const env = await buildWorkspaceEnv(userId, apiKey, codeServerPassword);
+        const containerConfig = buildContainerConfig(
+            containerName, env, hostHtmlPath, hostClaudeConfigPath,
+            workspace, userId, systemUsername, projectName
         );
 
-        if (userRows.length > 0) {
-            env.push(`GIT_USER_NAME=${userRows[0].username}`);
-            if (userRows[0].email) {
-                env.push(`GIT_USER_EMAIL=${userRows[0].email}`);
-            }
-        }
-
-        // Check if workspace image exists
-        try {
-            await docker.getImage(WORKSPACE_IMAGE).inspect();
-        } catch (error) {
-            throw new Error(`Workspace image ${WORKSPACE_IMAGE} not found. Please build it first.`);
-        }
-
-        // Create directory for Claude Code config persistence (per user, shared across projects)
-        const claudeConfigPath = path.join(USERS_PATH, systemUsername, '.claude-config');
-        const hostClaudeConfigPath = toHostPath(claudeConfigPath);
-        if (!fs.existsSync(claudeConfigPath)) {
-            fs.mkdirSync(claudeConfigPath, { recursive: true });
-        }
-
-        // Create container
-        // Note: No external port binding - access only via internal Docker network
-        // The dashboard proxy handles external access with authentication
-        const container = await docker.createContainer({
-            name: containerName,
-            Image: WORKSPACE_IMAGE,
-            Env: env,
-            ExposedPorts: {
-                '8080/tcp': {}
-            },
-            HostConfig: {
-                Binds: [
-                    `${hostHtmlPath}:/workspace`,
-                    // Persist Claude Code login across workspaces (per user)
-                    `${hostClaudeConfigPath}:/claude-config`
-                ],
-                // No PortBindings - container only accessible via Docker network for security
-                Memory: parseMemoryLimit(workspace.ram_limit),
-                NanoCpus: parseCpuLimit(workspace.cpu_limit),
-                RestartPolicy: {
-                    Name: 'unless-stopped'
-                },
-                SecurityOpt: ['no-new-privileges:true'],
-                CapDrop: ['ALL'],
-                // code-server needs these capabilities to function properly:
-                // - CHOWN, SETUID, SETGID: for user switching (gosu)
-                // - DAC_OVERRIDE: for root to write to coder-owned directories in entrypoint
-                CapAdd: ['CHOWN', 'SETUID', 'SETGID', 'DAC_OVERRIDE'],
-                ReadonlyRootfs: false
-            },
-            NetworkingConfig: {
-                EndpointsConfig: {
-                    [WORKSPACE_NETWORK]: {}
-                }
-            },
-            Labels: {
-                'com.dployr.type': 'workspace',
-                'com.dployr.user': systemUsername,
-                'com.dployr.user_id': userId.toString(),
-                'com.dployr.project': projectName
-            }
-        });
-
-        // Start container
+        // Create and start container
+        const container = await docker.createContainer(containerConfig);
         await container.start();
 
-        // Encrypt code-server password for storage
+        // Encrypt password for storage
         const secret = process.env.SESSION_SECRET;
         const { encrypted: encryptedPassword, iv: passwordIv } = encryption.encrypt(
-            codeServerPassword,
-            secret
+            codeServerPassword, secret
         );
 
         // Update workspace with container info
@@ -620,8 +778,7 @@ async function startWorkspace(userId, projectName, systemUsername) {
         );
 
         await logWorkspaceAction(workspaceId, userId, projectName, 'start', {
-            container_id: container.id,
-            port
+            container_id: container.id, port
         });
 
         logger.info('Workspace started', {
@@ -634,7 +791,6 @@ async function startWorkspace(userId, projectName, systemUsername) {
             userId, projectName, error: error.message
         });
 
-        // Update status to error
         if (workspaceId) {
             await pool.query(
                 'UPDATE workspaces SET status = ?, error_message = ? WHERE id = ?',
@@ -642,8 +798,7 @@ async function startWorkspace(userId, projectName, systemUsername) {
             );
 
             await logWorkspaceAction(workspaceId, userId, projectName, 'error', {
-                operation: 'start',
-                error: error.message
+                operation: 'start', error: error.message
             });
         }
 
@@ -1494,7 +1649,14 @@ module.exports = {
 
     // Resource limits
     getResourceLimits,
+    getGlobalLimits,
+    setGlobalLimits,
+    getUserLimits,
+    setUserLimits,
     canCreateWorkspace,
+
+    // Admin
+    getAdminWorkspaces,
 
     // Activity
     updateActivity,

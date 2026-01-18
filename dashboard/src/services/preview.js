@@ -497,6 +497,24 @@ async function getPreviewByHash(previewHash) {
 }
 
 /**
+ * Gets a preview by its ID
+ */
+async function getPreviewById(previewId) {
+    try {
+        const [previews] = await pool.query(
+            'SELECT * FROM preview_environments WHERE id = ?',
+            [previewId]
+        );
+
+        return previews.length > 0 ? previews[0] : null;
+
+    } catch (error) {
+        logger.error('Failed to get preview by id', { previewId, error: error.message });
+        return null;
+    }
+}
+
+/**
  * Validiert Preview-Zugriff (optional mit Passwort)
  *
  * @param {string} previewHash - Preview Hash
@@ -569,6 +587,26 @@ function getPreviewImage(projectName) {
     return 'nginx:alpine';
 }
 
+/**
+ * Gets all active previews for admin panel
+ */
+async function getAdminPreviews() {
+    try {
+        const [rows] = await pool.query(`
+            SELECT p.*, u.username
+            FROM preview_environments p
+            JOIN dashboard_users u ON p.user_id = u.id
+            WHERE p.status IN ('creating', 'running')
+            ORDER BY p.expires_at ASC
+        `);
+
+        return rows;
+    } catch (error) {
+        logger.error('Failed to get admin previews', { error: error.message });
+        throw error;
+    }
+}
+
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -582,6 +620,8 @@ module.exports = {
     getPreviewsForWorkspaces,
     getPreviewCountsForWorkspaces,
     getPreviewByHash,
+    getPreviewById,
     validatePreviewAccess,
+    getAdminPreviews,
     PREVIEW_STATUS
 };
