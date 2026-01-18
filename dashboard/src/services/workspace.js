@@ -1408,6 +1408,72 @@ async function getContainerIp(containerId) {
 }
 
 // ============================================================
+// CLAUDE CODE INTEGRATION
+// ============================================================
+
+/**
+ * Checks if Claude Code is authenticated in a workspace container
+ * by checking for the existence of credentials in ~/.claude
+ *
+ * @param {string} containerId - Docker container ID
+ * @returns {Promise<boolean>} True if authenticated
+ */
+async function getClaudeAuthStatus(containerId) {
+    try {
+        const container = docker.getContainer(containerId);
+
+        // Check if credentials file exists
+        const exec = await container.exec({
+            Cmd: ['sh', '-c', 'test -f /home/coder/.claude/credentials.json && cat /home/coder/.claude/credentials.json'],
+            AttachStdout: true,
+            AttachStderr: true,
+            User: 'coder'
+        });
+
+        const stream = await exec.start({ hijack: true });
+
+        return new Promise((resolve) => {
+            let output = '';
+            stream.on('data', (chunk) => {
+                output += chunk.toString();
+            });
+            stream.on('end', () => {
+                try {
+                    // Try to parse credentials - if it works, we're authenticated
+                    if (output.trim()) {
+                        // Remove docker stream header bytes if present
+                        const jsonStart = output.indexOf('{');
+                        if (jsonStart !== -1) {
+                            const jsonStr = output.substring(jsonStart);
+                            const credentials = JSON.parse(jsonStr);
+                            // Check if token exists and is not expired
+                            if (credentials.claudeAiOauth || credentials.accessToken) {
+                                resolve(true);
+                                return;
+                            }
+                        }
+                    }
+                    resolve(false);
+                } catch (e) {
+                    // Parsing failed, probably not authenticated
+                    resolve(false);
+                }
+            });
+            stream.on('error', () => resolve(false));
+
+            // Timeout after 3 seconds
+            setTimeout(() => resolve(false), 3000);
+        });
+    } catch (error) {
+        logger.debug('Claude auth status check failed', {
+            containerId,
+            error: error.message
+        });
+        return false;
+    }
+}
+
+// ============================================================
 // EXPORTS
 // ============================================================
 
@@ -1451,6 +1517,9 @@ module.exports = {
     markAllAsStopping,
     getContainerIp,
     getWorkspaceHost,
+
+    // Claude Code
+    getClaudeAuthStatus,
 
     // Constants
     STATUS

@@ -478,6 +478,45 @@ router.get('/:projectName/terminal',
     }
 );
 
+/**
+ * GET /workspaces/:projectName/claude - Claude Code Panel (dedicated Claude terminal)
+ */
+router.get('/:projectName/claude',
+    getWorkspaceAccess(),
+    requireWorkspace,
+    requireRunningWorkspace,
+    requireWorkspacePermission,
+    async (req, res) => {
+        try {
+            const userId = req.session.user.id;
+
+            // Update last accessed
+            await workspaceService.updateActivity(req.workspace.id, userId);
+
+            // Check Claude authentication status
+            let claudeAuthStatus = false;
+            try {
+                claudeAuthStatus = await workspaceService.getClaudeAuthStatus(req.workspace.container_id);
+            } catch (err) {
+                logger.debug('Could not check Claude auth status', { error: err.message });
+            }
+
+            res.render('workspaces/claude', {
+                layout: false,
+                title: `Claude Code - ${req.params.projectName}`,
+                workspace: req.workspace,
+                project: req.projectAccess.project,
+                user: req.session.user,
+                claudeAuthStatus
+            });
+        } catch (error) {
+            logger.error('Failed to access Claude Panel', { error: error.message });
+            req.flash('error', req.t('workspaces:errors.claudeFailed'));
+            res.redirect(`/workspaces/${req.params.projectName}`);
+        }
+    }
+);
+
 // ============================================================
 // SETTINGS
 // ============================================================

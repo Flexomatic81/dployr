@@ -24,6 +24,7 @@ const workspaceService = require('./services/workspace');
 const previewService = require('./services/preview');
 const { logger, requestLogger } = require('./config/logger');
 const terminalService = require('./services/terminal');
+const claudeTerminalService = require('./services/claude-terminal');
 const WebSocket = require('ws');
 
 // Import routes
@@ -800,9 +801,216 @@ async function start() {
             });
         });
 
-        // Handle WebSocket upgrades for workspace proxy and terminal
+        // Create WebSocket server for Claude Code terminal connections
+        const claudeWss = new WebSocket.Server({ noServer: true });
+
+        // Handle Claude WebSocket connections
+        claudeWss.on('connection', async (ws, req, containerId) => {
+            let session = null;
+            let pingInterval = null;
+            ws.isAlive = true;
+
+            // Setup ping/pong heartbeat to keep connection alive
+            ws.on('pong', () => {
+                ws.isAlive = true;
+            });
+
+            pingInterval = setInterval(() => {
+                if (ws.isAlive === false) {
+                    logger.debug('Claude WebSocket: no pong received, closing');
+                    clearInterval(pingInterval);
+                    return ws.terminate();
+                }
+                ws.isAlive = false;
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.ping();
+                }
+            }, 30000);
+
+            try {
+                // Check initial auth status
+                const isAuthenticated = await workspaceService.getClaudeAuthStatus(containerId);
+
+                // Create Claude terminal session with auth callbacks
+                const result = await claudeTerminalService.createClaudeSession(
+                    containerId,
+                    { cols: 80, rows: 24 },
+                    // onAuthUrl callback
+                    (authUrl) => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'auth_url', url: authUrl }));
+                        }
+                    },
+                    // onAuthSuccess callback
+                    () => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'auth_success' }));
+                        }
+                    }
+                );
+                session = result;
+
+                // Send data from container to client, parsing for auth URLs
+                session.stream.on('data', (data) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        const text = data.toString('utf8');
+
+                        // Parse output for auth-related content
+                        claudeTerminalService.parseOutput(session.sessionId, text);
+
+                        // Send output to client
+                        ws.send(JSON.stringify({ type: 'output', data: text }));
+                    }
+                });
+
+                // Handle stream end
+                session.stream.on('end', () => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'exit' }));
+                        ws.close();
+                    }
+                });
+
+                // Handle stream errors
+                session.stream.on('error', (err) => {
+                    logger.error('Claude terminal stream error', { error: err.message });
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'error', message: err.message }));
+                        ws.close();
+                    }
+                });
+
+                // Send ready message with auth status
+                ws.send(JSON.stringify({
+                    type: 'ready',
+                    sessionId: session.sessionId
+                }));
+                ws.send(JSON.stringify({
+                    type: 'auth_status',
+                    authenticated: isAuthenticated
+                }));
+
+            } catch (error) {
+                logger.error('Failed to create Claude terminal session', { error: error.message });
+                ws.send(JSON.stringify({ type: 'error', message: 'Failed to create Claude terminal session' }));
+                clearInterval(pingInterval);
+                ws.close();
+                return;
+            }
+
+            // Handle messages from client
+            ws.on('message', async (message) => {
+                try {
+                    const msg = JSON.parse(message.toString());
+
+                    switch (msg.type) {
+                        case 'input':
+                            // Send input to container
+                            if (session && session.stream && session.stream.writable) {
+                                session.stream.write(msg.data);
+                            }
+                            break;
+
+                        case 'resize':
+                            // Resize terminal
+                            if (session && msg.cols && msg.rows) {
+                                await claudeTerminalService.resizeClaudeTerminal(session.sessionId, msg.cols, msg.rows);
+                            }
+                            break;
+                    }
+                } catch (error) {
+                    logger.debug('Invalid Claude terminal message', { error: error.message });
+                }
+            });
+
+            // Handle WebSocket close
+            ws.on('close', () => {
+                clearInterval(pingInterval);
+                if (session) {
+                    claudeTerminalService.closeClaudeSession(session.sessionId);
+                }
+            });
+
+            // Handle WebSocket errors
+            ws.on('error', (err) => {
+                logger.debug('Claude WebSocket error', { error: err.message });
+                clearInterval(pingInterval);
+                if (session) {
+                    claudeTerminalService.closeClaudeSession(session.sessionId);
+                }
+            });
+        });
+
+        // Handle WebSocket upgrades for workspace proxy, terminal, and Claude
         server.on('upgrade', async (req, socket, head) => {
             const url = req.url || '';
+
+            // Check for Claude WebSocket
+            const claudeMatch = url.match(/^\/claude-ws\/([^/?]+)/);
+            if (claudeMatch) {
+                const projectName = claudeMatch[1];
+
+                try {
+                    // Validate session and get user
+                    const user = await validateWebSocketSession(req);
+                    if (!user) {
+                        logger.warn('Claude WebSocket rejected: invalid session', { projectName });
+                        socket.destroy();
+                        return;
+                    }
+
+                    const pool = getPool();
+
+                    // Get workspace and verify ownership/access
+                    const [workspaceRows] = await pool.query(
+                        'SELECT w.container_id, w.status, w.user_id FROM workspaces w WHERE w.project_name = ?',
+                        [projectName]
+                    );
+
+                    if (!workspaceRows.length || workspaceRows[0].status !== 'running' || !workspaceRows[0].container_id) {
+                        logger.warn('Claude WebSocket rejected: workspace not running', { projectName });
+                        socket.destroy();
+                        return;
+                    }
+
+                    const workspace = workspaceRows[0];
+
+                    // Check if user owns the workspace or has share access
+                    let hasAccess = workspace.user_id === user.id;
+                    if (!hasAccess) {
+                        // Check for share permission (at least 'manage' required for workspace)
+                        const [shareRows] = await pool.query(
+                            `SELECT ps.permission FROM project_shares ps
+                             JOIN projects p ON ps.owner_id = p.user_id AND ps.project_name = p.name
+                             WHERE p.name = ? AND ps.shared_with_id = ?
+                               AND ps.permission IN ('manage', 'full')`,
+                            [projectName, user.id]
+                        );
+                        hasAccess = shareRows.length > 0;
+                    }
+
+                    if (!hasAccess) {
+                        logger.warn('Claude WebSocket rejected: no access', {
+                            projectName,
+                            userId: user.id,
+                            workspaceOwnerId: workspace.user_id
+                        });
+                        socket.destroy();
+                        return;
+                    }
+
+                    const containerId = workspace.container_id;
+
+                    // Upgrade to WebSocket and pass container ID
+                    claudeWss.handleUpgrade(req, socket, head, (ws) => {
+                        claudeWss.emit('connection', ws, req, containerId);
+                    });
+                } catch (error) {
+                    logger.error('Claude WebSocket setup error', { error: error.message });
+                    socket.destroy();
+                }
+                return;
+            }
 
             // Check for terminal WebSocket
             const terminalMatch = url.match(/^\/terminal-ws\/([^/?]+)/);

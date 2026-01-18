@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="<%= currentLanguage %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code - <%= workspace.project_name %> | dployr</title>
+    <!-- xterm.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #1e1e1e;
+        }
+        #header {
+            height: 50px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d1f3d 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid #6b46c1;
+        }
+        #header h1 {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #header .claude-logo {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #6b46c1, #9f7aea);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        #header .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #header .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+        }
+        #header .status-dot.connected {
+            background: #4ec9b0;
+        }
+        #header .status-dot.connecting {
+            background: #dcdcaa;
+            animation: pulse 1s infinite;
+        }
+        #header .status-dot.authenticated {
+            background: #9f7aea;
+        }
+        #header .status-dot.error {
+            background: #f44747;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        #header .actions {
+            display: flex;
+            gap: 10px;
+        }
+        #header button {
+            background: #6b46c1;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        #header button:hover {
+            background: #805ad5;
+        }
+        #header .close-btn {
+            background: #d13438;
+        }
+        #header .close-btn:hover {
+            background: #e13438;
+        }
+
+        /* Auth Panel */
+        #auth-panel {
+            background: linear-gradient(135deg, #2d1f3d 0%, #1e1e1e 100%);
+            border-bottom: 1px solid #6b46c1;
+            padding: 20px;
+            display: none;
+        }
+        #auth-panel.visible {
+            display: block;
+        }
+        #auth-panel .auth-content {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        #auth-panel h2 {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        #auth-panel p {
+            color: #a0aec0;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        #auth-panel .auth-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        #auth-panel .auth-status .status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        #auth-panel .auth-status .status-icon.waiting {
+            background: #dcdcaa;
+            animation: pulse 1s infinite;
+        }
+        #auth-panel .auth-status .status-icon.success {
+            background: #4ec9b0;
+        }
+        #auth-btn {
+            background: linear-gradient(135deg, #6b46c1, #9f7aea);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            display: none;
+            margin: 0 auto;
+        }
+        #auth-btn:hover {
+            background: linear-gradient(135deg, #805ad5, #b794f4);
+        }
+        #auth-btn.visible {
+            display: inline-block;
+        }
+        #auth-alternative {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #718096;
+        }
+        #auth-alternative a {
+            color: #9f7aea;
+        }
+
+        /* Terminal Container */
+        #terminal-container {
+            width: 100%;
+            height: calc(100% - 50px);
+            padding: 10px;
+            background: #1e1e1e;
+        }
+        #terminal-container.with-auth-panel {
+            height: calc(100% - 50px - 160px);
+        }
+        #terminal {
+            width: 100%;
+            height: 100%;
+        }
+        .xterm {
+            height: 100%;
+        }
+        /* Custom xterm styles */
+        .xterm-viewport::-webkit-scrollbar {
+            width: 10px;
+        }
+        .xterm-viewport::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        .xterm-viewport::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 5px;
+        }
+        .xterm-viewport::-webkit-scrollbar-thumb:hover {
+            background: #4f4f4f;
+        }
+
+        /* Auth Success Animation */
+        .auth-success-animation {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div class="status">
+            <span class="status-dot" id="statusDot"></span>
+            <h1>
+                <span class="claude-logo">C</span>
+                Claude Code - <%= workspace.project_name %>
+            </h1>
+        </div>
+        <div class="actions">
+            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>/ide'">
+                IDE
+            </button>
+            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>/terminal'">
+                Terminal
+            </button>
+            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>'">
+                <%= t('workspaces:actions.settings') %>
+            </button>
+            <button class="close-btn" onclick="closePanel()">
+                <%= t('common:buttons.close') %>
+            </button>
+        </div>
+    </div>
+
+    <div id="auth-panel">
+        <div class="auth-content">
+            <h2 id="auth-title"><%= t('workspaces:claude.setupTitle') %></h2>
+            <p id="auth-description"><%= t('workspaces:claude.setupDescription') %></p>
+            <div class="auth-status" id="auth-status" style="display: none;">
+                <span class="status-icon waiting" id="auth-status-icon"></span>
+                <span id="auth-status-text"><%= t('workspaces:claude.waitingForAuth') %></span>
+            </div>
+            <button id="auth-btn" onclick="openAuthUrl()">
+                <%= t('workspaces:claude.loginButton') %>
+            </button>
+            <div id="auth-alternative">
+                <%= t('workspaces:claude.alternative') %>
+                <a href="/profile#api-keys"><%= t('workspaces:claude.apiKeyLink') %></a>
+            </div>
+        </div>
+    </div>
+
+    <div id="terminal-container">
+        <div id="terminal"></div>
+    </div>
+
+    <script>
+        let socket = null;
+        let terminal = null;
+        let fitAddon = null;
+        let activityInterval = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        // Auth state
+        let authUrl = null;
+        let isAuthenticated = <%= claudeAuthStatus ? 'true' : 'false' %>;
+
+        // Initialize terminal
+        function initTerminal() {
+            terminal = new Terminal({
+                cursorBlink: true,
+                cursorStyle: 'block',
+                cursorInactiveStyle: 'outline',
+                fontSize: 14,
+                fontFamily: '"Cascadia Code", "Fira Code", Menlo, Monaco, "Courier New", monospace',
+                scrollback: 10000,
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    cursor: '#ffffff',
+                    cursorAccent: '#1e1e1e',
+                    selectionBackground: '#6b46c1',
+                    black: '#1e1e1e',
+                    red: '#f44747',
+                    green: '#4ec9b0',
+                    yellow: '#dcdcaa',
+                    blue: '#569cd6',
+                    magenta: '#c586c0',
+                    cyan: '#9cdcfe',
+                    white: '#d4d4d4',
+                    brightBlack: '#808080',
+                    brightRed: '#f44747',
+                    brightGreen: '#4ec9b0',
+                    brightYellow: '#dcdcaa',
+                    brightBlue: '#569cd6',
+                    brightMagenta: '#c586c0',
+                    brightCyan: '#9cdcfe',
+                    brightWhite: '#ffffff'
+                },
+                allowProposedApi: true
+            });
+
+            // Add fit addon for auto-sizing
+            fitAddon = new FitAddon.FitAddon();
+            terminal.loadAddon(fitAddon);
+
+            // Add web links addon for clickable URLs
+            const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+            terminal.loadAddon(webLinksAddon);
+
+            // Open terminal in container
+            const terminalContainer = document.getElementById('terminal');
+            terminal.open(terminalContainer);
+
+            // Fit to container
+            fitAddon.fit();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                fitAddon.fit();
+                sendResize();
+            });
+
+            // Handle terminal input
+            terminal.onData((data) => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'input', data: data }));
+                }
+            });
+
+            // Ensure focus on click
+            document.getElementById('terminal-container').addEventListener('click', () => {
+                terminal.focus();
+            });
+
+            // Connect to WebSocket
+            connectWebSocket();
+        }
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            setStatus('connecting');
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/claude-ws/<%= workspace.project_name %>`;
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log('Claude WebSocket connected');
+                reconnectAttempts = 0;
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+
+                    switch (msg.type) {
+                        case 'ready':
+                            setStatus('connected');
+                            // Show auth panel if not authenticated
+                            if (!isAuthenticated) {
+                                showAuthPanel();
+                            }
+                            setTimeout(() => {
+                                terminal.focus();
+                                fitAddon.fit();
+                                sendResize();
+                            }, 100);
+                            break;
+
+                        case 'output':
+                            terminal.write(msg.data);
+                            break;
+
+                        case 'auth_url':
+                            // Claude is requesting authentication
+                            authUrl = msg.url;
+                            showAuthButton();
+                            break;
+
+                        case 'auth_success':
+                            // Authentication successful
+                            handleAuthSuccess();
+                            break;
+
+                        case 'auth_status':
+                            // Initial auth status from server
+                            isAuthenticated = msg.authenticated;
+                            if (isAuthenticated) {
+                                hideAuthPanel();
+                                setStatus('authenticated');
+                            } else {
+                                showAuthPanel();
+                            }
+                            break;
+
+                        case 'exit':
+                            setStatus('error');
+                            terminal.write('\r\n\x1b[31mClaude session ended.\x1b[0m\r\n');
+                            break;
+
+                        case 'error':
+                            setStatus('error');
+                            terminal.write(`\r\n\x1b[31mError: ${msg.message}\x1b[0m\r\n`);
+                            break;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse message:', e);
+                }
+            };
+
+            socket.onclose = () => {
+                console.log('Claude WebSocket closed');
+                setStatus('error');
+
+                // Try to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    terminal.write(`\r\n\x1b[33mConnection lost. Reconnecting (${reconnectAttempts}/${maxReconnectAttempts})...\x1b[0m\r\n`);
+                    setTimeout(connectWebSocket, 2000);
+                } else {
+                    terminal.write('\r\n\x1b[31mConnection lost. Please refresh the page.\x1b[0m\r\n');
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error('Claude WebSocket error:', error);
+                setStatus('error');
+            };
+        }
+
+        // Send resize event
+        function sendResize() {
+            if (socket && socket.readyState === WebSocket.OPEN && terminal) {
+                socket.send(JSON.stringify({
+                    type: 'resize',
+                    cols: terminal.cols,
+                    rows: terminal.rows
+                }));
+            }
+        }
+
+        // Set connection status
+        function setStatus(status) {
+            const dot = document.getElementById('statusDot');
+            dot.className = 'status-dot ' + status;
+        }
+
+        // Show auth panel
+        function showAuthPanel() {
+            const panel = document.getElementById('auth-panel');
+            const container = document.getElementById('terminal-container');
+            panel.classList.add('visible');
+            container.classList.add('with-auth-panel');
+            fitAddon.fit();
+        }
+
+        // Hide auth panel
+        function hideAuthPanel() {
+            const panel = document.getElementById('auth-panel');
+            const container = document.getElementById('terminal-container');
+            panel.classList.remove('visible');
+            container.classList.remove('with-auth-panel');
+            fitAddon.fit();
+        }
+
+        // Show auth button with URL
+        function showAuthButton() {
+            const authStatus = document.getElementById('auth-status');
+            const authBtn = document.getElementById('auth-btn');
+
+            authStatus.style.display = 'flex';
+            authBtn.classList.add('visible');
+        }
+
+        // Open auth URL in new tab
+        function openAuthUrl() {
+            if (authUrl) {
+                window.open(authUrl, '_blank');
+
+                // Update status to show we're waiting
+                const statusIcon = document.getElementById('auth-status-icon');
+                const statusText = document.getElementById('auth-status-text');
+                statusIcon.className = 'status-icon waiting';
+                statusText.textContent = '<%= t("workspaces:claude.waitingForAuth") %>';
+            }
+        }
+
+        // Handle successful authentication
+        function handleAuthSuccess() {
+            isAuthenticated = true;
+            setStatus('authenticated');
+
+            // Update UI
+            const authTitle = document.getElementById('auth-title');
+            const authDescription = document.getElementById('auth-description');
+            const authBtn = document.getElementById('auth-btn');
+            const authStatus = document.getElementById('auth-status');
+            const statusIcon = document.getElementById('auth-status-icon');
+            const statusText = document.getElementById('auth-status-text');
+            const authAlt = document.getElementById('auth-alternative');
+
+            authTitle.textContent = '<%= t("workspaces:claude.authSuccess") %>';
+            authTitle.classList.add('auth-success-animation');
+            authDescription.textContent = '<%= t("workspaces:claude.authSuccessDesc") %>';
+            authBtn.style.display = 'none';
+            authAlt.style.display = 'none';
+            statusIcon.className = 'status-icon success';
+            statusText.textContent = '<%= t("workspaces:claude.authenticated") %>';
+
+            // Hide panel after delay
+            setTimeout(() => {
+                hideAuthPanel();
+            }, 2000);
+        }
+
+        // Send activity heartbeat
+        async function sendActivity() {
+            try {
+                await fetch('/workspaces/<%= workspace.project_name %>/activity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-Token': '<%= csrfToken %>'
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to send activity:', error);
+            }
+        }
+
+        // Close panel
+        function closePanel() {
+            if (socket) {
+                socket.close();
+            }
+            window.close();
+            // If window.close() fails
+            setTimeout(() => {
+                window.location.href = '/workspaces/<%= workspace.project_name %>';
+            }, 100);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initTerminal();
+
+            // Start activity tracking
+            activityInterval = setInterval(sendActivity, 30000);
+            sendActivity();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (activityInterval) {
+                clearInterval(activityInterval);
+            }
+            if (socket) {
+                socket.close();
+            }
+        });
+    </script>
+</body>
+</html>

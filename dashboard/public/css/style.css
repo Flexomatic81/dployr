@@ -255,3 +255,24 @@ input[type="password"].form-control-sm {
 [data-bs-toggle="collapse"]:not(.collapsed) .collapse-icon {
     transform: rotate(180deg);
 }
+
+/* Claude Code Button */
+.btn-claude {
+    background: linear-gradient(135deg, #6b46c1, #9f7aea);
+    border: none;
+    color: #fff;
+}
+
+.btn-claude:hover {
+    background: linear-gradient(135deg, #805ad5, #b794f4);
+    color: #fff;
+}
+
+.btn-claude:focus {
+    box-shadow: 0 0 0 0.2rem rgba(107, 70, 193, 0.5);
+}
+
+.btn-claude:disabled {
+    background: linear-gradient(135deg, #6b46c1, #9f7aea);
+    opacity: 0.65;
+}

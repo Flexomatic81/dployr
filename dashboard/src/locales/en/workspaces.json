@@ -18,6 +18,7 @@
         "start": "Start",
         "stop": "Stop",
         "openIDE": "Open IDE",
+        "openClaude": "Claude Code",
         "openTerminal": "Open Terminal",
         "syncToProject": "Sync to Project",
         "syncFromProject": "Sync from Project",
@@ -79,6 +80,7 @@
         "notRunning": "Workspace is not running",
         "ideFailed": "Failed to open IDE",
         "terminalFailed": "Failed to open terminal",
+        "claudeFailed": "Failed to open Claude Code panel",
         "noWorkspaceHost": "Could not determine server IP. Check network connectivity or set WORKSPACE_HOST manually.",
         "updateFailed": "Failed to update settings",
         "noPermission": "No permission for this workspace",
@@ -156,5 +158,17 @@
         "configured": "Configured",
         "notConfigured": "Not configured",
         "testKey": "Test Key"
+    },
+    "claude": {
+        "loading": "Loading Claude Code...",
+        "setupTitle": "Set up Claude Code",
+        "setupDescription": "To use Claude Code, sign in with your Claude Pro/Max subscription.",
+        "waitingForAuth": "Waiting for authentication...",
+        "loginButton": "Sign in to Claude",
+        "alternative": "Alternatively:",
+        "apiKeyLink": "Set API key in profile",
+        "authSuccess": "Sign in successful!",
+        "authSuccessDesc": "You are now signed in to Claude Code.",
+        "authenticated": "Authenticated"
     }
 }
