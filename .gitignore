@@ -46,3 +46,4 @@ gitignore/
 
 # Claude Code configuration
 .claude/settings.local.json
+.version.json

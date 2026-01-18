@@ -148,7 +148,14 @@ do_deploy() {
     # Get version information for build args
     export GIT_HASH=$(git rev-parse --short HEAD)
     export GIT_DATE=$(git log -1 --format=%cd --date=format:'%d.%m.%Y')
-    export GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    # Try multiple methods to get the tag
+    export GIT_TAG=$(git tag --points-at HEAD 2>/dev/null | head -1)
+    if [ -z "$GIT_TAG" ]; then
+        export GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    fi
+
+    # Write version info to file (for runtime reading by dashboard)
+    echo "{\"hash\":\"$GIT_HASH\",\"date\":\"$GIT_DATE\",\"tag\":\"$GIT_TAG\"}" > .version.json
 
     if [ "$JSON_OUTPUT" = true ]; then
         echo "{\"status\":\"pulling\",\"step\":\"pull-images\",\"version\":\"$GIT_HASH\"}"
