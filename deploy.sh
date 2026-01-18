@@ -1,6 +1,7 @@
 #!/bin/bash
 # Dployr Deploy Script
 # Updates the repository and rebuilds the dashboard with version information
+# Supports annotated and lightweight git tags for version detection
 #
 # Usage:
 #   ./deploy.sh              # Full update (pull, build, restart) from main
