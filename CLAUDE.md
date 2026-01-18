@@ -164,6 +164,17 @@ Middleware: `requireAuth`, `requireAdmin`
 | `/dployr-review` | Deep review - architecture, security, performance, tests (5-10 min) |
 | `/dployr-release` | Create release (changelog, tag, GitHub) |
 
+### Proactive Skill Usage
+
+**Use skills automatically in these situations:**
+
+| Trigger | Action |
+|---------|--------|
+| After writing/editing code (new feature, bugfix) | Run `/dployr-check` |
+| User requests commit | Run `/dployr-precommit` first |
+| User requests release | Run `/dployr-review` first |
+| Major refactoring completed | Run `/dployr-review` |
+
 ## Environment Variables
 
 **Required:** `MYSQL_ROOT_PASSWORD`, `POSTGRES_ROOT_PASSWORD`, `PGADMIN_PASSWORD`, `SESSION_SECRET`
