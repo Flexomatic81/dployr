@@ -363,15 +363,36 @@ async function loadVersionInfo() {
     if (!versionInfo.tag && versionInfo.hash) {
         try {
             // Fetch tags first to ensure we have the latest
-            execSync('git fetch --tags origin 2>/dev/null || true', { cwd: DPLOYR_PATH, stdio: 'pipe' });
-            // Try to get tag for current commit
-            const tag = execSync('git describe --tags --exact-match 2>/dev/null || echo ""', { cwd: DPLOYR_PATH, stdio: 'pipe' }).toString().trim();
+            try {
+                execSync('git fetch --tags origin', { cwd: DPLOYR_PATH, stdio: 'pipe', timeout: 10000 });
+            } catch (fetchError) {
+                logger.debug('Could not fetch tags from origin', { error: fetchError.message });
+            }
+
+            // Method 1: Try git tag --points-at HEAD (more reliable)
+            let tag = '';
+            try {
+                const tags = execSync('git tag --points-at HEAD', { cwd: DPLOYR_PATH, stdio: 'pipe' }).toString().trim();
+                // Take the first tag if multiple exist (prefer version tags)
+                const tagList = tags.split('\n').filter(t => t);
+                tag = tagList.find(t => t.startsWith('v')) || tagList[0] || '';
+            } catch {
+                // Method 2: Fallback to git describe
+                try {
+                    tag = execSync('git describe --tags --exact-match', { cwd: DPLOYR_PATH, stdio: 'pipe' }).toString().trim();
+                } catch {
+                    // No tag on current commit
+                }
+            }
+
             if (tag) {
                 versionInfo.tag = tag;
                 logger.info('Version tag resolved from git', { tag });
+            } else {
+                logger.debug('No tag found for current commit', { hash: versionInfo.hash });
             }
         } catch (error) {
-            logger.debug('Could not resolve version tag from git');
+            logger.warn('Could not resolve version tag from git', { error: error.message });
         }
     }
 
