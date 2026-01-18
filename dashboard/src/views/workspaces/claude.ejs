@@ -286,6 +286,9 @@
             </h1>
         </div>
         <div class="actions">
+            <button onclick="syncToProject(this)">
+                ↑ <%= t('workspaces:actions.syncToProject') %>
+            </button>
             <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>/ide'">
                 IDE
             </button>
@@ -653,6 +656,48 @@
                 });
             } catch (error) {
                 console.error('Failed to send activity:', error);
+            }
+        }
+
+        // Sync to project
+        async function syncToProject(btn) {
+            if (!confirm('<%= t("workspaces:sync.confirm") %>')) return;
+
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⟳ <%= t("workspaces:sync.inProgress") %>';
+
+            try {
+                const response = await fetch('/workspaces/<%= workspace.project_name %>/sync/to-project', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-Token': '<%= csrfToken %>'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let message = data.message;
+                    if (data.actions && data.actions.includes('rebuild')) {
+                        message = '<%= t("workspaces:messages.syncedRebuilt") %>';
+                    } else if (data.actions && data.actions.includes('restart')) {
+                        message = '<%= t("workspaces:messages.syncedRestarted") %>';
+                    }
+                    if (data.projectType) {
+                        message += ' (' + data.projectType + ')';
+                    }
+                    alert(message);
+                } else {
+                    alert(data.error || '<%= t("workspaces:errors.syncFailed") %>');
+                }
+            } catch (error) {
+                alert('<%= t("workspaces:errors.syncFailed") %>: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
