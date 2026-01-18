@@ -109,7 +109,11 @@
         "confirm": "Sync changes to project? The project will be restarted/rebuilt.",
         "inProgress": "Syncing...",
         "rebuilding": "Rebuilding project...",
-        "restarting": "Restarting project..."
+        "restarting": "Restarting project...",
+        "modalTitle": "Sync to Project",
+        "step1": "Starting synchronization",
+        "step2": "Rebuild / restart project",
+        "step3": "Finishing"
     },
     "ide": {
         "waitingForContainer": "Waiting for container...",

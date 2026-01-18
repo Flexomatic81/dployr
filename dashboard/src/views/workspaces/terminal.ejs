@@ -111,6 +111,113 @@
         .xterm-viewport::-webkit-scrollbar-thumb:hover {
             background: #4f4f4f;
         }
+
+        /* Sync Modal */
+        .sync-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .sync-modal-overlay.visible {
+            display: flex;
+        }
+        .sync-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 30px 40px;
+            min-width: 350px;
+            max-width: 450px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        .sync-modal h3 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .sync-modal .sync-spinner {
+            border: 4px solid #3c3c3c;
+            border-top: 4px solid #4ec9b0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .sync-modal .sync-steps {
+            text-align: left;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        .sync-modal .sync-step {
+            padding: 8px 0;
+            color: #6a6a6a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sync-modal .sync-step.active {
+            color: #fff;
+        }
+        .sync-modal .sync-step.done {
+            color: #4ec9b0;
+        }
+        .sync-modal .sync-step.error {
+            color: #f44747;
+        }
+        .sync-modal .sync-step-icon {
+            width: 20px;
+            text-align: center;
+        }
+        .sync-modal .sync-result {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .sync-modal .sync-result.success {
+            display: block;
+            background: rgba(78, 201, 176, 0.1);
+            border: 1px solid #4ec9b0;
+            color: #4ec9b0;
+        }
+        .sync-modal .sync-result.error {
+            display: block;
+            background: rgba(244, 71, 71, 0.1);
+            border: 1px solid #f44747;
+            color: #f44747;
+        }
+        .sync-modal .sync-close-btn {
+            display: none;
+            margin-top: 20px;
+            background: #0e639c;
+            color: #fff;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .sync-modal .sync-close-btn:hover {
+            background: #1177bb;
+        }
+        .sync-modal .sync-close-btn.visible {
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -140,6 +247,32 @@
 
     <div id="terminal-container">
         <div id="terminal"></div>
+    </div>
+
+    <!-- Sync Modal -->
+    <div class="sync-modal-overlay" id="syncModal">
+        <div class="sync-modal">
+            <h3><%= t('workspaces:sync.modalTitle') %></h3>
+            <div class="sync-spinner" id="syncSpinner"></div>
+            <div class="sync-steps">
+                <div class="sync-step" id="step1">
+                    <span class="sync-step-icon">○</span>
+                    <span><%= t('workspaces:sync.step1') %></span>
+                </div>
+                <div class="sync-step" id="step2">
+                    <span class="sync-step-icon">○</span>
+                    <span><%= t('workspaces:sync.step2') %></span>
+                </div>
+                <div class="sync-step" id="step3">
+                    <span class="sync-step-icon">○</span>
+                    <span><%= t('workspaces:sync.step3') %></span>
+                </div>
+            </div>
+            <div class="sync-result" id="syncResult"></div>
+            <button class="sync-close-btn" id="syncCloseBtn" onclick="closeSyncModal()">
+                <%= t('common:buttons.close') %>
+            </button>
+        </div>
     </div>
 
     <script>
@@ -323,13 +456,58 @@
             }
         }
 
+        // Sync Modal Functions
+        function showSyncModal() {
+            document.getElementById('syncModal').classList.add('visible');
+            document.getElementById('syncSpinner').style.display = 'block';
+            document.getElementById('syncResult').className = 'sync-result';
+            document.getElementById('syncResult').textContent = '';
+            document.getElementById('syncCloseBtn').classList.remove('visible');
+
+            ['step1', 'step2', 'step3'].forEach(id => {
+                const step = document.getElementById(id);
+                step.className = 'sync-step';
+                step.querySelector('.sync-step-icon').textContent = '○';
+            });
+        }
+
+        function updateSyncStep(stepNum, status) {
+            const step = document.getElementById('step' + stepNum);
+            const icon = step.querySelector('.sync-step-icon');
+
+            if (status === 'active') {
+                step.className = 'sync-step active';
+                icon.textContent = '◐';
+            } else if (status === 'done') {
+                step.className = 'sync-step done';
+                icon.textContent = '✓';
+            } else if (status === 'error') {
+                step.className = 'sync-step error';
+                icon.textContent = '✗';
+            }
+        }
+
+        function showSyncResult(success, message) {
+            document.getElementById('syncSpinner').style.display = 'none';
+            const result = document.getElementById('syncResult');
+            result.className = 'sync-result ' + (success ? 'success' : 'error');
+            result.textContent = message;
+            document.getElementById('syncCloseBtn').classList.add('visible');
+        }
+
+        function closeSyncModal() {
+            document.getElementById('syncModal').classList.remove('visible');
+        }
+
         // Sync to project
         async function syncToProject(btn) {
-            if (!confirm('<%= t("workspaces:sync.confirm") %>')) return;
+            showSyncModal();
 
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '⟳ <%= t("workspaces:sync.inProgress") %>';
+            updateSyncStep(1, 'active');
+            await new Promise(r => setTimeout(r, 500));
+            updateSyncStep(1, 'done');
+
+            updateSyncStep(2, 'active');
 
             try {
                 const response = await fetch('/workspaces/<%= workspace.project_name %>/sync/to-project', {
@@ -344,7 +522,12 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    let message = data.message;
+                    updateSyncStep(2, 'done');
+                    updateSyncStep(3, 'active');
+                    await new Promise(r => setTimeout(r, 300));
+                    updateSyncStep(3, 'done');
+
+                    let message = '<%= t("workspaces:messages.synced") %>';
                     if (data.actions && data.actions.includes('rebuild')) {
                         message = '<%= t("workspaces:messages.syncedRebuilt") %>';
                     } else if (data.actions && data.actions.includes('restart')) {
@@ -353,15 +536,14 @@
                     if (data.projectType) {
                         message += ' (' + data.projectType + ')';
                     }
-                    alert(message);
+                    showSyncResult(true, message);
                 } else {
-                    alert(data.error || '<%= t("workspaces:errors.syncFailed") %>');
+                    updateSyncStep(2, 'error');
+                    showSyncResult(false, data.error || '<%= t("workspaces:errors.syncFailed") %>');
                 }
             } catch (error) {
-                alert('<%= t("workspaces:errors.syncFailed") %>: ' + error.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
+                updateSyncStep(2, 'error');
+                showSyncResult(false, '<%= t("workspaces:errors.syncFailed") %>: ' + error.message);
             }
         }
 

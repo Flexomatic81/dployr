@@ -109,7 +109,11 @@
         "confirm": "Änderungen zum Projekt synchronisieren? Das Projekt wird neu gestartet/gebaut.",
         "inProgress": "Synchronisiere...",
         "rebuilding": "Baue Projekt neu...",
-        "restarting": "Starte Projekt neu..."
+        "restarting": "Starte Projekt neu...",
+        "modalTitle": "Projekt synchronisieren",
+        "step1": "Synchronisierung starten",
+        "step2": "Projekt neu bauen / neustarten",
+        "step3": "Abschließen"
     },
     "ide": {
         "waitingForContainer": "Warte auf Container...",
