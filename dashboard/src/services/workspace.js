@@ -1202,6 +1202,7 @@ async function syncToProject(userId, projectName, systemUsername) {
 
         // Determine if we need a full rebuild or just a restart
         // Rebuild is needed for projects with dependencies (npm, composer, pip)
+        // Custom projects always rebuild since they may have custom Dockerfiles
         const needsRebuild = [
             'nodejs-app',
             'nextjs',
@@ -1209,7 +1210,8 @@ async function syncToProject(userId, projectName, systemUsername) {
             'laravel',
             'php-website',
             'python-flask',
-            'python-django'
+            'python-django',
+            'custom'
         ].includes(projectType);
 
         logger.info('Starting workspace sync to project', {
