@@ -127,7 +127,7 @@ Browser-based VS Code (code-server) with Claude Code CLI integration:
 - Preview environments for sharing work
 - WebSocket terminal via docker exec
 
-Services: `workspace.js`, `terminal.js`, `preview.js`, `encryption.js`, `portManager.js`
+Services: `workspace.js`, `terminal.js`, `claude-terminal.js`, `preview.js`, `encryption.js`, `portManager.js`
 
 ### Backup & Restore
 
@@ -140,8 +140,11 @@ Service: `backup.js`, Table: `backup_logs`
 1. User registers → `approved = FALSE`
 2. Admin approves via `/admin`
 3. Sessions stored in MySQL (24h expiry)
+4. Optional 2FA via TOTP (authenticator apps) with backup codes
 
 Middleware: `requireAuth`, `requireAdmin`
+
+Service: `twofa.js`
 
 ## Security
 

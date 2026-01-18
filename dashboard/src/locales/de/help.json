@@ -12,6 +12,7 @@
     "workspaces": "Workspaces",
     "domains": "Domains & SSL",
     "notifications": "Benachrichtigungen",
+    "security": "Sicherheit",
     "admin": "Administration",
     "faq": "FAQ"
   },
@@ -380,6 +381,48 @@
       "address": "Du musst eine E-Mail-Adresse hinterlegt haben"
     },
     "note": "Hinweis: Wenn du noch keine E-Mail-Adresse hinterlegt oder verifiziert hast, kannst du dies in den Benachrichtigungseinstellungen nachholen."
+  },
+
+  "security": {
+    "title": "Sicherheit",
+    "intro": "Schütze dein Konto mit zusätzlichen Sicherheitsmaßnahmen.",
+    "twofaTitle": "Zwei-Faktor-Authentifizierung (2FA)",
+    "twofaIntro": "2FA fügt eine zusätzliche Sicherheitsebene zu deinem Konto hinzu. Neben deinem Passwort benötigst du einen zeitbasierten Code aus einer Authenticator-App.",
+    "twofaSetupTitle": "2FA einrichten",
+    "twofaSetupSteps": {
+      "goto": "Gehe zu Profil → Sicherheit",
+      "click": "Klicke auf \"2FA aktivieren\"",
+      "scan": "Scanne den QR-Code mit einer Authenticator-App (Google Authenticator, Authy, etc.)",
+      "enter": "Gib den 6-stelligen Code aus der App ein",
+      "save": "Speichere die Backup-Codes an einem sicheren Ort"
+    },
+    "twofaAppsTitle": "Empfohlene Authenticator-Apps",
+    "twofaApps": {
+      "googleAuth": "Google Authenticator (iOS/Android)",
+      "authy": "Authy (iOS/Android/Desktop)",
+      "microsoft": "Microsoft Authenticator (iOS/Android)"
+    },
+    "backupCodesTitle": "Backup-Codes",
+    "backupCodesIntro": "Bei der 2FA-Aktivierung erhältst du 10 Backup-Codes. Diese können verwendet werden, wenn du keinen Zugriff auf deine Authenticator-App hast.",
+    "backupCodesFeatures": {
+      "oneTime": "Jeder Code kann nur einmal verwendet werden",
+      "store": "Speichere sie sicher (Passwort-Manager, ausdrucken)",
+      "regenerate": "Du kannst neue Codes in den Sicherheitseinstellungen generieren"
+    },
+    "backupCodesWarning": "Wichtig: Wenn du alle Backup-Codes verbraucht hast und deine Authenticator-App verlierst, ist der Zugang zu deinem Konto nur noch über den Administrator möglich.",
+    "twofaLoginTitle": "Anmeldung mit 2FA",
+    "twofaLoginSteps": {
+      "password": "Melde dich wie gewohnt mit Benutzername und Passwort an",
+      "code": "Gib den 6-stelligen Code aus deiner Authenticator-App ein",
+      "backup": "Falls nötig: Verwende einen Backup-Code stattdessen"
+    },
+    "twofaDisableTitle": "2FA deaktivieren",
+    "twofaDisableSteps": {
+      "goto": "Gehe zu Profil → Sicherheit",
+      "enter": "Gib deinen aktuellen 2FA-Code ein",
+      "click": "Klicke auf \"2FA deaktivieren\""
+    },
+    "twofaNote": "Hinweis: Nach der Deaktivierung ist dein Konto nur noch durch dein Passwort geschützt. Es wird empfohlen, 2FA aktiviert zu lassen."
   },
 
   "admin": {

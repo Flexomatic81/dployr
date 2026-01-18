@@ -38,6 +38,9 @@
             <a href="#notifications" class="list-group-item list-group-item-action">
                 <i class="bi bi-bell"></i> <%= t('help:nav.notifications') %>
             </a>
+            <a href="#security" class="list-group-item list-group-item-action">
+                <i class="bi bi-shield-check"></i> <%= t('help:nav.security') %>
+            </a>
             <% if (user && user.is_admin) { %>
             <a href="#admin" class="list-group-item list-group-item-action">
                 <i class="bi bi-shield-lock"></i> <%= t('help:nav.admin') %>
@@ -714,6 +717,68 @@ DB_NAME=deine_db</code></pre>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
                         <strong><%= t('help:notifications.note') %></strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Security -->
+        <section id="security" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i><%= t('help:security.title') %></h5>
+                </div>
+                <div class="card-body">
+                    <p><%= t('help:security.intro') %></p>
+
+                    <h5><i class="bi bi-phone me-1"></i> <%= t('help:security.twofaTitle') %></h5>
+                    <p><%= t('help:security.twofaIntro') %></p>
+
+                    <h6 class="mt-4"><%= t('help:security.twofaSetupTitle') %></h6>
+                    <ol>
+                        <li><%= t('help:security.twofaSetupSteps.goto') %></li>
+                        <li><%= t('help:security.twofaSetupSteps.click') %></li>
+                        <li><%= t('help:security.twofaSetupSteps.scan') %></li>
+                        <li><%= t('help:security.twofaSetupSteps.enter') %></li>
+                        <li><%= t('help:security.twofaSetupSteps.save') %></li>
+                    </ol>
+
+                    <h6 class="mt-4"><%= t('help:security.twofaAppsTitle') %></h6>
+                    <ul>
+                        <li><i class="bi bi-google text-primary"></i> <%= t('help:security.twofaApps.googleAuth') %></li>
+                        <li><i class="bi bi-shield text-danger"></i> <%= t('help:security.twofaApps.authy') %></li>
+                        <li><i class="bi bi-microsoft text-info"></i> <%= t('help:security.twofaApps.microsoft') %></li>
+                    </ul>
+
+                    <h5 class="mt-4"><i class="bi bi-key me-1"></i> <%= t('help:security.backupCodesTitle') %></h5>
+                    <p><%= t('help:security.backupCodesIntro') %></p>
+                    <ul>
+                        <li><%= t('help:security.backupCodesFeatures.oneTime') %></li>
+                        <li><%= t('help:security.backupCodesFeatures.store') %></li>
+                        <li><%= t('help:security.backupCodesFeatures.regenerate') %></li>
+                    </ul>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong><%= t('help:security.backupCodesWarning') %></strong>
+                    </div>
+
+                    <h5 class="mt-4"><i class="bi bi-box-arrow-in-right me-1"></i> <%= t('help:security.twofaLoginTitle') %></h5>
+                    <ol>
+                        <li><%= t('help:security.twofaLoginSteps.password') %></li>
+                        <li><%= t('help:security.twofaLoginSteps.code') %></li>
+                        <li><%= t('help:security.twofaLoginSteps.backup') %></li>
+                    </ol>
+
+                    <h5 class="mt-4"><i class="bi bi-x-circle me-1"></i> <%= t('help:security.twofaDisableTitle') %></h5>
+                    <ol>
+                        <li><%= t('help:security.twofaDisableSteps.goto') %></li>
+                        <li><%= t('help:security.twofaDisableSteps.enter') %></li>
+                        <li><%= t('help:security.twofaDisableSteps.click') %></li>
+                    </ol>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong><%= t('help:security.twofaNote') %></strong>
                     </div>
                 </div>
             </div>

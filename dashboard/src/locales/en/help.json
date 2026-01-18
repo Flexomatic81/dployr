@@ -12,6 +12,7 @@
     "workspaces": "Workspaces",
     "domains": "Domains & SSL",
     "notifications": "Notifications",
+    "security": "Security",
     "admin": "Administration",
     "faq": "FAQ"
   },
@@ -380,6 +381,48 @@
       "address": "You must have an email address on file"
     },
     "note": "Note: If you haven't added or verified an email address yet, you can do so in the notification settings."
+  },
+
+  "security": {
+    "title": "Security",
+    "intro": "Protect your account with additional security measures.",
+    "twofaTitle": "Two-Factor Authentication (2FA)",
+    "twofaIntro": "2FA adds an extra layer of security to your account. In addition to your password, you need a time-based code from an authenticator app.",
+    "twofaSetupTitle": "Set up 2FA",
+    "twofaSetupSteps": {
+      "goto": "Go to Profile → Security",
+      "click": "Click \"Enable 2FA\"",
+      "scan": "Scan the QR code with an authenticator app (Google Authenticator, Authy, etc.)",
+      "enter": "Enter the 6-digit code from the app",
+      "save": "Save the backup codes in a secure location"
+    },
+    "twofaAppsTitle": "Recommended Authenticator Apps",
+    "twofaApps": {
+      "googleAuth": "Google Authenticator (iOS/Android)",
+      "authy": "Authy (iOS/Android/Desktop)",
+      "microsoft": "Microsoft Authenticator (iOS/Android)"
+    },
+    "backupCodesTitle": "Backup Codes",
+    "backupCodesIntro": "When activating 2FA, you receive 10 backup codes. These can be used if you don't have access to your authenticator app.",
+    "backupCodesFeatures": {
+      "oneTime": "Each code can only be used once",
+      "store": "Store them securely (password manager, print them)",
+      "regenerate": "You can generate new codes in the security settings"
+    },
+    "backupCodesWarning": "Important: If you've used all backup codes and lose your authenticator app, access to your account is only possible through the administrator.",
+    "twofaLoginTitle": "Logging in with 2FA",
+    "twofaLoginSteps": {
+      "password": "Log in as usual with username and password",
+      "code": "Enter the 6-digit code from your authenticator app",
+      "backup": "If needed: Use a backup code instead"
+    },
+    "twofaDisableTitle": "Disable 2FA",
+    "twofaDisableSteps": {
+      "goto": "Go to Profile → Security",
+      "enter": "Enter your current 2FA code",
+      "click": "Click \"Disable 2FA\""
+    },
+    "twofaNote": "Note: After deactivation, your account is only protected by your password. It is recommended to keep 2FA enabled."
   },
 
   "admin": {
