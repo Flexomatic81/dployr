@@ -94,7 +94,23 @@ Search patterns:
 - Large files loaded into memory?
 - Temporary files cleaned up?
 
-## 5. Test Coverage
+## 5. Tests
+
+### Run Test Suite
+```bash
+cd dashboard && npm test
+```
+
+### Analyze Results
+- Total tests: passed / failed / skipped
+- Test duration
+- For failures: error message, likely cause, suggested fix
+
+### Test Coverage
+If coverage available:
+- Overall coverage percentage
+- Files with low coverage (<80%)
+- Uncovered critical paths
 
 ### Missing Tests
 Check for untested code:
@@ -104,6 +120,7 @@ Check for untested code:
 
 ### Test Quality
 - AAA pattern (Arrange, Act, Assert)?
+- Proper mocking of dependencies?
 - Edge cases covered?
 - Error conditions tested?
 
@@ -136,6 +153,7 @@ Top 3 Priorities:
 ℹ️ Consider caching for /api/status
 
 --- Tests ---
+✅ 45 tests passed (2.3s)
 ⚠️ Missing tests for: workspace.js, preview.js
 
 Action Items:

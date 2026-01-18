@@ -159,10 +159,9 @@ Middleware: `requireAuth`, `requireAdmin`
 
 | Skill | Purpose |
 |-------|---------|
-| `/dployr-check` | Quick lint check - language, i18n, code style (fast, CI-friendly) |
-| `/dployr-review` | Deep code review - architecture, security, performance, tests |
-| `/dployr-test` | Run tests with analysis |
-| `/dployr-precommit` | Ultra-fast pre-commit checks (staged files only) |
+| `/dployr-precommit` | Ultra-fast pre-commit checks (staged files only, < 10s) |
+| `/dployr-check` | Quick lint check - language, i18n, code style (< 1 min) |
+| `/dployr-review` | Deep review - architecture, security, performance, tests (5-10 min) |
 | `/dployr-release` | Create release (changelog, tag, GitHub) |
 
 ## Environment Variables
