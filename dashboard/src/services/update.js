@@ -115,8 +115,10 @@ async function getCurrentVersion() {
         const { stdout: date } = await execAsync('git log -1 --format=%cd --date=format:\'%Y-%m-%d\'', { cwd: DPLOYR_PATH });
 
         // Try to get current tag (if on a release)
+        // First fetch tags to ensure we have the latest from remote
         let tag = null;
         try {
+            await execAsync('git fetch --tags 2>/dev/null || true', { cwd: DPLOYR_PATH });
             const { stdout: tagOutput } = await execAsync('git describe --tags --exact-match 2>/dev/null || echo ""', { cwd: DPLOYR_PATH });
             tag = tagOutput.trim() || null;
         } catch {
