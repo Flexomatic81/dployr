@@ -361,9 +361,10 @@ async function performUpdate() {
         }
 
         // Execute the deploy script with branch parameter
+        // Timeout increased to 15 minutes to allow workspace image rebuild
         const { stdout, stderr } = await execAsync(`bash ${DEPLOY_SCRIPT} --branch ${branch}`, {
             cwd: DPLOYR_PATH,
-            timeout: 300000, // 5 minute timeout
+            timeout: 900000, // 15 minute timeout (workspace image build can take 5-10 min)
             env: {
                 ...process.env,
                 PATH: process.env.PATH
