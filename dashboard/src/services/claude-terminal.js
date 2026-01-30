@@ -60,7 +60,9 @@ async function createClaudeSession(containerId, options = {}, onAuthUrl = null, 
         Env: [
             'TERM=xterm-256color',
             `COLUMNS=${cols}`,
-            `LINES=${rows}`
+            `LINES=${rows}`,
+            'PATH=/home/coder/.local/bin:/usr/local/bin:/usr/bin:/bin',
+            'HOME=/home/coder'
         ]
     });
 
