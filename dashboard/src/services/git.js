@@ -617,9 +617,9 @@ services:
         RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip gd xml intl opcache bcmath
         RUN a2enmod rewrite
         COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-        ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-        RUN sed -ri -e 's!/var/www/html!\$\{APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-        RUN sed -ri -e 's!/var/www/!\$\{APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+        ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+        RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf
+        RUN sed -ri -e 's!<Directory /var/www/>!<Directory /var/www/html/public>!g' /etc/apache2/apache2.conf
     container_name: \${PROJECT_NAME:-${projectName}}
     restart: unless-stopped
     working_dir: /var/www/html
