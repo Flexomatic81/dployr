@@ -55,9 +55,13 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 # ============================================================
-# Claude Code CLI
+# Claude Code CLI (native installer)
+# Install as coder user, then symlink for global access
 # ============================================================
-RUN npm install -g @anthropic-ai/claude-code
+USER coder
+RUN curl -fsSL https://claude.ai/install.sh | bash
+USER root
+RUN ln -sf /home/coder/.claude/local/claude /usr/local/bin/claude
 
 # ============================================================
 # Global npm packages (commonly used)
