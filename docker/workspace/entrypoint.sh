@@ -49,19 +49,24 @@ if [ -d "/claude-config" ]; then
 fi
 
 # ============================================================
-# Claude Code Update (background)
+# Claude Code Migration (npm -> native)
 # ============================================================
 
-# Update Claude Code in background to not block container startup
-# This replaces Claude's built-in auto-update which causes issues
-(
-    echo "Claude Code: Checking for updates..."
-    if npm update -g @anthropic-ai/claude-code --loglevel=error 2>/dev/null; then
-        echo "Claude Code: Updated successfully"
-    else
-        echo "Claude Code: Update check completed"
+# Check if old npm-style credentials exist and need migration
+# Native Claude Code uses different auth format
+if [ -d "/claude-config" ]; then
+    # If old credentials.json exists but claudeAiOauth is missing, clear for re-auth
+    if [ -f "/claude-config/credentials.json" ]; then
+        # Check if it's old npm-style format (has anthropicApiKey but no claudeAiOauth)
+        if grep -q '"anthropicApiKey"' /claude-config/credentials.json 2>/dev/null && \
+           ! grep -q '"claudeAiOauth"' /claude-config/credentials.json 2>/dev/null; then
+            echo "Claude Code: Migrating from npm to native version..."
+            rm -f /claude-config/credentials.json
+            rm -f /claude-config/claude.json
+            echo "Claude Code: Please re-authenticate"
+        fi
     fi
-) &
+fi
 
 # ============================================================
 # Claude Code Configuration
