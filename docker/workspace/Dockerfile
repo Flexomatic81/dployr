@@ -69,7 +69,8 @@ fi\n\
 exec "$CLAUDE_BIN" "$@"' > /home/coder/.local/bin/claude \
     && chmod +x /home/coder/.local/bin/claude \
     && chown -R coder:coder /home/coder/.local \
-    && ln -sf /home/coder/.local/bin/claude /usr/local/bin/claude
+    && ln -sf /home/coder/.local/bin/claude /usr/local/bin/claude \
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/coder/.bashrc
 
 # ============================================================
 # Global npm packages (commonly used)
