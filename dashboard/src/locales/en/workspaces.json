@@ -177,5 +177,8 @@
         "authSuccess": "Sign in successful!",
         "authSuccessDesc": "You are now signed in to Claude Code.",
         "authenticated": "Authenticated"
+    },
+    "terminal": {
+        "hint": "Note: Only changes in /workspace are persisted!"
     }
 }

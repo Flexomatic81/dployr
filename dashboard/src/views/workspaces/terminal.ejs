@@ -376,6 +376,8 @@
                     switch (msg.type) {
                         case 'ready':
                             setStatus('connected');
+                            // Show workspace hint banner
+                            terminal.write('\x1b[43m\x1b[30m <%= t("workspaces:terminal.hint") %> \x1b[0m\r\n\r\n');
                             // Ensure terminal is focused and cursor is visible
                             setTimeout(() => {
                                 terminal.focus();

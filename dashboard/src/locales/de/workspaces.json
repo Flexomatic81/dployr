@@ -177,5 +177,8 @@
         "authSuccess": "Anmeldung erfolgreich!",
         "authSuccessDesc": "Du bist jetzt bei Claude Code angemeldet.",
         "authenticated": "Angemeldet"
+    },
+    "terminal": {
+        "hint": "Hinweis: Nur Änderungen in /workspace werden gespeichert!"
     }
 }
