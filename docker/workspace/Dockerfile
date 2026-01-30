@@ -140,5 +140,6 @@ EXPOSE 8080
 
 # Environment
 ENV SHELL=/bin/bash
+ENV PATH="/home/coder/.local/bin:${PATH}"
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
