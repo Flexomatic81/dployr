@@ -55,13 +55,18 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 # ============================================================
-# Claude Code CLI (native installer)
-# Install as coder user, then symlink for global access
+# Claude Code CLI wrapper
+# The VS Code extension includes the native binary, we create
+# a wrapper script that finds and executes it dynamically
 # ============================================================
-USER coder
-RUN curl -fsSL https://claude.ai/install.sh | bash
-USER root
-RUN ln -sf /home/coder/.claude/local/claude /usr/local/bin/claude
+RUN echo '#!/bin/bash\n\
+CLAUDE_BIN=$(find /home/coder/.local/share/code-server/extensions -name "claude" -path "*/native-binary/*" -type f 2>/dev/null | head -1)\n\
+if [ -z "$CLAUDE_BIN" ]; then\n\
+    echo "Claude Code not found. Please install the Claude Code extension in VS Code."\n\
+    exit 1\n\
+fi\n\
+exec "$CLAUDE_BIN" "$@"' > /usr/local/bin/claude \
+    && chmod +x /usr/local/bin/claude
 
 # ============================================================
 # Global npm packages (commonly used)
