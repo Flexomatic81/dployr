@@ -135,10 +135,26 @@ function parseOutput(sessionId, data) {
 
     // Check for auth URLs
     if (!session.authSuccessDetected) {
+        // Debug: Log buffer content periodically when it contains oauth
+        if (session.outputBuffer.includes('oauth') || session.outputBuffer.includes('claude.ai')) {
+            logger.debug('OAuth URL buffer check', {
+                sessionId,
+                bufferLength: session.outputBuffer.length,
+                bufferSnippet: session.outputBuffer.substring(0, 500)
+            });
+        }
+
         for (const pattern of AUTH_URL_PATTERNS) {
             const matches = session.outputBuffer.match(pattern);
             if (matches && matches.length > 0) {
                 const potentialUrl = matches[0].trim();
+
+                logger.debug('OAuth URL match found', {
+                    sessionId,
+                    urlLength: potentialUrl.length,
+                    hasState: potentialUrl.includes('state='),
+                    urlEnd: potentialUrl.slice(-50)
+                });
 
                 // OAuth URLs must contain the 'state' parameter to be complete
                 // If missing, the URL is likely split across chunks - wait for more data
