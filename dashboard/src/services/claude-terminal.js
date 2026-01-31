@@ -148,12 +148,17 @@ function parseOutput(sessionId, data) {
             const matches = session.outputBuffer.match(pattern);
             if (matches && matches.length > 0) {
                 const potentialUrl = matches[0].trim();
+                const matchEnd = session.outputBuffer.indexOf(potentialUrl) + potentialUrl.length;
+                const nextChars = session.outputBuffer.slice(matchEnd, matchEnd + 20);
+                const nextHex = [...nextChars].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
 
                 logger.info('OAuth URL match found', {
                     sessionId,
                     urlLength: potentialUrl.length,
                     hasState: potentialUrl.includes('state='),
-                    urlEnd: potentialUrl.slice(-50)
+                    urlEnd: potentialUrl.slice(-50),
+                    nextCharsHex: nextHex,
+                    nextCharsRaw: nextChars.replace(/[\x00-\x1f]/g, '?')
                 });
 
                 // OAuth URLs must contain the 'state' parameter to be complete
