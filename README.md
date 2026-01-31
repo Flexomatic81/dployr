@@ -284,7 +284,6 @@ Workspaces provide a complete development environment in the browser using VS Co
 | **Claude Code AI** | Integrated AI coding assistant with persistent login |
 | **Terminal Access** | Real-time terminal via WebSocket (xterm.js) |
 | **File Sync** | Bidirectional sync between workspace and project |
-| **Preview Environments** | Share your work with temporary preview links |
 | **Resource Limits** | Configurable CPU, RAM, and idle timeout |
 
 #### Getting Started
@@ -314,18 +313,6 @@ Claude Code requires authentication. You have two options:
 - **Project → Workspace**: Updates workspace with latest project files
 
 **Note:** Sync operations overwrite the destination. Commit important changes before syncing.
-
-#### Preview Environments
-
-Share your work temporarily with others:
-
-1. Start the workspace
-2. Click **Create Preview**
-3. Set lifetime (default: 24 hours)
-4. Optionally set a password
-5. Share the preview URL
-
-Previews are automatically deleted when they expire.
 
 ### Databases
 
