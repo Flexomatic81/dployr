@@ -5,6 +5,19 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.8] - 2026-01-31
+
+### Fixed
+- Claude Code OAuth authentication in workspaces (URLs were truncated by terminal line wrapping)
+- Workspace Docker image now uses native Claude Code instead of npm package
+- Auto-migration from old npm-style Claude credentials to native format
+- PATH configuration for Claude CLI in workspace containers
+- Update timeout increased to 15 minutes (allows workspace image rebuild)
+
+### Changed
+- Claude terminal service now buffers output to capture complete OAuth URLs
+- Improved ANSI code stripping to handle terminal hyperlinks and wrapped lines
+
 ## [v1.4.7] - 2026-01-21
 
 ### Fixed
