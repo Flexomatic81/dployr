@@ -71,7 +71,15 @@ router.get('/', async (req, res) => {
  */
 router.post('/limits', async (req, res) => {
     try {
-        await workspaceService.setGlobalLimits(req.body);
+        // Convert idle timeout from hours to minutes
+        const limits = { ...req.body };
+        if (limits.default_idle_timeout_hours) {
+            const hours = Math.min(24, Math.max(1, parseInt(limits.default_idle_timeout_hours) || 1));
+            limits.default_idle_timeout = hours * 60;
+            delete limits.default_idle_timeout_hours;
+        }
+
+        await workspaceService.setGlobalLimits(limits);
 
         req.flash('success', req.t('admin:resources.limitsUpdated'));
         res.redirect('/admin/resources');

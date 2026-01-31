@@ -88,6 +88,7 @@
     <div class="collapse" id="collapseLimits">
         <div class="card-body">
             <form action="/admin/resources/limits" method="POST">
+                <%- csrfInput %>
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label"><%= t('admin:resources.maxWorkspacesPerUser') %></label>
@@ -113,9 +114,9 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><%= t('admin:resources.defaultIdleTimeout') %></label>
-                        <input type="number" class="form-control" name="default_idle_timeout"
-                               value="<%= globalLimits.default_idle_timeout %>" min="5" max="480">
-                        <small class="text-muted"><%= t('admin:resources.minutes') %></small>
+                        <input type="number" class="form-control" name="default_idle_timeout_hours"
+                               value="<%= Math.round(globalLimits.default_idle_timeout / 60) %>" min="1" max="24" step="1">
+                        <small class="text-muted"><%= t('admin:resources.hours') %> (max. 24)</small>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><%= t('admin:resources.maxPreviewsPerWorkspace') %></label>
