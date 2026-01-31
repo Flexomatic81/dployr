@@ -496,6 +496,27 @@ async function initDatabase() {
             // Global defaults already exist - ignore
         }
 
+        // Cleanup duplicate global limits (bug fix: NULL values bypass UNIQUE constraint)
+        // Keep only the first row (lowest ID) with user_id IS NULL
+        try {
+            const [duplicates] = await connection.execute(`
+                SELECT COUNT(*) as count FROM resource_limits WHERE user_id IS NULL
+            `);
+            if (duplicates[0].count > 1) {
+                const [firstRow] = await connection.execute(`
+                    SELECT MIN(id) as min_id FROM resource_limits WHERE user_id IS NULL
+                `);
+                await connection.execute(`
+                    DELETE FROM resource_limits WHERE user_id IS NULL AND id > ?
+                `, [firstRow[0].min_id]);
+                logger.info('Migration: Cleaned up duplicate global resource limits', {
+                    removed: duplicates[0].count - 1
+                });
+            }
+        } catch (e) {
+            logger.warn('Migration: Could not cleanup resource_limits duplicates', { error: e.message });
+        }
+
         // ============================================================
         // GIT CREDENTIALS TABLE (encrypted storage)
         // ============================================================
