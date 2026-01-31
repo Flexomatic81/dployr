@@ -135,36 +135,19 @@ function parseOutput(sessionId, data) {
 
     // Check for auth URLs
     if (!session.authSuccessDetected) {
-        // Debug: Log buffer content when it contains oauth
-        if (session.outputBuffer.includes('oauth') || session.outputBuffer.includes('claude.ai')) {
-            logger.info('OAuth URL buffer check', {
-                sessionId,
-                bufferLength: session.outputBuffer.length,
-                bufferSnippet: session.outputBuffer.substring(0, 500)
-            });
-        }
+        // For URL matching, remove ALL whitespace since URLs don't contain spaces
+        // This handles terminal line wrapping that inserts spaces in the middle of URLs
+        const bufferForUrlMatch = session.outputBuffer.replace(/\s+/g, '');
 
         for (const pattern of AUTH_URL_PATTERNS) {
-            const matches = session.outputBuffer.match(pattern);
+            const matches = bufferForUrlMatch.match(pattern);
             if (matches && matches.length > 0) {
                 const potentialUrl = matches[0].trim();
-                const matchEnd = session.outputBuffer.indexOf(potentialUrl) + potentialUrl.length;
-                const nextChars = session.outputBuffer.slice(matchEnd, matchEnd + 20);
-                const nextHex = [...nextChars].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-
-                logger.info('OAuth URL match found', {
-                    sessionId,
-                    urlLength: potentialUrl.length,
-                    hasState: potentialUrl.includes('state='),
-                    urlEnd: potentialUrl.slice(-50),
-                    nextCharsHex: nextHex,
-                    nextCharsRaw: nextChars.replace(/[\x00-\x1f]/g, '?')
-                });
 
                 // OAuth URLs must contain the 'state' parameter to be complete
                 // If missing, the URL is likely split across chunks - wait for more data
                 if (!potentialUrl.includes('state=')) {
-                    logger.info('Incomplete OAuth URL detected, waiting for more data', {
+                    logger.debug('Incomplete OAuth URL detected, waiting for more data', {
                         sessionId,
                         urlLength: potentialUrl.length
                     });
