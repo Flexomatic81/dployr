@@ -14,11 +14,13 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const sessions = new Map();
 
 // Regex patterns for detecting Claude auth URLs and success messages
-// Note: These match clean text (after ANSI codes are stripped)
+// Match valid URL characters only (stops at invalid chars like > or text without encoding)
+// Valid URL chars: alphanumeric, and -_.~:/?#[]@!$&'()*+,;=%
+const URL_CHAR_CLASS = '[a-zA-Z0-9\\-_.~:/?#\\[\\]@!$&\'()*+,;=%]';
 const AUTH_URL_PATTERNS = [
-    /https:\/\/claude\.ai\/oauth[^\s]*/g,
-    /https:\/\/console\.anthropic\.com\/oauth[^\s]*/g,
-    /https:\/\/[^\s]*\/oauth\/authorize[^\s]*/g
+    new RegExp(`https://claude\\.ai/oauth${URL_CHAR_CLASS}*`, 'g'),
+    new RegExp(`https://console\\.anthropic\\.com/oauth${URL_CHAR_CLASS}*`, 'g'),
+    new RegExp(`https://${URL_CHAR_CLASS}*/oauth/authorize${URL_CHAR_CLASS}*`, 'g')
 ];
 
 const AUTH_SUCCESS_PATTERNS = [
@@ -142,7 +144,7 @@ function parseOutput(sessionId, data) {
         for (const pattern of AUTH_URL_PATTERNS) {
             const matches = bufferForUrlMatch.match(pattern);
             if (matches && matches.length > 0) {
-                const potentialUrl = matches[0].trim();
+                let potentialUrl = matches[0].trim();
 
                 // OAuth URLs must contain the 'state' parameter to be complete
                 // If missing, the URL is likely split across chunks - wait for more data
@@ -152,6 +154,16 @@ function parseOutput(sessionId, data) {
                         urlLength: potentialUrl.length
                     });
                     continue;
+                }
+
+                // Truncate URL after state parameter value
+                // State is typically base64url encoded: [A-Za-z0-9_-]+
+                // Real state values are 32-64 chars; cap at 64 to avoid capturing trailing text
+                // After removing whitespace, trailing text may be concatenated
+                const stateMatch = potentialUrl.match(/state=([A-Za-z0-9_-]{1,64})/);
+                if (stateMatch) {
+                    const stateEnd = potentialUrl.indexOf('state=') + 6 + stateMatch[1].length;
+                    potentialUrl = potentialUrl.substring(0, stateEnd);
                 }
 
                 authUrl = potentialUrl;

@@ -130,32 +130,35 @@ describe('Claude Terminal Service', () => {
 
         it('should detect Claude AI OAuth URL', () => {
             // URLs must contain state= parameter to be considered complete
-            const output = 'Please visit: https://claude.ai/oauth/callback?code=abc123&state=xyz789 to authenticate';
+            // State values are base64url encoded and contain - or _ chars
+            // In real terminal output, URLs are followed by terminal control chars or brackets
+            const output = 'Please visit: https://claude.ai/oauth/callback?code=abc123&state=xyz-789_test\n> to authenticate';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
-            expect(result.authUrl).toBe('https://claude.ai/oauth/callback?code=abc123&state=xyz789');
+            expect(result.authUrl).toBe('https://claude.ai/oauth/callback?code=abc123&state=xyz-789_test');
             expect(logger.info).toHaveBeenCalledWith('Claude auth URL detected', expect.any(Object));
         });
 
         it('should detect Anthropic console OAuth URL', () => {
-            const output = 'Open https://console.anthropic.com/oauth/authorize?client_id=xyz&state=abc123';
+            const output = 'Open https://console.anthropic.com/oauth/authorize?client_id=xyz&state=abc-123_test\n';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
             expect(result.authUrl).toContain('console.anthropic.com/oauth');
         });
 
         it('should detect generic OAuth URL', () => {
-            const output = 'Visit https://auth.example.com/oauth/authorize?scope=read&state=test123';
+            const output = 'Visit https://auth.example.com/oauth/authorize?scope=read&state=test-123_abc\n';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
             expect(result.authUrl).toContain('/oauth/authorize');
         });
 
         it('should clean ANSI codes from URL', () => {
-            const output = 'Visit \x1b[36mhttps://claude.ai/oauth/test?state=abc\x1b[0m to continue';
+            // Real terminal output has ANSI codes and control chars around URLs
+            const output = 'Visit \x1b[36mhttps://claude.ai/oauth/test?state=abc-def_123\x1b[0m\n> to continue';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
-            expect(result.authUrl).toBe('https://claude.ai/oauth/test?state=abc');
+            expect(result.authUrl).toBe('https://claude.ai/oauth/test?state=abc-def_123');
             expect(result.authUrl).not.toContain('\x1b');
         });
 
