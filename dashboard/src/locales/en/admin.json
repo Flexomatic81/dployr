@@ -25,7 +25,9 @@
     "updatesDescription": "Update Dployr to the latest version.",
     "checkUpdates": "Check Updates",
     "securityDescription": "Configure two-factor authentication and security policies.",
-    "configureSecurity": "Configure Security"
+    "configureSecurity": "Configure Security",
+    "resourcesDescription": "Manage workspace limits, idle timeout and active previews.",
+    "manageResources": "Manage Resources"
   },
 
   "users": {
