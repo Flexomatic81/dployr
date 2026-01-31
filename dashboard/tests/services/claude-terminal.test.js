@@ -61,7 +61,9 @@ describe('Claude Terminal Service', () => {
                 Env: [
                     'TERM=xterm-256color',
                     'COLUMNS=80',
-                    'LINES=24'
+                    'LINES=24',
+                    'PATH=/home/coder/.local/bin:/usr/local/bin:/usr/bin:/bin',
+                    'HOME=/home/coder'
                 ]
             });
             expect(mockExec.start).toHaveBeenCalledWith({

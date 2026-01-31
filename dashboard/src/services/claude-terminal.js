@@ -14,10 +14,11 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const sessions = new Map();
 
 // Regex patterns for detecting Claude auth URLs and success messages
+// Note: These match clean text (after ANSI codes are stripped)
 const AUTH_URL_PATTERNS = [
-    /https:\/\/claude\.ai\/oauth[^\s\x1b]*/g,
-    /https:\/\/console\.anthropic\.com\/oauth[^\s\x1b]*/g,
-    /https:\/\/[^\s\x1b]*\/oauth\/authorize[^\s\x1b]*/g
+    /https:\/\/claude\.ai\/oauth[^\s]*/g,
+    /https:\/\/console\.anthropic\.com\/oauth[^\s]*/g,
+    /https:\/\/[^\s]*\/oauth\/authorize[^\s]*/g
 ];
 
 const AUTH_SUCCESS_PATTERNS = [
@@ -117,13 +118,16 @@ function parseOutput(sessionId, data) {
     let authUrl = null;
     let authSuccess = false;
 
+    // Clean ANSI codes FIRST, then search for URLs
+    // This prevents truncation when escape codes are embedded in URLs (e.g., hyperlinks)
+    const cleanData = cleanAnsiCodes(data);
+
     // Check for auth URLs
     if (!session.authSuccessDetected) {
         for (const pattern of AUTH_URL_PATTERNS) {
-            const matches = data.match(pattern);
+            const matches = cleanData.match(pattern);
             if (matches && matches.length > 0) {
-                // Clean URL from ANSI codes
-                authUrl = cleanAnsiCodes(matches[0]);
+                authUrl = matches[0].trim();
                 session.authDetected = true;
 
                 if (session.onAuthUrl) {
@@ -136,10 +140,10 @@ function parseOutput(sessionId, data) {
         }
     }
 
-    // Check for auth success
+    // Check for auth success (use clean data for consistency)
     if (session.authDetected && !session.authSuccessDetected) {
         for (const pattern of AUTH_SUCCESS_PATTERNS) {
-            if (pattern.test(data)) {
+            if (pattern.test(cleanData)) {
                 authSuccess = true;
                 session.authSuccessDetected = true;
 
@@ -157,13 +161,21 @@ function parseOutput(sessionId, data) {
 }
 
 /**
- * Removes ANSI escape codes from string
- * @param {string} str - String with ANSI codes
+ * Removes all ANSI/terminal control sequences from string
+ * Handles CSI sequences (colors), OSC sequences (hyperlinks), and other escapes
+ * @param {string} str - String with control codes
  * @returns {string} Clean string
  */
 function cleanAnsiCodes(str) {
     // eslint-disable-next-line no-control-regex
-    return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
+    return str
+        // Remove CSI sequences (e.g., colors): ESC [ ... letter
+        .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+        // Remove OSC sequences (e.g., hyperlinks): ESC ] ... (ST or BEL)
+        .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
+        // Remove any remaining escape sequences
+        .replace(/\x1b[^[\]]\S*/g, '')
+        .trim();
 }
 
 /**
