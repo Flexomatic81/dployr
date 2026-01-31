@@ -129,32 +129,33 @@ describe('Claude Terminal Service', () => {
         });
 
         it('should detect Claude AI OAuth URL', () => {
-            const output = 'Please visit: https://claude.ai/oauth/callback?code=abc123 to authenticate';
+            // URLs must contain state= parameter to be considered complete
+            const output = 'Please visit: https://claude.ai/oauth/callback?code=abc123&state=xyz789 to authenticate';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
-            expect(result.authUrl).toBe('https://claude.ai/oauth/callback?code=abc123');
+            expect(result.authUrl).toBe('https://claude.ai/oauth/callback?code=abc123&state=xyz789');
             expect(logger.info).toHaveBeenCalledWith('Claude auth URL detected', expect.any(Object));
         });
 
         it('should detect Anthropic console OAuth URL', () => {
-            const output = 'Open https://console.anthropic.com/oauth/authorize?client_id=xyz';
+            const output = 'Open https://console.anthropic.com/oauth/authorize?client_id=xyz&state=abc123';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
             expect(result.authUrl).toContain('console.anthropic.com/oauth');
         });
 
         it('should detect generic OAuth URL', () => {
-            const output = 'Visit https://auth.example.com/oauth/authorize?scope=read';
+            const output = 'Visit https://auth.example.com/oauth/authorize?scope=read&state=test123';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
             expect(result.authUrl).toContain('/oauth/authorize');
         });
 
         it('should clean ANSI codes from URL', () => {
-            const output = 'Visit \x1b[36mhttps://claude.ai/oauth/test\x1b[0m to continue';
+            const output = 'Visit \x1b[36mhttps://claude.ai/oauth/test?state=abc\x1b[0m to continue';
             const result = claudeTerminalService.parseOutput(sessionId, output);
 
-            expect(result.authUrl).toBe('https://claude.ai/oauth/test');
+            expect(result.authUrl).toBe('https://claude.ai/oauth/test?state=abc');
             expect(result.authUrl).not.toContain('\x1b');
         });
 
@@ -164,16 +165,26 @@ describe('Claude Terminal Service', () => {
                 'container-456', {}, onAuthUrl, null
             );
 
-            claudeTerminalService.parseOutput(newSessionId, 'https://claude.ai/oauth/test');
+            claudeTerminalService.parseOutput(newSessionId, 'https://claude.ai/oauth/test?state=callback123');
 
-            expect(onAuthUrl).toHaveBeenCalledWith('https://claude.ai/oauth/test');
+            expect(onAuthUrl).toHaveBeenCalledWith('https://claude.ai/oauth/test?state=callback123');
 
             claudeTerminalService.closeClaudeSession(newSessionId);
         });
 
+        it('should wait for complete URL with state parameter', () => {
+            // First chunk without state - should not trigger detection
+            const result1 = claudeTerminalService.parseOutput(sessionId, 'https://claude.ai/oauth/authorize?code=true&client_id=abc');
+            expect(result1.authUrl).toBeNull();
+
+            // Second chunk completes the URL with state parameter
+            const result2 = claudeTerminalService.parseOutput(sessionId, '&scope=read&state=xyz789');
+            expect(result2.authUrl).toContain('state=xyz789');
+        });
+
         it('should detect auth success messages', async () => {
             // First detect an auth URL to set authDetected flag
-            claudeTerminalService.parseOutput(sessionId, 'https://claude.ai/oauth/test');
+            claudeTerminalService.parseOutput(sessionId, 'https://claude.ai/oauth/test?state=abc');
 
             // Then check for success message
             const result = claudeTerminalService.parseOutput(sessionId, 'Successfully authenticated with Claude');
@@ -194,8 +205,8 @@ describe('Claude Terminal Service', () => {
                 // Create fresh session for each test
                 const { sessionId: testSessionId } = await claudeTerminalService.createClaudeSession('container-test');
 
-                // Set auth detected
-                claudeTerminalService.parseOutput(testSessionId, 'https://claude.ai/oauth/test');
+                // Set auth detected with complete URL
+                claudeTerminalService.parseOutput(testSessionId, 'https://claude.ai/oauth/test?state=abc');
 
                 const result = claudeTerminalService.parseOutput(testSessionId, message);
                 expect(result.authSuccess).toBe(true);
@@ -210,8 +221,8 @@ describe('Claude Terminal Service', () => {
                 'container-789', {}, null, onAuthSuccess
             );
 
-            // Set auth detected first
-            claudeTerminalService.parseOutput(newSessionId, 'https://claude.ai/oauth/test');
+            // Set auth detected first with complete URL
+            claudeTerminalService.parseOutput(newSessionId, 'https://claude.ai/oauth/test?state=abc');
 
             // Then success
             claudeTerminalService.parseOutput(newSessionId, 'Successfully authenticated');
@@ -379,8 +390,8 @@ describe('Claude Terminal Service', () => {
             const session1 = await claudeTerminalService.createClaudeSession('container-1');
             const session2 = await claudeTerminalService.createClaudeSession('container-2');
 
-            // Trigger auth URL on session1 only
-            claudeTerminalService.parseOutput(session1.sessionId, 'https://claude.ai/oauth/test');
+            // Trigger auth URL on session1 only (with state parameter for complete URL)
+            claudeTerminalService.parseOutput(session1.sessionId, 'https://claude.ai/oauth/test?state=abc');
 
             const s1 = claudeTerminalService.getClaudeSession(session1.sessionId);
             const s2 = claudeTerminalService.getClaudeSession(session2.sessionId);

@@ -89,7 +89,8 @@ async function createClaudeSession(containerId, options = {}, onAuthUrl = null, 
         onAuthUrl,
         onAuthSuccess,
         authDetected: false,
-        authSuccessDetected: false
+        authSuccessDetected: false,
+        outputBuffer: '' // Buffer for accumulating output to detect complete URLs
     };
 
     sessions.set(sessionId, session);
@@ -105,6 +106,7 @@ async function createClaudeSession(containerId, options = {}, onAuthUrl = null, 
 
 /**
  * Parses terminal output for auth URLs and success messages
+ * Uses buffering to handle URLs split across multiple data chunks
  * @param {string} sessionId - Session ID
  * @param {string} data - Terminal output data
  * @returns {object} Parsed result with authUrl and authSuccess flags
@@ -122,13 +124,35 @@ function parseOutput(sessionId, data) {
     // This prevents truncation when escape codes are embedded in URLs (e.g., hyperlinks)
     const cleanData = cleanAnsiCodes(data);
 
+    // Accumulate data in buffer for URL detection (URLs may span multiple chunks)
+    if (!session.authDetected) {
+        session.outputBuffer += cleanData;
+        // Keep buffer size reasonable (last 4KB should be enough for any URL)
+        if (session.outputBuffer.length > 4096) {
+            session.outputBuffer = session.outputBuffer.slice(-4096);
+        }
+    }
+
     // Check for auth URLs
     if (!session.authSuccessDetected) {
         for (const pattern of AUTH_URL_PATTERNS) {
-            const matches = cleanData.match(pattern);
+            const matches = session.outputBuffer.match(pattern);
             if (matches && matches.length > 0) {
-                authUrl = matches[0].trim();
+                const potentialUrl = matches[0].trim();
+
+                // OAuth URLs must contain the 'state' parameter to be complete
+                // If missing, the URL is likely split across chunks - wait for more data
+                if (!potentialUrl.includes('state=')) {
+                    logger.debug('Incomplete OAuth URL detected, waiting for more data', {
+                        sessionId,
+                        urlLength: potentialUrl.length
+                    });
+                    continue;
+                }
+
+                authUrl = potentialUrl;
                 session.authDetected = true;
+                session.outputBuffer = ''; // Clear buffer after successful detection
 
                 if (session.onAuthUrl) {
                     session.onAuthUrl(authUrl);
