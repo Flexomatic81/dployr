@@ -374,7 +374,7 @@ async function getResourceLimits(userId) {
 async function getGlobalLimits() {
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM resource_limits WHERE user_id IS NULL'
+            'SELECT * FROM resource_limits WHERE user_id IS NULL ORDER BY id ASC LIMIT 1'
         );
 
         return rows[0] || {
@@ -393,6 +393,9 @@ async function getGlobalLimits() {
 
 /**
  * Sets global resource limits (admin)
+ * Note: We use UPDATE instead of INSERT...ON DUPLICATE KEY because
+ * MySQL/MariaDB treats NULL values as unique in UNIQUE constraints,
+ * so ON DUPLICATE KEY doesn't work for user_id = NULL
  */
 async function setGlobalLimits(limits) {
     try {
@@ -405,27 +408,50 @@ async function setGlobalLimits(limits) {
             default_preview_lifetime_hours
         } = limits;
 
-        await pool.query(`
-            INSERT INTO resource_limits
-                (user_id, max_workspaces, default_cpu, default_ram,
-                 default_idle_timeout, max_previews_per_workspace,
-                 default_preview_lifetime_hours)
-            VALUES (NULL, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                max_workspaces = VALUES(max_workspaces),
-                default_cpu = VALUES(default_cpu),
-                default_ram = VALUES(default_ram),
-                default_idle_timeout = VALUES(default_idle_timeout),
-                max_previews_per_workspace = VALUES(max_previews_per_workspace),
-                default_preview_lifetime_hours = VALUES(default_preview_lifetime_hours)
-        `, [
-            max_workspaces,
-            default_cpu,
-            default_ram,
-            default_idle_timeout,
-            max_previews_per_workspace,
-            default_preview_lifetime_hours
-        ]);
+        // Check if global limits row exists
+        const [existing] = await pool.query(
+            'SELECT id FROM resource_limits WHERE user_id IS NULL LIMIT 1'
+        );
+
+        if (existing.length > 0) {
+            // Update existing global limits (use ORDER BY id ASC to always update the same row)
+            await pool.query(`
+                UPDATE resource_limits SET
+                    max_workspaces = ?,
+                    default_cpu = ?,
+                    default_ram = ?,
+                    default_idle_timeout = ?,
+                    max_previews_per_workspace = ?,
+                    default_preview_lifetime_hours = ?,
+                    updated_at = NOW()
+                WHERE user_id IS NULL
+                ORDER BY id ASC
+                LIMIT 1
+            `, [
+                max_workspaces,
+                default_cpu,
+                default_ram,
+                default_idle_timeout,
+                max_previews_per_workspace,
+                default_preview_lifetime_hours
+            ]);
+        } else {
+            // Insert new global limits
+            await pool.query(`
+                INSERT INTO resource_limits
+                    (user_id, max_workspaces, default_cpu, default_ram,
+                     default_idle_timeout, max_previews_per_workspace,
+                     default_preview_lifetime_hours)
+                VALUES (NULL, ?, ?, ?, ?, ?, ?)
+            `, [
+                max_workspaces,
+                default_cpu,
+                default_ram,
+                default_idle_timeout,
+                max_previews_per_workspace,
+                default_preview_lifetime_hours
+            ]);
+        }
 
         logger.info('Global limits updated', { limits });
     } catch (error) {
