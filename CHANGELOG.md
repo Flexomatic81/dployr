@@ -5,6 +5,16 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.10] - 2026-01-31
+
+### Fixed
+- Admin resource limits not saving (missing CSRF token in form)
+- Global resource limits not updating (MySQL NULL duplicate key issue)
+- Auto-cleanup duplicate global resource limits on startup
+
+### Changed
+- Idle timeout now configurable in hours (1-24h) instead of minutes
+
 ## [v1.4.9] - 2026-01-31
 
 ### Fixed
@@ -257,6 +267,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin dashboard with user management
 - System updates from GitHub releases
 
+[v1.4.10]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.10
+[v1.4.9]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.9
+[v1.4.8]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.8
 [v1.4.7]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.7
 [v1.4.6]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.6
 [v1.4.5]: https://github.com/Flexomatic81/dployr/releases/tag/v1.4.5
