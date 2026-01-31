@@ -201,8 +201,8 @@ function parseOutput(sessionId, data) {
 }
 
 /**
- * Removes all ANSI/terminal control sequences from string
- * Handles CSI sequences (colors), OSC sequences (hyperlinks), and other escapes
+ * Removes all ANSI/terminal control sequences and normalizes whitespace
+ * Handles CSI sequences (colors), OSC sequences (hyperlinks), and line wrapping
  * @param {string} str - String with control codes
  * @returns {string} Clean string
  */
@@ -214,7 +214,10 @@ function cleanAnsiCodes(str) {
         // Remove OSC sequences (e.g., hyperlinks): ESC ] ... (ST or BEL)
         .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
         // Remove any remaining escape sequences
-        .replace(/\x1b[^[\]]\S*/g, '')
+        .replace(/\x1b./g, '')
+        // Normalize all whitespace (including newlines) to single spaces
+        // This helps join URLs that are wrapped across lines
+        .replace(/[\r\n\t ]+/g, ' ')
         .trim();
 }
 
