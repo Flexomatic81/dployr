@@ -268,6 +268,37 @@
     </div>
 </div>
 
+<!-- Infrastructure-only warning for custom projects -->
+<% if (project.isCustom && project.customAnalysis && project.customAnalysis.isInfrastructureOnly) { %>
+<div class="alert alert-warning d-elevated mb-4" role="alert">
+    <div class="d-flex">
+        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+        <div class="flex-grow-1">
+            <strong><%= t('projects:customProject.infrastructureOnlyTitle') %></strong>
+            <p class="mb-2 mt-1"><%= t('projects:customProject.infrastructureOnlyDesc') %></p>
+            <p class="mb-1"><strong><%= t('projects:customProject.infrastructureOnlyHint') %></strong></p>
+            <ol class="mb-2 small">
+                <li><%= t('projects:customProject.infrastructureOnlyStep1') %></li>
+                <li><%= t('projects:customProject.infrastructureOnlyStep2') %></li>
+                <li><%= t('projects:customProject.infrastructureOnlyStep3') %></li>
+            </ol>
+            <% if (project.customAnalysis.infrastructureServices && project.customAnalysis.infrastructureServices.length > 0) { %>
+            <div class="mt-2">
+                <small class="text-muted"><%= t('projects:customProject.infrastructureOnlyServices') %>:</small>
+                <div class="mt-1">
+                    <% project.customAnalysis.infrastructureServices.forEach(function(svc) { %>
+                        <span class="badge bg-secondary-subtle text-secondary me-1">
+                            <i class="bi bi-gear"></i> <%= svc.name %><% if (svc.image) { %>: <%= svc.image %><% } %>
+                        </span>
+                    <% }) %>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+<% } %>
+
 <!-- Service Logs Modal (for custom docker-compose projects) -->
 <% if (project.isCustom && canManage) { %>
 <div class="modal fade" id="serviceLogsModal" tabindex="-1">
@@ -827,37 +858,6 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
         <% } %><!-- End projectAccess.isOwner for Auto-Deploy -->
     </div>
     </div><!-- End collapse -->
-</div>
-<% } %>
-
-<!-- Infrastructure-only warning for custom projects -->
-<% if (project.isCustom && project.customAnalysis && project.customAnalysis.isInfrastructureOnly) { %>
-<div class="alert alert-warning d-elevated mb-4" role="alert">
-    <div class="d-flex">
-        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
-        <div class="flex-grow-1">
-            <strong><%= t('projects:customProject.infrastructureOnlyTitle') %></strong>
-            <p class="mb-2 mt-1"><%= t('projects:customProject.infrastructureOnlyDesc') %></p>
-            <p class="mb-1"><strong><%= t('projects:customProject.infrastructureOnlyHint') %></strong></p>
-            <ol class="mb-2 small">
-                <li><%= t('projects:customProject.infrastructureOnlyStep1') %></li>
-                <li><%= t('projects:customProject.infrastructureOnlyStep2') %></li>
-                <li><%= t('projects:customProject.infrastructureOnlyStep3') %></li>
-            </ol>
-            <% if (project.customAnalysis.infrastructureServices && project.customAnalysis.infrastructureServices.length > 0) { %>
-            <div class="mt-2">
-                <small class="text-muted"><%= t('projects:customProject.infrastructureOnlyServices') %>:</small>
-                <div class="mt-1">
-                    <% project.customAnalysis.infrastructureServices.forEach(function(svc) { %>
-                        <span class="badge bg-secondary-subtle text-secondary me-1">
-                            <i class="bi bi-gear"></i> <%= svc.name %><% if (svc.image) { %>: <%= svc.image %><% } %>
-                        </span>
-                    <% }) %>
-                </div>
-            </div>
-            <% } %>
-        </div>
-    </div>
 </div>
 <% } %>
 
