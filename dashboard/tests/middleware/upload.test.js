@@ -131,7 +131,8 @@ describe('Upload Middleware - ZIP Validation', () => {
                 file: null,
                 ip: '127.0.0.1',
                 flash: jest.fn(),
-                t: jest.fn((key) => key) // Mock i18n translation function
+                t: jest.fn((key) => key), // Mock i18n translation function
+                get: jest.fn().mockReturnValue('/projects/create')
             };
 
             mockRes = {
@@ -183,7 +184,7 @@ describe('Upload Middleware - ZIP Validation', () => {
 
             expect(mockNext).not.toHaveBeenCalled();
             expect(mockReq.flash).toHaveBeenCalledWith('error', 'projects:errors.zipInvalid');
-            expect(mockRes.redirect).toHaveBeenCalledWith('back');
+            expect(mockRes.redirect).toHaveBeenCalledWith('/projects/create');
 
             // File should be deleted
             expect(fs.existsSync(fakePath)).toBe(false);

@@ -10,7 +10,8 @@ describe('Validation Middleware', () => {
             body: {},
             xhr: false,
             headers: {},
-            flash: jest.fn()
+            flash: jest.fn(),
+            get: jest.fn().mockReturnValue('/projects/create')
         };
         mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -48,7 +49,7 @@ describe('Validation Middleware', () => {
 
             expect(mockNext).not.toHaveBeenCalled();
             expect(mockReq.flash).toHaveBeenCalledWith('error', expect.any(String));
-            expect(mockRes.redirect).toHaveBeenCalledWith('back');
+            expect(mockRes.redirect).toHaveBeenCalledWith('/projects/create');
         });
 
         it('should return JSON for AJAX requests', () => {

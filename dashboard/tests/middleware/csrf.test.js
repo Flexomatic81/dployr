@@ -20,7 +20,11 @@ describe('CSRF Middleware', () => {
             ip: '127.0.0.1',
             originalUrl: '/test',
             method: 'POST',
-            get: jest.fn().mockReturnValue('Mozilla/5.0'),
+            get: jest.fn((header) => {
+                if (header === 'User-Agent') return 'Mozilla/5.0';
+                if (header === 'Referrer') return '/test-page';
+                return null;
+            }),
             xhr: false,
             headers: {
                 accept: 'text/html'
@@ -47,7 +51,7 @@ describe('CSRF Middleware', () => {
             csrfErrorHandler(err, mockReq, mockRes, mockNext);
 
             expect(mockReq.flash).toHaveBeenCalledWith('error', 'common:errors.csrfInvalid');
-            expect(mockRes.redirect).toHaveBeenCalledWith('back');
+            expect(mockRes.redirect).toHaveBeenCalledWith('/test-page');
             expect(mockNext).not.toHaveBeenCalled();
         });
 
@@ -57,7 +61,7 @@ describe('CSRF Middleware', () => {
             csrfErrorHandler(err, mockReq, mockRes, mockNext);
 
             expect(mockReq.flash).toHaveBeenCalledWith('error', 'common:errors.csrfInvalid');
-            expect(mockRes.redirect).toHaveBeenCalledWith('back');
+            expect(mockRes.redirect).toHaveBeenCalledWith('/test-page');
         });
 
         it('should return JSON for AJAX requests', () => {

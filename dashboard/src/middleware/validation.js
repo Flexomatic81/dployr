@@ -371,7 +371,8 @@ function validate(schemaName) {
 
             // Flash message and redirect for normal requests
             req.flash('error', messages.join('. '));
-            return res.redirect('back');
+            const referrer = req.get('Referrer');
+            return res.redirect(referrer || '/');
         }
 
         // Store validated data in request

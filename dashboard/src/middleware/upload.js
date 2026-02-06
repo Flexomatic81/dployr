@@ -172,7 +172,8 @@ function validateZipMiddleware(req, res, next) {
         });
 
         req.flash('error', req.t('projects:errors.zipInvalid'));
-        return res.redirect('back');
+        const referrer = req.get('Referrer');
+        return res.redirect(referrer || '/');
     }
 
     // 2. Validate ZIP contents
@@ -188,7 +189,8 @@ function validateZipMiddleware(req, res, next) {
         });
 
         req.flash('error', `Invalid ZIP file: ${validation.errors.join(', ')}`);
-        return res.redirect('back');
+        const referrer = req.get('Referrer');
+        return res.redirect(referrer || '/');
     }
 
     next();

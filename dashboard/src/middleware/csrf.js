@@ -73,7 +73,8 @@ function csrfErrorHandler(err, req, res, next) {
 
         // Flash message and redirect for normal requests
         req.flash('error', req.t('common:errors.csrfInvalid'));
-        return res.redirect('back');
+        const referrer = req.get('Referrer');
+        return res.redirect(referrer || '/');
     }
 
     next(err);
