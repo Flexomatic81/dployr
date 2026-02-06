@@ -5,6 +5,26 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.0] - 2026-02-07
+
+### Added
+- Infrastructure-only project detection: Warning when custom docker-compose projects contain only infrastructure services (databases, caches, etc.) but no application services
+- Downloadable project structure guide (DE + EN) explaining how to structure projects for Dployr
+- Compose subdirectory detection: Automatically finds docker-compose.yml in `docker/` subdirectory
+- Workspace cleanup on project deletion (prevents orphaned workspaces)
+- Workspace deletion hint in project delete confirmation dialog
+
+### Fixed
+- Named Docker volumes (e.g. `postgres_data:/var/lib/...`) no longer incorrectly transformed into bind mounts
+- Nginx/Caddy with app-serving volumes correctly classified as application services instead of infrastructure
+- HTML5 pattern validation feedback for project name input field
+- Deprecated `res.redirect('back')` replaced with explicit Referrer-based redirect
+
+### Changed
+- Infrastructure warning uses softer wording ("It appears that..." instead of definitive statements)
+- Infrastructure warning is dismissable per project (persisted via localStorage)
+- Auto-dismiss for flash alerts now excludes persistent warnings via `data-no-auto-dismiss` attribute
+
 ## [v1.4.10] - 2026-01-31
 
 ### Fixed
