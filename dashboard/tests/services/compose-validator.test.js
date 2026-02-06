@@ -1012,6 +1012,86 @@ services:
         });
     });
 
+    describe('transformCompose - Named Volume Preservation', () => {
+        it('should preserve named volumes defined in top-level volumes section', () => {
+            const compose = {
+                services: {
+                    db: {
+                        image: 'postgres:16',
+                        volumes: ['postgres_data:/var/lib/postgresql/data']
+                    }
+                },
+                volumes: {
+                    postgres_data: { name: 'my-postgres-data' }
+                }
+            };
+
+            const { compose: transformed } = composeValidator.transformCompose(compose, 'john-myproject', 10000);
+
+            expect(transformed.services.db.volumes[0]).toBe('postgres_data:/var/lib/postgresql/data');
+        });
+
+        it('should preserve multiple named volumes', () => {
+            const compose = {
+                services: {
+                    db: {
+                        image: 'postgres:16',
+                        volumes: ['postgres_data:/var/lib/postgresql/data']
+                    },
+                    redis: {
+                        image: 'redis:7',
+                        volumes: ['redis_data:/data']
+                    }
+                },
+                volumes: {
+                    postgres_data: {},
+                    redis_data: {}
+                }
+            };
+
+            const { compose: transformed } = composeValidator.transformCompose(compose, 'john-myproject', 10000);
+
+            expect(transformed.services.db.volumes[0]).toBe('postgres_data:/var/lib/postgresql/data');
+            expect(transformed.services.redis.volumes[0]).toBe('redis_data:/data');
+        });
+
+        it('should still transform relative bind mounts alongside named volumes', () => {
+            const compose = {
+                services: {
+                    app: {
+                        image: 'node:20',
+                        volumes: ['./src:/app', 'node_modules:/app/node_modules']
+                    }
+                },
+                volumes: {
+                    node_modules: {}
+                }
+            };
+
+            const { compose: transformed } = composeValidator.transformCompose(compose, 'john-myproject', 10000);
+
+            expect(transformed.services.app.volumes[0]).toBe('./html/src:/app');
+            expect(transformed.services.app.volumes[1]).toBe('node_modules:/app/node_modules');
+        });
+
+        it('should transform non-named volume-like paths that are not in volumes section', () => {
+            const compose = {
+                services: {
+                    db: {
+                        image: 'mysql:8',
+                        volumes: ['dbdata:/var/lib/mysql']
+                    }
+                }
+                // No top-level volumes section
+            };
+
+            const { compose: transformed } = composeValidator.transformCompose(compose, 'john-myproject', 10000);
+
+            // Without top-level volumes definition, treat as relative path
+            expect(transformed.services.db.volumes[0]).toBe('./data/dbdata:/var/lib/mysql');
+        });
+    });
+
     describe('transformCompose - Build Context Transformation', () => {
         it('should prefix build context string with ./html', () => {
             const compose = {

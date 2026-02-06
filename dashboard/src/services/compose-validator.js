@@ -384,8 +384,10 @@ function transformCompose(compose, containerPrefix, basePort, sourceDir) {
         // Transform volume paths to be relative to project
         // Database services get ./data/ prefix, app services get ./html/ prefix
         // When compose is in a subdirectory (e.g. docker/), include it in the path
+        // Named volumes (no / in source, e.g. "postgres_data:/var/lib/...") are left unchanged
         const isDatabase = isDatabaseService(service);
         const volumePrefix = isDatabase ? './data' : (sourceDir ? `./html/${sourceDir}` : './html');
+        const namedVolumes = transformed.volumes ? Object.keys(transformed.volumes) : [];
 
         if (service.volumes && Array.isArray(service.volumes)) {
             service.volumes = service.volumes.map(volume => {
@@ -393,7 +395,14 @@ function transformCompose(compose, containerPrefix, basePort, sourceDir) {
                     const parts = volume.split(':');
                     if (parts.length >= 2) {
                         let source = parts[0];
-                        // If source is relative (starts with . or no /), prefix appropriately
+
+                        // Skip named volumes - they are managed by Docker, not bind mounts
+                        // A named volume has no path separators and matches a top-level volume definition
+                        if (!source.includes('/') && !source.startsWith('.') && namedVolumes.includes(source)) {
+                            return volume;
+                        }
+
+                        // Transform bind mount paths
                         if (!source.startsWith('/') && !source.startsWith('./html') && !source.startsWith('./data')) {
                             if (source === '.') {
                                 source = volumePrefix;
