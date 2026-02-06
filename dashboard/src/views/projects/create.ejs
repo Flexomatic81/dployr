@@ -42,6 +42,7 @@
                                 </label>
                                 <input type="text" class="form-control" id="git_name" name="name"
                                        pattern="[a-z0-9-]+" required
+                                       title="<%= t('projects:create.projectNameHint') %>"
                                        placeholder="<%= t('projects:create.projectNamePlaceholder') %>">
                                 <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
                             </div>
@@ -124,6 +125,7 @@
                                 <label for="zip_name" class="form-label"><%= t('projects:create.projectName') %></label>
                                 <input type="text" class="form-control" id="zip_name" name="name"
                                        pattern="[a-z0-9-]+" required
+                                       title="<%= t('projects:create.projectNameHint') %>"
                                        placeholder="<%= t('projects:create.projectNamePlaceholder') %>">
                                 <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
                             </div>
@@ -185,6 +187,7 @@
                                 <label for="name" class="form-label"><%= t('projects:create.projectName') %></label>
                                 <input type="text" class="form-control" id="name" name="name"
                                        pattern="[a-z0-9-]+" required
+                                       title="<%= t('projects:create.projectNameHint') %>"
                                        placeholder="<%= t('projects:create.projectNamePlaceholder') %>">
                                 <div class="form-text"><%= t('projects:create.projectNameHint') %></div>
                             </div>
@@ -301,6 +304,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     zipTab.addEventListener('shown.bs.tab', function() {
         templateInfoCard.style.display = 'none';
+    });
+
+    // Live validation for project name fields
+    document.querySelectorAll('input[name="name"]').forEach(function(input) {
+        input.addEventListener('input', function() {
+            if (this.value && !this.value.match(/^[a-z0-9-]+$/)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Add invalid-feedback element if not present
+        if (!input.parentElement.querySelector('.invalid-feedback')) {
+            var feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = '<%= t("projects:create.projectNameHint") %>';
+            input.parentElement.insertBefore(feedback, input.nextSibling);
+        }
     });
 });
 </script>
