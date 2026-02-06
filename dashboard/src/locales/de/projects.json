@@ -159,6 +159,7 @@
     "deleteConfirmList1": "Alle Container werden gestoppt und entfernt",
     "deleteConfirmList2": "Alle Projekt-Dateien werden gelöscht",
     "deleteConfirmList3": "Die Datenbank wird nicht automatisch gelöscht",
+    "deleteConfirmList4": "Ein vorhandener Workspace wird gestoppt und gelöscht",
     "confirmDelete": "Ja, löschen",
     "gitDisconnectTitle": "Git-Verbindung trennen",
     "gitDisconnectConfirm": "Möchtest du die Git-Verbindung wirklich trennen?",

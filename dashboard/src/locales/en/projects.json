@@ -159,6 +159,7 @@
     "deleteConfirmList1": "All containers will be stopped and removed",
     "deleteConfirmList2": "All project files will be deleted",
     "deleteConfirmList3": "The database will not be automatically deleted",
+    "deleteConfirmList4": "An existing workspace will be stopped and deleted",
     "confirmDelete": "Yes, delete",
     "gitDisconnectTitle": "Disconnect Git",
     "gitDisconnectConfirm": "Do you really want to disconnect the Git connection?",
