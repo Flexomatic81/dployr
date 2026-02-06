@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize theme
     initTheme();
 
-    // Auto-dismiss alerts after 5 seconds
-    const alerts = document.querySelectorAll('.alert-dismissible');
+    // Auto-dismiss alerts after 5 seconds (skip persistent alerts)
+    const alerts = document.querySelectorAll('.alert-dismissible:not([data-no-auto-dismiss])');
     alerts.forEach(alert => {
         setTimeout(() => {
             const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);

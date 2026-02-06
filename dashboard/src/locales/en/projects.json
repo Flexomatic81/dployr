@@ -87,13 +87,14 @@
     "servicesCount": "{{count}} services",
     "detected": "detected",
     "portRemapInfo": "Ports are automatically remapped. Your services are accessible via the displayed external ports, not the ports defined in your docker-compose.yml.",
-    "infrastructureOnlyTitle": "Infrastructure services only",
-    "infrastructureOnlyDesc": "This project only contains infrastructure services (databases, caches, etc.) but no application services. The actual application is not containerized and will not start.",
-    "infrastructureOnlyHint": "To run your application, you need to containerize it:",
+    "infrastructureOnlyTitle": "Possible infrastructure-only project",
+    "infrastructureOnlyDesc": "It appears that this project only contains infrastructure services (databases, caches, etc.) but no application services. If this is unintentional, the actual application may not be containerized and would therefore not start.",
+    "infrastructureOnlyHint": "To add your application, you would need to containerize it:",
     "infrastructureOnlyStep1": "Create a Dockerfile for each application service (e.g., API, frontend)",
     "infrastructureOnlyStep2": "Add the application services with a build: directive to your docker-compose.yml",
     "infrastructureOnlyStep3": "Push the changes and rebuild the project",
-    "infrastructureOnlyServices": "Detected infrastructure services"
+    "infrastructureOnlyServices": "Detected infrastructure services",
+    "infrastructureOnlyGuide": "Project Structure Guide"
   },
 
   "templateInfo": {

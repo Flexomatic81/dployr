@@ -87,13 +87,14 @@
     "servicesCount": "{{count}} Services",
     "detected": "erkannt",
     "portRemapInfo": "Ports werden automatisch neu zugewiesen. Deine Services sind über die angezeigten externen Ports erreichbar, nicht über die in deiner docker-compose.yml definierten Ports.",
-    "infrastructureOnlyTitle": "Nur Infrastruktur-Services erkannt",
-    "infrastructureOnlyDesc": "Dieses Projekt enthält ausschließlich Infrastruktur-Services (Datenbanken, Caches, etc.), aber keine Anwendungs-Services. Die eigentliche Applikation ist nicht containerisiert und wird daher nicht gestartet.",
-    "infrastructureOnlyHint": "Damit deine Anwendung läuft, musst du sie in Docker-Container verpacken:",
+    "infrastructureOnlyTitle": "Möglicherweise reines Infrastruktur-Projekt",
+    "infrastructureOnlyDesc": "Es scheint, dass dieses Projekt ausschließlich Infrastruktur-Services (Datenbanken, Caches, etc.) enthält, aber keine Anwendungs-Services. Falls das nicht beabsichtigt ist, ist die eigentliche Applikation möglicherweise nicht containerisiert und würde daher nicht gestartet.",
+    "infrastructureOnlyHint": "Um deine Anwendung hinzuzufügen, müsstest du sie in Docker-Container verpacken:",
     "infrastructureOnlyStep1": "Erstelle ein Dockerfile für jeden Anwendungs-Service (z.B. API, Frontend)",
-    "infrastructureOnlyStep2": "Füge die Anwendungs-Services mit build:-Direktive in deine docker-compose.yml ein",
+    "infrastructureOnlyStep2": "Füge die Anwendungs-Services mit einer build:-Direktive in deine docker-compose.yml ein",
     "infrastructureOnlyStep3": "Pushe die Änderungen und baue das Projekt neu",
-    "infrastructureOnlyServices": "Erkannte Infrastruktur-Services"
+    "infrastructureOnlyServices": "Erkannte Infrastruktur-Services",
+    "infrastructureOnlyGuide": "Projektstruktur-Anleitung"
   },
 
   "templateInfo": {

@@ -124,9 +124,23 @@ function isDatabaseService(service) {
     return DATABASE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
 }
 
+// Images that can be either infrastructure (reverse proxy) or app server (serving content)
+const DUAL_USE_IMAGE_PATTERNS = ['nginx', 'caddy'];
+
+// Volume mount targets that indicate the service is serving app content
+const APP_SERVING_VOLUME_TARGETS = [
+    '/usr/share/nginx/html',
+    '/etc/nginx/conf.d',
+    '/etc/nginx/nginx.conf',
+    '/etc/nginx/templates',
+    '/srv',
+    '/etc/caddy'
+];
+
 /**
  * Check if a service is a known infrastructure service (not application code)
  * Services with a build directive are always considered app services.
+ * Dual-use images (nginx, caddy) with app-serving volumes are treated as app services.
  * @param {object} service - Service definition from compose file
  * @returns {boolean} - True if service appears to be infrastructure
  */
@@ -135,7 +149,20 @@ function isInfrastructureService(service) {
     if (service.build) return false;
     if (!service.image) return false;
     const image = service.image.toLowerCase();
-    return INFRASTRUCTURE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
+    const matchesInfra = INFRASTRUCTURE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
+    if (!matchesInfra) return false;
+
+    // Dual-use images (nginx, caddy) with app-serving volumes are app services
+    const isDualUse = DUAL_USE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
+    if (isDualUse && service.volumes && Array.isArray(service.volumes)) {
+        const hasAppVolumes = service.volumes.some(vol => {
+            const mountStr = typeof vol === 'string' ? vol : (vol.target || '');
+            return APP_SERVING_VOLUME_TARGETS.some(target => mountStr.includes(target));
+        });
+        if (hasAppVolumes) return false;
+    }
+
+    return true;
 }
 
 /**

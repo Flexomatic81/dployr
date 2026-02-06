@@ -1493,5 +1493,84 @@ volumes:
 
             expect(result.isInfrastructureOnly).toBe(true);
         });
+
+        it('should treat nginx with app-serving volumes as app service', () => {
+            const compose = {
+                services: {
+                    web: {
+                        image: 'nginx:alpine',
+                        volumes: ['./html:/usr/share/nginx/html']
+                    }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+            expect(result.appServices[0].name).toBe('web');
+        });
+
+        it('should treat nginx with custom config volume as app service', () => {
+            const compose = {
+                services: {
+                    web: {
+                        image: 'nginx:latest',
+                        volumes: ['./nginx.conf:/etc/nginx/nginx.conf']
+                    },
+                    db: { image: 'postgres:16' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+            expect(result.infrastructureServices).toHaveLength(1);
+        });
+
+        it('should treat nginx without app volumes as infrastructure', () => {
+            const compose = {
+                services: {
+                    proxy: {
+                        image: 'nginx:alpine',
+                        ports: ['80:80']
+                    },
+                    db: { image: 'postgres:16' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(true);
+            expect(result.infrastructureServices).toHaveLength(2);
+        });
+
+        it('should treat caddy with /srv volume as app service', () => {
+            const compose = {
+                services: {
+                    web: {
+                        image: 'caddy:2-alpine',
+                        volumes: ['./site:/srv']
+                    }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+        });
+
+        it('should handle long-form volume syntax for dual-use detection', () => {
+            const compose = {
+                services: {
+                    web: {
+                        image: 'nginx:alpine',
+                        volumes: [{ type: 'bind', source: './html', target: '/usr/share/nginx/html' }]
+                    }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+        });
     });
 });
