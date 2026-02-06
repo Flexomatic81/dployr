@@ -86,7 +86,14 @@
     "integratedDbHint": "This project includes an integrated {{type}} database. Connection details are managed internally via docker-compose and do not need to be configured manually in .env.",
     "servicesCount": "{{count}} services",
     "detected": "detected",
-    "portRemapInfo": "Ports are automatically remapped. Your services are accessible via the displayed external ports, not the ports defined in your docker-compose.yml."
+    "portRemapInfo": "Ports are automatically remapped. Your services are accessible via the displayed external ports, not the ports defined in your docker-compose.yml.",
+    "infrastructureOnlyTitle": "Infrastructure services only",
+    "infrastructureOnlyDesc": "This project only contains infrastructure services (databases, caches, etc.) but no application services. The actual application is not containerized and will not start.",
+    "infrastructureOnlyHint": "To run your application, you need to containerize it:",
+    "infrastructureOnlyStep1": "Create a Dockerfile for each application service (e.g., API, frontend)",
+    "infrastructureOnlyStep2": "Add the application services with a build: directive to your docker-compose.yml",
+    "infrastructureOnlyStep3": "Push the changes and rebuild the project",
+    "infrastructureOnlyServices": "Detected infrastructure services"
   },
 
   "templateInfo": {

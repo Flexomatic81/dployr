@@ -1273,4 +1273,145 @@ volumes:
             expect(result.portMappings.length).toBe(3);
         });
     });
+
+    describe('analyzeComposeCompleteness', () => {
+        it('should detect infrastructure-only compose (databases + cache)', () => {
+            const compose = {
+                services: {
+                    db: { image: 'postgres:15' },
+                    redis: { image: 'redis:7-alpine' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(true);
+            expect(result.infrastructureServices).toHaveLength(2);
+            expect(result.appServices).toHaveLength(0);
+            expect(result.totalServices).toBe(2);
+        });
+
+        it('should detect infrastructure-only with keycloak', () => {
+            const compose = {
+                services: {
+                    db: { image: 'postgres:15' },
+                    redis: { image: 'redis:7-alpine' },
+                    keycloak: { image: 'quay.io/keycloak/keycloak:24.0' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(true);
+            expect(result.infrastructureServices).toHaveLength(3);
+        });
+
+        it('should NOT flag compose with app services (unknown image)', () => {
+            const compose = {
+                services: {
+                    app: { image: 'myapp:latest', ports: ['3000:3000'] },
+                    db: { image: 'postgres:15' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+            expect(result.appServices[0].name).toBe('app');
+        });
+
+        it('should NOT flag compose with build services', () => {
+            const compose = {
+                services: {
+                    api: { build: './api' },
+                    db: { image: 'postgres:15' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+            expect(result.appServices[0].hasBuild).toBe(true);
+        });
+
+        it('should treat build directive as app even if image matches infra pattern', () => {
+            const compose = {
+                services: {
+                    web: { build: '.', image: 'nginx' },
+                    db: { image: 'postgres:15' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(1);
+            expect(result.appServices[0].name).toBe('web');
+        });
+
+        it('should detect message brokers as infrastructure', () => {
+            const compose = {
+                services: {
+                    rabbit: { image: 'rabbitmq:3-management' },
+                    kafka: { image: 'confluentinc/cp-kafka:latest' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(true);
+            expect(result.infrastructureServices).toHaveLength(2);
+        });
+
+        it('should handle empty compose', () => {
+            const result = composeValidator.analyzeComposeCompleteness({});
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.totalServices).toBe(0);
+        });
+
+        it('should handle null compose', () => {
+            const result = composeValidator.analyzeComposeCompleteness(null);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+        });
+
+        it('should handle mixed compose with both app and infra', () => {
+            const compose = {
+                services: {
+                    frontend: { build: './frontend' },
+                    api: { build: './api' },
+                    db: { image: 'postgres:15' },
+                    redis: { image: 'redis:7' },
+                    keycloak: { image: 'quay.io/keycloak/keycloak:latest' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(false);
+            expect(result.appServices).toHaveLength(2);
+            expect(result.infrastructureServices).toHaveLength(3);
+            expect(result.totalServices).toBe(5);
+        });
+
+        it('should detect monitoring tools as infrastructure', () => {
+            const compose = {
+                services: {
+                    prometheus: { image: 'prom/prometheus:latest' },
+                    grafana: { image: 'grafana/grafana:latest' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(true);
+        });
+
+        it('should detect admin tools as infrastructure', () => {
+            const compose = {
+                services: {
+                    db: { image: 'mariadb:11' },
+                    pma: { image: 'phpmyadmin:latest' }
+                }
+            };
+            const result = composeValidator.analyzeComposeCompleteness(compose);
+
+            expect(result.isInfrastructureOnly).toBe(true);
+        });
+    });
 });

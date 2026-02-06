@@ -89,6 +89,28 @@ const DATABASE_IMAGE_PATTERNS = [
     'timescaledb'
 ];
 
+// Infrastructure image patterns - services that are NOT application code
+// Used to detect compose files that only contain infrastructure but no app services
+const INFRASTRUCTURE_IMAGE_PATTERNS = [
+    // Databases (superset of DATABASE_IMAGE_PATTERNS)
+    'mysql', 'mariadb', 'postgres', 'postgresql', 'mongo', 'mongodb',
+    'cassandra', 'couchdb', 'neo4j', 'influxdb', 'clickhouse', 'timescaledb',
+    // Caches
+    'redis', 'memcached',
+    // Search engines
+    'elasticsearch', 'opensearch', 'meilisearch', 'typesense', 'solr',
+    // Auth servers
+    'keycloak', 'authentik', 'authelia',
+    // Message brokers
+    'rabbitmq', 'kafka', 'nats', 'mosquitto',
+    // Reverse proxies / load balancers
+    'nginx', 'traefik', 'caddy', 'haproxy',
+    // Monitoring / observability
+    'prometheus', 'grafana', 'jaeger', 'zipkin',
+    // Admin tools
+    'adminer', 'phpmyadmin', 'pgadmin', 'mailhog', 'mailpit', 'minio'
+];
+
 /**
  * Check if a service is a database based on its image
  * @param {object} service - Service definition from compose file
@@ -100,6 +122,52 @@ function isDatabaseService(service) {
     }
     const image = service.image.toLowerCase();
     return DATABASE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
+}
+
+/**
+ * Check if a service is a known infrastructure service (not application code)
+ * Services with a build directive are always considered app services.
+ * @param {object} service - Service definition from compose file
+ * @returns {boolean} - True if service appears to be infrastructure
+ */
+function isInfrastructureService(service) {
+    if (!service) return false;
+    if (service.build) return false;
+    if (!service.image) return false;
+    const image = service.image.toLowerCase();
+    return INFRASTRUCTURE_IMAGE_PATTERNS.some(pattern => image.includes(pattern));
+}
+
+/**
+ * Analyze whether a compose file contains application services or only infrastructure
+ * @param {object} compose - Parsed compose object
+ * @returns {object} - Analysis result with service classification
+ */
+function analyzeComposeCompleteness(compose) {
+    if (!compose || !compose.services) {
+        return { isInfrastructureOnly: false, infrastructureServices: [], appServices: [], totalServices: 0 };
+    }
+
+    const infrastructureServices = [];
+    const appServices = [];
+
+    for (const [name, service] of Object.entries(compose.services)) {
+        if (!service || typeof service !== 'object') continue;
+
+        if (isInfrastructureService(service)) {
+            infrastructureServices.push({ name, image: service.image || null });
+        } else {
+            appServices.push({ name, image: service.image || null, hasBuild: !!service.build });
+        }
+    }
+
+    const totalServices = infrastructureServices.length + appServices.length;
+    return {
+        isInfrastructureOnly: totalServices > 0 && appServices.length === 0,
+        infrastructureServices,
+        appServices,
+        totalServices
+    };
 }
 
 /**
@@ -541,8 +609,11 @@ module.exports = {
     reimportUserCompose,
     findComposeFile,
     findDockerfile,
+    isInfrastructureService,
+    analyzeComposeCompleteness,
     BLOCKED_SERVICE_OPTIONS,
     BLOCKED_VOLUME_SOURCES,
     DEFAULT_RESOURCE_LIMITS,
-    MAX_RESOURCE_LIMITS
+    MAX_RESOURCE_LIMITS,
+    INFRASTRUCTURE_IMAGE_PATTERNS
 };

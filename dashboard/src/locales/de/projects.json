@@ -86,7 +86,14 @@
     "integratedDbHint": "Dieses Projekt enthält eine integrierte {{type}}-Datenbank. Die Verbindungsdaten werden intern über docker-compose verwaltet und müssen nicht manuell in der .env konfiguriert werden.",
     "servicesCount": "{{count}} Services",
     "detected": "erkannt",
-    "portRemapInfo": "Ports werden automatisch neu zugewiesen. Deine Services sind über die angezeigten externen Ports erreichbar, nicht über die in deiner docker-compose.yml definierten Ports."
+    "portRemapInfo": "Ports werden automatisch neu zugewiesen. Deine Services sind über die angezeigten externen Ports erreichbar, nicht über die in deiner docker-compose.yml definierten Ports.",
+    "infrastructureOnlyTitle": "Nur Infrastruktur-Services erkannt",
+    "infrastructureOnlyDesc": "Dieses Projekt enthält ausschließlich Infrastruktur-Services (Datenbanken, Caches, etc.), aber keine Anwendungs-Services. Die eigentliche Applikation ist nicht containerisiert und wird daher nicht gestartet.",
+    "infrastructureOnlyHint": "Damit deine Anwendung läuft, musst du sie in Docker-Container verpacken:",
+    "infrastructureOnlyStep1": "Erstelle ein Dockerfile für jeden Anwendungs-Service (z.B. API, Frontend)",
+    "infrastructureOnlyStep2": "Füge die Anwendungs-Services mit build:-Direktive in deine docker-compose.yml ein",
+    "infrastructureOnlyStep3": "Pushe die Änderungen und baue das Projekt neu",
+    "infrastructureOnlyServices": "Erkannte Infrastruktur-Services"
   },
 
   "templateInfo": {

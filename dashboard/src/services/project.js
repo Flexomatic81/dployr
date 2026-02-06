@@ -1,7 +1,9 @@
 const fs = require('fs').promises;
 const path = require('path');
+const YAML = require('yaml');
 const dockerService = require('./docker');
 const { generateDockerCompose, generateNginxConfig, getGitPath, isGitRepository } = require('./git');
+const { analyzeComposeCompleteness } = require('./compose-validator');
 const { logger } = require('../config/logger');
 const { DB_VARIABLE_ALIASES } = require('../config/constants');
 
@@ -364,7 +366,10 @@ async function analyzeCustomDockerCompose(projectPath) {
         services: [],
         databases: [],
         appTechnology: null,
-        ports: []
+        ports: [],
+        isInfrastructureOnly: false,
+        infrastructureServices: [],
+        appServices: []
     };
 
     try {
@@ -372,6 +377,15 @@ async function analyzeCustomDockerCompose(projectPath) {
         const content = await fs.readFile(composePath, 'utf8');
 
         const parsed = parseComposeServices(content);
+
+        // Analyze compose completeness (infrastructure-only detection)
+        let completeness = { isInfrastructureOnly: false, infrastructureServices: [], appServices: [] };
+        try {
+            const parsedYaml = YAML.parse(content);
+            completeness = analyzeComposeCompleteness(parsedYaml);
+        } catch (e) {
+            // YAML parse error - skip completeness check
+        }
 
         // If no app technology detected from images, check Dockerfiles
         if (!parsed.appTechnology && parsed.buildContexts.length > 0) {
@@ -389,7 +403,10 @@ async function analyzeCustomDockerCompose(projectPath) {
             services: parsed.services,
             databases: parsed.databases,
             appTechnology: parsed.appTechnology,
-            ports: parsed.ports
+            ports: parsed.ports,
+            isInfrastructureOnly: completeness.isInfrastructureOnly,
+            infrastructureServices: completeness.infrastructureServices,
+            appServices: completeness.appServices
         };
     } catch (error) {
         logger.debug('Could not analyze docker-compose.yml', { projectPath, error: error.message });
