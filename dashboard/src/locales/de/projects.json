@@ -94,6 +94,7 @@
     "infrastructureOnlyStep2": "Füge die Anwendungs-Services mit einer build:-Direktive in deine docker-compose.yml ein",
     "infrastructureOnlyStep3": "Pushe die Änderungen und baue das Projekt neu",
     "infrastructureOnlyServices": "Erkannte Infrastruktur-Services",
+    "infrastructureOnlyGuideHint": "Eine ausführliche Anleitung zur Projektstruktur für Dployr kannst du hier herunterladen:",
     "infrastructureOnlyGuide": "Projektstruktur-Anleitung"
   },
 

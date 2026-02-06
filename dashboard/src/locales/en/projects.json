@@ -94,6 +94,7 @@
     "infrastructureOnlyStep2": "Add the application services with a build: directive to your docker-compose.yml",
     "infrastructureOnlyStep3": "Push the changes and rebuild the project",
     "infrastructureOnlyServices": "Detected infrastructure services",
+    "infrastructureOnlyGuideHint": "You can download a detailed guide on how to structure your project for Dployr here:",
     "infrastructureOnlyGuide": "Project Structure Guide"
   },
 
