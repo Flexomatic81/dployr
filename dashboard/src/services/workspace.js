@@ -922,6 +922,55 @@ async function deleteWorkspace(userId, projectName) {
     }
 }
 
+/**
+ * Force-deletes a workspace by ID (for orphaned workspaces where the project no longer exists)
+ */
+async function forceDeleteWorkspace(workspaceId, userId) {
+    try {
+        const workspace = await getWorkspaceById(workspaceId);
+        if (!workspace) {
+            throw new Error('Workspace not found');
+        }
+
+        // Verify ownership
+        if (workspace.user_id !== userId) {
+            throw new Error('Not authorized');
+        }
+
+        // Stop container if running
+        if (workspace.container_id) {
+            try {
+                const container = docker.getContainer(workspace.container_id);
+                await container.stop({ t: 10 });
+                await container.remove();
+            } catch (error) {
+                logger.warn('Container stop/remove failed during force delete', {
+                    error: error.message
+                });
+            }
+        }
+
+        // Delete workspace record
+        await pool.query('DELETE FROM workspaces WHERE id = ?', [workspace.id]);
+
+        await logWorkspaceAction(null, userId, workspace.project_name, 'force_delete', {
+            workspace_id: workspace.id,
+            reason: 'orphaned'
+        });
+
+        logger.info('Orphaned workspace force-deleted', {
+            workspaceId: workspace.id, userId, projectName: workspace.project_name
+        });
+
+        return { success: true };
+    } catch (error) {
+        logger.error('Failed to force-delete workspace', {
+            workspaceId, userId, error: error.message
+        });
+        throw error;
+    }
+}
+
 // ============================================================
 // WORKSPACE QUERIES
 // ============================================================
@@ -1666,6 +1715,7 @@ module.exports = {
     startWorkspace,
     stopWorkspace,
     deleteWorkspace,
+    forceDeleteWorkspace,
 
     // Queries
     getWorkspace,

@@ -659,6 +659,16 @@ router.delete('/:name', requireAuth, getProjectAccess(), async (req, res) => {
 
         const systemUsername = req.projectAccess.systemUsername;
 
+        // Delete workspace if exists
+        try {
+            const workspace = await workspaceService.getWorkspace(req.session.user.id, req.params.name);
+            if (workspace) {
+                await workspaceService.deleteWorkspace(req.session.user.id, req.params.name);
+            }
+        } catch (wsError) {
+            logger.warn('Failed to cleanup workspace during project deletion', { error: wsError.message });
+        }
+
         // Delete all shares for this project
         await sharingService.deleteAllSharesForProject(req.session.user.id, req.params.name);
 

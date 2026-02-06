@@ -12,7 +12,8 @@
         "starting": "Startet...",
         "running": "Läuft",
         "stopping": "Stoppt...",
-        "error": "Fehler"
+        "error": "Fehler",
+        "orphaned": "Verwaist"
     },
     "actions": {
         "start": "Starten",
@@ -76,6 +77,7 @@
         "startFailed": "Workspace konnte nicht gestartet werden",
         "stopFailed": "Workspace konnte nicht gestoppt werden",
         "deleteFailed": "Workspace konnte nicht gelöscht werden",
+        "orphaned": "Verwaist – das zugehörige Projekt existiert nicht mehr",
         "syncFailed": "Synchronisierung fehlgeschlagen",
         "notRunning": "Workspace läuft nicht",
         "ideFailed": "IDE konnte nicht geöffnet werden",
@@ -97,6 +99,7 @@
         "started": "Workspace gestartet",
         "stopped": "Workspace gestoppt",
         "deleted": "Workspace gelöscht",
+        "orphanDeleted": "Verwaister Workspace wurde gelöscht",
         "synced": "Synchronisierung abgeschlossen",
         "syncedRebuilt": "Projekt neu gebaut mit aktuellen Änderungen",
         "syncedRestarted": "Projekt neu gestartet mit aktuellen Änderungen",

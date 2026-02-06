@@ -15,6 +15,7 @@ const {
     requireWorkspacePermission
 } = require('../middleware/workspaceAccess');
 const { requirePermission } = require('../middleware/projectAccess');
+const projectService = require('../services/project');
 const { logger } = require('../config/logger');
 const { pool } = require('../config/database');
 
@@ -28,7 +29,18 @@ const { pool } = require('../config/database');
 router.get('/', async (req, res) => {
     try {
         const userId = req.session.user.id;
+        const systemUsername = req.session.user.system_username;
         const workspaces = await workspaceService.getUserWorkspaces(userId);
+
+        // Check which workspaces have a valid project
+        for (const workspace of workspaces) {
+            try {
+                const project = await projectService.getProjectInfo(systemUsername, workspace.project_name);
+                workspace.orphaned = !project;
+            } catch {
+                workspace.orphaned = true;
+            }
+        }
 
         res.render('workspaces/index', {
             title: req.t('workspaces:title'),
@@ -41,6 +53,39 @@ router.get('/', async (req, res) => {
         res.redirect('/dashboard');
     }
 });
+
+// ============================================================
+// ORPHANED WORKSPACE CLEANUP (must be before /:projectName routes)
+// ============================================================
+
+/**
+ * DELETE /workspaces/orphaned/:workspaceId - Delete orphaned workspace (no project access needed)
+ */
+router.delete('/orphaned/:workspaceId',
+    async (req, res) => {
+        try {
+            const userId = req.session.user.id;
+            const workspaceId = parseInt(req.params.workspaceId);
+
+            if (isNaN(workspaceId)) {
+                return res.status(400).json({ success: false, error: 'Invalid workspace ID' });
+            }
+
+            await workspaceService.forceDeleteWorkspace(workspaceId, userId);
+
+            res.json({
+                success: true,
+                message: req.t('workspaces:messages.orphanDeleted')
+            });
+        } catch (error) {
+            logger.error('Failed to delete orphaned workspace', { error: error.message });
+            res.status(500).json({
+                success: false,
+                error: req.t('workspaces:errors.deleteFailed')
+            });
+        }
+    }
+);
 
 // ============================================================
 // WORKSPACE CRUD

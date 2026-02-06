@@ -31,21 +31,32 @@
                     </thead>
                     <tbody>
                         <% workspaces.forEach(workspace => { %>
-                            <tr>
+                            <tr<% if (workspace.orphaned) { %> class="table-warning"<% } %>>
                                 <td>
-                                    <a href="/workspaces/<%= workspace.project_name %>" class="text-decoration-none">
-                                        <i class="bi bi-code-square text-primary"></i>
+                                    <% if (workspace.orphaned) { %>
+                                        <i class="bi bi-exclamation-triangle text-warning"></i>
                                         <strong><%= workspace.project_name %></strong>
-                                    </a>
+                                    <% } else { %>
+                                        <a href="/workspaces/<%= workspace.project_name %>" class="text-decoration-none">
+                                            <i class="bi bi-code-square text-primary"></i>
+                                            <strong><%= workspace.project_name %></strong>
+                                        </a>
+                                    <% } %>
                                 </td>
                                 <td>
-                                    <% let statusBadge = 'secondary'; %>
-                                    <% if (workspace.status === 'running') statusBadge = 'success'; %>
-                                    <% if (workspace.status === 'starting') statusBadge = 'info'; %>
-                                    <% if (workspace.status === 'error') statusBadge = 'danger'; %>
-                                    <span class="badge bg-<%= statusBadge %>-subtle text-<%= statusBadge %>">
-                                        <%= t('workspaces:status.' + workspace.status) %>
-                                    </span>
+                                    <% if (workspace.orphaned) { %>
+                                        <span class="badge bg-warning-subtle text-warning" title="<%= t('workspaces:errors.orphaned') %>">
+                                            <%= t('workspaces:status.orphaned') %>
+                                        </span>
+                                    <% } else { %>
+                                        <% let statusBadge = 'secondary'; %>
+                                        <% if (workspace.status === 'running') statusBadge = 'success'; %>
+                                        <% if (workspace.status === 'starting') statusBadge = 'info'; %>
+                                        <% if (workspace.status === 'error') statusBadge = 'danger'; %>
+                                        <span class="badge bg-<%= statusBadge %>-subtle text-<%= statusBadge %>">
+                                            <%= t('workspaces:status.' + workspace.status) %>
+                                        </span>
+                                    <% } %>
                                 </td>
                                 <td>
                                     <% if (workspace.started_at) { %>
@@ -66,17 +77,26 @@
                                     <% } %>
                                 </td>
                                 <td class="text-end">
-                                    <% if (workspace.status === 'running') { %>
-                                        <a href="/workspaces/<%= workspace.project_name %>/ide"
-                                           class="btn btn-sm btn-primary" target="_blank">
-                                            <i class="bi bi-box-arrow-up-right"></i>
-                                            <%= t('workspaces:actions.openIDE') %>
+                                    <% if (workspace.orphaned) { %>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="deleteOrphanedWorkspace(<%= workspace.id %>, '<%= workspace.project_name %>')">
+                                            <i class="bi bi-trash"></i>
+                                            <%= t('workspaces:actions.delete') %>
+                                        </button>
+                                    <% } else { %>
+                                        <% if (workspace.status === 'running') { %>
+                                            <a href="/workspaces/<%= workspace.project_name %>/ide"
+                                               class="btn btn-sm btn-primary" target="_blank">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                                <%= t('workspaces:actions.openIDE') %>
+                                            </a>
+                                        <% } %>
+                                        <a href="/workspaces/<%= workspace.project_name %>"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-gear"></i>
                                         </a>
                                     <% } %>
-                                    <a href="/workspaces/<%= workspace.project_name %>"
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-gear"></i>
-                                    </a>
                                 </td>
                             </tr>
                         <% }); %>
@@ -86,3 +106,33 @@
         <% } %>
     </div>
 </div>
+
+<% if (workspaces.some(w => w.orphaned)) { %>
+<script>
+async function deleteOrphanedWorkspace(workspaceId, projectName) {
+    if (!confirm('<%= t("common:confirm.delete") %>')) return;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const response = await fetch('/workspaces/orphaned/' + workspaceId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-Token': csrfToken
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to delete workspace');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+</script>
+<% } %>
