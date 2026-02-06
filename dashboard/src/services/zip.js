@@ -93,7 +93,7 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
 
             const composeContent = fs.readFileSync(userCompose.path, 'utf8');
             const containerPrefix = `${systemUsername}-${projectName}`;
-            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port);
+            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port, userCompose.subdir);
 
             if (result.success) {
                 // Use transformed user compose

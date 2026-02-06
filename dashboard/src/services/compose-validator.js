@@ -205,9 +205,10 @@ function validateCompose(compose) {
  * @param {object} compose - Parsed compose object
  * @param {string} containerPrefix - Prefix for container names (username-projectname)
  * @param {number} basePort - Base port for port allocation
+ * @param {string} [sourceDir] - Subdirectory where the compose file was found (e.g. 'docker')
  * @returns {object} - Transformed compose and port mappings
  */
-function transformCompose(compose, containerPrefix, basePort) {
+function transformCompose(compose, containerPrefix, basePort, sourceDir) {
     const transformed = JSON.parse(JSON.stringify(compose)); // Deep copy
     const portMappings = [];
     let currentPort = basePort;
@@ -314,9 +315,9 @@ function transformCompose(compose, containerPrefix, basePort) {
 
         // Transform volume paths to be relative to project
         // Database services get ./data/ prefix, app services get ./html/ prefix
-        // This keeps database files out of the workspace area for security
+        // When compose is in a subdirectory (e.g. docker/), include it in the path
         const isDatabase = isDatabaseService(service);
-        const volumePrefix = isDatabase ? './data' : './html';
+        const volumePrefix = isDatabase ? './data' : (sourceDir ? `./html/${sourceDir}` : './html');
 
         if (service.volumes && Array.isArray(service.volumes)) {
             service.volumes = service.volumes.map(volume => {
@@ -343,13 +344,15 @@ function transformCompose(compose, containerPrefix, basePort) {
         }
 
         // Transform build context
+        // When compose is in a subdirectory, build paths are relative to that subdirectory
+        const buildPrefix = sourceDir ? `./html/${sourceDir}` : './html';
         if (service.build) {
             if (typeof service.build === 'string') {
-                service.build = './html/' + service.build.replace(/^\.\//, '');
+                service.build = buildPrefix + '/' + service.build.replace(/^\.\//, '');
             } else if (service.build.context) {
                 const context = service.build.context;
                 if (!context.startsWith('./html')) {
-                    service.build.context = './html/' + context.replace(/^\.\//, '');
+                    service.build.context = buildPrefix + '/' + context.replace(/^\.\//, '');
                 }
             }
         }
@@ -387,9 +390,10 @@ function stringifyCompose(compose) {
  * @param {string} content - Raw YAML content
  * @param {string} containerPrefix - Container name prefix
  * @param {number} basePort - Starting port for allocation
+ * @param {string} [sourceDir] - Subdirectory where the compose file was found (e.g. 'docker')
  * @returns {object} - Result with sanitized YAML and port mappings
  */
-function processUserCompose(content, containerPrefix, basePort) {
+function processUserCompose(content, containerPrefix, basePort, sourceDir) {
     // Parse
     const parseResult = parseCompose(content);
     if (!parseResult.success) {
@@ -405,7 +409,7 @@ function processUserCompose(content, containerPrefix, basePort) {
     }
 
     // Transform
-    const { compose, portMappings } = transformCompose(parseResult.compose, containerPrefix, basePort);
+    const { compose, portMappings } = transformCompose(parseResult.compose, containerPrefix, basePort, sourceDir);
 
     // Stringify
     const yamlOutput = stringifyCompose(compose);
@@ -434,10 +438,19 @@ function findComposeFile(dirPath) {
     const fs = require('fs');
     const composeFiles = ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml'];
 
+    // Check root directory first
     for (const filename of composeFiles) {
         const filePath = path.join(dirPath, filename);
         if (fs.existsSync(filePath)) {
             return { exists: true, path: filePath, filename };
+        }
+    }
+
+    // Check docker/ subdirectory
+    for (const filename of composeFiles) {
+        const filePath = path.join(dirPath, 'docker', filename);
+        if (fs.existsSync(filePath)) {
+            return { exists: true, path: filePath, filename: `docker/${filename}`, subdir: 'docker' };
         }
     }
 
@@ -491,7 +504,7 @@ function reimportUserCompose(projectPath, containerPrefix, basePort) {
         const composeContent = fs.readFileSync(userCompose.path, 'utf8');
 
         // Process and transform it (validation, port mapping, network injection, etc.)
-        const result = processUserCompose(composeContent, containerPrefix, basePort);
+        const result = processUserCompose(composeContent, containerPrefix, basePort, userCompose.subdir);
 
         if (!result.success) {
             return result;
