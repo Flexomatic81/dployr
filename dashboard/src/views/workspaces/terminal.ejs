@@ -230,16 +230,16 @@
             </h1>
         </div>
         <div class="actions">
-            <button onclick="syncToProject(this)">
+            <button id="btn-sync-to-project">
                 ↑ <%= t('workspaces:actions.syncToProject') %>
             </button>
-            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>/ide'">
+            <button id="btn-ide">
                 IDE
             </button>
-            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>'">
+            <button id="btn-settings">
                 <%= t('workspaces:actions.settings') %>
             </button>
-            <button class="close-btn" onclick="closeTerminal()">
+            <button class="close-btn" id="btn-close-terminal">
                 <%= t('common:buttons.close') %>
             </button>
         </div>
@@ -269,13 +269,13 @@
                 </div>
             </div>
             <div class="sync-result" id="syncResult"></div>
-            <button class="sync-close-btn" id="syncCloseBtn" onclick="closeSyncModal()">
+            <button class="sync-close-btn" id="syncCloseBtn">
                 <%= t('common:buttons.close') %>
             </button>
         </div>
     </div>
 
-    <script>
+    <script nonce="<%= cspNonce %>">
         let socket = null;
         let terminal = null;
         let fitAddon = null;
@@ -502,7 +502,7 @@
         }
 
         // Sync to project
-        async function syncToProject(btn) {
+        async function syncToProject() {
             showSyncModal();
 
             updateSyncStep(1, 'active');
@@ -560,6 +560,17 @@
                 window.location.href = '/workspaces/<%= workspace.project_name %>';
             }, 100);
         }
+
+        // Event listeners for buttons
+        document.getElementById('btn-sync-to-project').addEventListener('click', syncToProject);
+        document.getElementById('btn-ide').addEventListener('click', function() {
+            window.location.href = '/workspaces/<%= workspace.project_name %>/ide';
+        });
+        document.getElementById('btn-settings').addEventListener('click', function() {
+            window.location.href = '/workspaces/<%= workspace.project_name %>';
+        });
+        document.getElementById('btn-close-terminal').addEventListener('click', closeTerminal);
+        document.getElementById('syncCloseBtn').addEventListener('click', closeSyncModal);
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {

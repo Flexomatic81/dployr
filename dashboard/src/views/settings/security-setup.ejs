@@ -38,7 +38,7 @@
                         <p class="text-muted small"><%= t('security:setup.manualDescription') %></p>
                         <div class="input-group mb-3">
                             <input type="text" class="form-control font-monospace" value="<%= secret %>" readonly id="secretKey">
-                            <button class="btn btn-outline-secondary" type="button" onclick="copySecret()">
+                            <button class="btn btn-outline-secondary" type="button" id="btn-copy-secret">
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </div>
@@ -94,14 +94,16 @@
     </div>
 </div>
 
-<script>
-function copySecret() {
+<script nonce="<%= cspNonce %>">
+function copySecret(e) {
     const input = document.getElementById('secretKey');
     navigator.clipboard.writeText(input.value).then(() => {
-        const btn = event.target.closest('button');
+        const btn = e.target.closest('button');
         const originalHtml = btn.innerHTML;
         btn.innerHTML = '<i class="bi bi-check"></i>';
         setTimeout(() => btn.innerHTML = originalHtml, 2000);
     });
 }
+
+document.getElementById('btn-copy-secret').addEventListener('click', copySecret);
 </script>

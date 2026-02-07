@@ -8,6 +8,7 @@ const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { csrfSynchronisedProtection, csrfTokenMiddleware, csrfErrorHandler } = require('./middleware/csrf');
@@ -51,13 +52,19 @@ const PORT = process.env.PORT || 3000;
 // Required for correct IP detection and rate limiting
 app.set('trust proxy', 1);
 
+// Security: Generate CSP nonce per request (before Helmet)
+app.use((req, res, next) => {
+    res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+    next();
+});
+
 // Security: Helmet for HTTP security headers (skip for workspace proxy)
 const helmetMiddleware = helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
-            scriptSrcAttr: ["'unsafe-inline'"],
+            scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`, "https://cdn.jsdelivr.net"],
+            scriptSrcAttr: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
             imgSrc: ["'self'", "data:", "https:"],

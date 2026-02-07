@@ -78,24 +78,24 @@
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <% if (workspace.status === 'stopped') { %>
-                        <button class="btn btn-success" onclick="startWorkspace(this)">
+                        <button class="btn btn-success" id="btn-start-workspace">
                             <i class="bi bi-play-fill"></i>
                             <%= t('workspaces:actions.start') %>
                         </button>
                     <% } else if (workspace.status === 'running') { %>
-                        <button class="btn btn-primary" id="openIdeBtn" onclick="openIDE(this)">
+                        <button class="btn btn-primary" id="openIdeBtn">
                             <i class="bi bi-code-square"></i>
                             <%= t('workspaces:actions.openIDE') %>
                         </button>
-                        <button class="btn btn-claude" id="openClaudeBtn" onclick="openClaude(this)">
+                        <button class="btn btn-claude" id="openClaudeBtn">
                             <i class="bi bi-robot"></i>
                             <%= t('workspaces:actions.openClaude') %>
                         </button>
-                        <button class="btn btn-dark" id="openTerminalBtn" onclick="openTerminal(this)">
+                        <button class="btn btn-dark" id="openTerminalBtn">
                             <i class="bi bi-terminal"></i>
                             <%= t('workspaces:actions.openTerminal') %>
                         </button>
-                        <button class="btn btn-warning" onclick="stopWorkspace(this)">
+                        <button class="btn btn-warning" id="btn-stop-workspace">
                             <i class="bi bi-stop-fill"></i>
                             <%= t('workspaces:actions.stop') %>
                         </button>
@@ -141,7 +141,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <button class="btn btn-danger w-100" onclick="deleteWorkspace()">
+                <button class="btn btn-danger w-100" id="btn-delete-workspace">
                     <i class="bi bi-trash"></i>
                     <%= t('workspaces:actions.delete') %>
                 </button>
@@ -150,8 +150,9 @@
     </div>
 </div>
 
-<script>
-async function startWorkspace(btn) {
+<script nonce="<%= cspNonce %>">
+async function startWorkspace() {
+    const btn = document.getElementById('btn-start-workspace');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
 
@@ -181,9 +182,10 @@ async function startWorkspace(btn) {
     }
 }
 
-async function stopWorkspace(btn) {
+async function stopWorkspace() {
     if (!confirm('<%= t("common:confirm.action") %>')) return;
 
+    const btn = document.getElementById('btn-stop-workspace');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Stopping...';
 
@@ -238,7 +240,8 @@ async function deleteWorkspace() {
     }
 }
 
-async function openTerminal(btn) {
+async function openTerminal() {
+    const btn = document.getElementById('openTerminalBtn');
     const originalContent = btn.innerHTML;
 
     // Open tab immediately to avoid popup blocker
@@ -335,7 +338,8 @@ async function openTerminal(btn) {
     btn.innerHTML = originalContent;
 }
 
-async function openClaude(btn) {
+async function openClaude() {
+    const btn = document.getElementById('openClaudeBtn');
     const originalContent = btn.innerHTML;
 
     // Open tab immediately to avoid popup blocker
@@ -446,7 +450,8 @@ async function openClaude(btn) {
     btn.innerHTML = originalContent;
 }
 
-async function openIDE(btn) {
+async function openIDE() {
+    const btn = document.getElementById('openIdeBtn');
     const originalContent = btn.innerHTML;
 
     // Open tab immediately to avoid popup blocker
@@ -543,4 +548,21 @@ async function openIDE(btn) {
     btn.disabled = false;
     btn.innerHTML = originalContent;
 }
+
+// Event listeners for buttons
+document.addEventListener('DOMContentLoaded', function() {
+    var el;
+    el = document.getElementById('btn-start-workspace');
+    if (el) el.addEventListener('click', startWorkspace);
+    el = document.getElementById('openIdeBtn');
+    if (el) el.addEventListener('click', openIDE);
+    el = document.getElementById('openClaudeBtn');
+    if (el) el.addEventListener('click', openClaude);
+    el = document.getElementById('openTerminalBtn');
+    if (el) el.addEventListener('click', openTerminal);
+    el = document.getElementById('btn-stop-workspace');
+    if (el) el.addEventListener('click', stopWorkspace);
+    el = document.getElementById('btn-delete-workspace');
+    if (el) el.addEventListener('click', deleteWorkspace);
+});
 </script>

@@ -122,12 +122,12 @@
                         </button>
 
                         <% if (hasAnthropicKey) { %>
-                            <button type="button" class="btn btn-outline-primary" onclick="testAnthropicKey()">
+                            <button type="button" class="btn btn-outline-primary" id="btn-test-key">
                                 <i class="bi bi-check-circle"></i>
                                 <%= t('workspaces:claudeCode.testKey') %>
                             </button>
 
-                            <button type="button" class="btn btn-outline-danger ms-auto" onclick="deleteAnthropicKey()">
+                            <button type="button" class="btn btn-outline-danger ms-auto" id="btn-delete-key">
                                 <i class="bi bi-trash"></i>
                                 <%= t('common:buttons.delete') %>
                             </button>
@@ -164,9 +164,9 @@
     </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 async function testAnthropicKey() {
-    const btn = event.target;
+    const btn = document.getElementById('btn-test-key');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
 
@@ -219,4 +219,10 @@ async function deleteAnthropicKey() {
         alert('Error: ' + error.message);
     }
 }
+
+var el;
+el = document.getElementById('btn-test-key');
+if (el) el.addEventListener('click', testAnthropicKey);
+el = document.getElementById('btn-delete-key');
+if (el) el.addEventListener('click', deleteAnthropicKey);
 </script>

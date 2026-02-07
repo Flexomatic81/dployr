@@ -165,7 +165,7 @@ DB_PASSWORD=&lt;password&gt;</code></pre>
 </div>
 <% } %>
 
-<script>
+<script nonce="<%= cspNonce %>">
 document.addEventListener('DOMContentLoaded', function() {
     // Toggle password visibility
     document.querySelectorAll('.btn-toggle-password').forEach(function(btn) {

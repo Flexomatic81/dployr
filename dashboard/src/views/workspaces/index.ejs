@@ -80,7 +80,8 @@
                                     <% if (workspace.orphaned) { %>
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-danger"
-                                                onclick="deleteOrphanedWorkspace(<%= workspace.id %>, '<%= workspace.project_name %>')">
+                                                data-workspace-id="<%= workspace.id %>"
+                                                data-workspace-name="<%= workspace.project_name %>">
                                             <i class="bi bi-trash"></i>
                                             <%= t('workspaces:actions.delete') %>
                                         </button>
@@ -108,7 +109,7 @@
 </div>
 
 <% if (workspaces.some(w => w.orphaned)) { %>
-<script>
+<script nonce="<%= cspNonce %>">
 async function deleteOrphanedWorkspace(workspaceId, projectName) {
     if (!confirm('<%= t("common:confirm.delete") %>')) return;
 
@@ -134,5 +135,14 @@ async function deleteOrphanedWorkspace(workspaceId, projectName) {
         alert('Error: ' + error.message);
     }
 }
+
+document.querySelectorAll('.btn-outline-danger[data-workspace-id]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        deleteOrphanedWorkspace(
+            parseInt(this.dataset.workspaceId),
+            this.dataset.workspaceName
+        );
+    });
+});
 </script>
 <% } %>

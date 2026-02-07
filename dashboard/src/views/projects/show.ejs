@@ -28,16 +28,16 @@
         </a>
         <% if (project.status === 'running') { %>
             <% if (canManage) { %>
-            <button type="button" class="btn btn-outline-warning" onclick="projectAction('restart')">
+            <button type="button" class="btn btn-outline-warning" data-project-action="restart">
                 <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.restart') %>
             </button>
-            <button type="button" class="btn btn-danger" onclick="projectAction('stop')">
+            <button type="button" class="btn btn-danger" data-project-action="stop">
                 <i class="bi bi-stop-fill"></i> <%= t('common:buttons.stop') %>
             </button>
             <% } %>
         <% } else { %>
             <% if (canManage) { %>
-            <button type="button" class="btn btn-success" onclick="projectAction('start')">
+            <button type="button" class="btn btn-success" data-project-action="start">
                 <i class="bi bi-play-fill"></i> <%= t('common:buttons.start') %>
             </button>
             <% } %>
@@ -184,7 +184,7 @@
                         <%= project.runningContainers %>/<%= project.totalContainers %> <%= t('common:status.active').toLowerCase() %>
                     </span>
                     <% if (project.isCustom && canManage) { %>
-                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="projectAction('rebuild')" title="<%= t('projects:services.rebuildHelp') %>">
+                        <button type="button" class="btn btn-sm btn-outline-warning" data-project-action="rebuild" title="<%= t('projects:services.rebuildHelp') %>">
                             <i class="bi bi-hammer"></i> <%= t('projects:services.rebuild') %>
                         </button>
                     <% } %>
@@ -228,7 +228,7 @@
                                     <% if (canManage) { %>
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="showServiceLogs('<%= service.Service || service.Name %>')"
+                                                data-service-logs="<%= service.Service || service.Name %>"
                                                 title="<%= t('projects:services.logs') %>">
                                             <i class="bi bi-terminal"></i>
                                         </button>
@@ -310,7 +310,7 @@
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
-<script>
+<script nonce="<%= cspNonce %>">
 (function() {
     var key = 'dployr:infra-warning-dismissed:<%= project.name %>';
     var warning = document.getElementById('infraWarning');
@@ -348,7 +348,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 let currentServiceName = '';
 
 function showServiceLogs(serviceName) {
@@ -1511,8 +1511,22 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
 </div>
 <% } %><!-- End projectAccess.isOwner for Clone Modal -->
 
-<script>
+<script nonce="<%= cspNonce %>">
 document.addEventListener('DOMContentLoaded', function() {
+    // Project action buttons
+    document.querySelectorAll('[data-project-action]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            projectAction(this.dataset.projectAction);
+        });
+    });
+
+    // Service logs buttons
+    document.querySelectorAll('[data-service-logs]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            showServiceLogs(this.dataset.serviceLogs);
+        });
+    });
+
     // Copy to clipboard buttons
     document.querySelectorAll('.copy-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {

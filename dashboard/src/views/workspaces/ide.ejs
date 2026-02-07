@@ -202,13 +202,13 @@
             <%= workspace.project_name %> - Cloud IDE
         </h1>
         <div class="actions">
-            <button onclick="syncToProject()">
+            <button id="btn-sync-to-project">
                 ↑ <%= t('workspaces:actions.syncToProject') %>
             </button>
-            <button onclick="window.location.href='/workspaces/<%= workspace.project_name %>'">
+            <button id="btn-settings">
                 ⚙ <%= t('workspaces:actions.settings') %>
             </button>
-            <button class="close-btn" onclick="closeIDE()">
+            <button class="close-btn" id="btn-close-ide">
                 × <%= t('common:buttons.close') %>
             </button>
         </div>
@@ -239,13 +239,13 @@
                 </div>
             </div>
             <div class="sync-result" id="syncResult"></div>
-            <button class="sync-close-btn" id="syncCloseBtn" onclick="closeSyncModal()">
+            <button class="sync-close-btn" id="syncCloseBtn">
                 <%= t('common:buttons.close') %>
             </button>
         </div>
     </div>
 
-    <script>
+    <script nonce="<%= cspNonce %>">
         let activityInterval;
 
         // Send activity heartbeat every 30 seconds
@@ -372,6 +372,14 @@
                 window.location.href = '/workspaces/<%= workspace.project_name %>';
             }, 100);
         }
+
+        // Event listeners for buttons
+        document.getElementById('btn-sync-to-project').addEventListener('click', syncToProject);
+        document.getElementById('btn-settings').addEventListener('click', function() {
+            window.location.href = '/workspaces/<%= workspace.project_name %>';
+        });
+        document.getElementById('btn-close-ide').addEventListener('click', closeIDE);
+        document.getElementById('syncCloseBtn').addEventListener('click', closeSyncModal);
 
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {

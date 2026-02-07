@@ -11,7 +11,7 @@
         <p class="text-muted"><%= t('admin:resources.subtitle') %></p>
     </div>
     <div class="d-page-header-actions">
-        <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+        <button type="button" class="btn btn-outline-secondary" id="btn-refresh">
             <i class="bi bi-arrow-clockwise"></i> <%= t('common:buttons.refresh') %>
         </button>
     </div>
@@ -349,7 +349,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 document.addEventListener('DOMContentLoaded', function() {
     // Confirm dialogs
     document.querySelectorAll('[data-confirm]').forEach(function(btn) {
@@ -372,6 +372,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 header.classList.add('collapsed');
             });
         }
+    });
+
+    // Refresh button
+    document.getElementById('btn-refresh').addEventListener('click', function() {
+        location.reload();
     });
 });
 </script>
