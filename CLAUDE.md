@@ -149,6 +149,7 @@ Service: `twofa.js`
 ## Security
 
 - Helmet (CSP, security headers)
+- **Nonce-based CSP**: No `unsafe-inline`/`unsafe-eval` in scriptSrc. Inline `<script>` tags require `nonce="<%= cspNonce %>"`. No inline event handlers (`onclick`, `onkeypress` etc.) — use `addEventListener` instead.
 - Rate limiting (auth: 10/15min, API: 100/min)
 - Joi input validation
 - CSRF protection (session-based)
