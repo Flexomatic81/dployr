@@ -168,7 +168,7 @@ async function createPreview(workspaceId, userId, options = {}) {
     } catch (error) {
         logger.error('Failed to create preview:', error);
 
-        // Cleanup bei Fehler
+        // Cleanup on error
         if (error.previewId) {
             await pool.query(
                 `UPDATE preview_environments

@@ -22,6 +22,7 @@ const autoDeployService = require('./services/autodeploy');
 const proxyService = require('./services/proxy');
 const updateService = require('./services/update');
 const workspaceService = require('./services/workspace');
+const projectPorts = require('./services/projectPorts');
 const previewService = require('./services/preview');
 const { logger, requestLogger } = require('./config/logger');
 const terminalService = require('./services/terminal');
@@ -666,6 +667,20 @@ async function start() {
             // Initialize database only when setup is complete
             await initDatabase();
             logger.info('Setup already completed - normal mode');
+
+            // Backfill project_ports table if empty (non-blocking)
+            projectPorts.getAllUsedPorts().then(async (ports) => {
+                if (ports.size === 0) {
+                    try {
+                        const stats = await projectPorts.backfillPorts();
+                        if (stats.registered > 0) {
+                            logger.info('Backfilled project_ports table', stats);
+                        }
+                    } catch (err) {
+                        logger.warn('Port backfill failed', { error: err.message });
+                    }
+                }
+            }).catch(() => {});
 
             // Start Auto-Deploy polling
             startAutoDeployPolling();

@@ -6,6 +6,7 @@ const { removeBlockedFiles } = require('./utils/security');
 const { logger } = require('../config/logger');
 const composeValidator = require('./compose-validator');
 const gitCredentials = require('./gitCredentials');
+const projectPorts = require('./projectPorts');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -805,7 +806,7 @@ networks:
  * Creates a new project directly from a Git repository
  * Repository is cloned into html/ subfolder for consistent structure
  */
-async function createProjectFromGit(systemUsername, projectName, repoUrl, token, port) {
+async function createProjectFromGit(systemUsername, projectName, repoUrl, token, port, options = {}) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
     const htmlPath = path.join(projectPath, 'html');
 
@@ -852,7 +853,7 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
 
             const composeContent = fs.readFileSync(userCompose.path, 'utf8');
             const containerPrefix = `${systemUsername}-${projectName}`;
-            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port, userCompose.subdir);
+            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port, userCompose.subdir, options.usedPorts);
 
             if (result.success) {
                 // Use transformed user compose
@@ -900,6 +901,19 @@ async function createProjectFromGit(systemUsername, projectName, repoUrl, token,
             const nginxDir = path.join(projectPath, 'nginx');
             fs.mkdirSync(nginxDir, { recursive: true });
             fs.writeFileSync(path.join(nginxDir, 'default.conf'), generateNginxConfig());
+        }
+
+        // Register ports in database
+        if (options.userId) {
+            try {
+                if (portMappings.length > 0) {
+                    await projectPorts.registerPorts(options.userId, projectName, portMappings);
+                } else {
+                    await projectPorts.registerBasePort(options.userId, projectName, port);
+                }
+            } catch (err) {
+                logger.warn('Failed to register ports', { projectName, error: err.message });
+            }
         }
 
         return {

@@ -10,6 +10,7 @@ const { getProjectAccess, requirePermission } = require('../../middleware/projec
 const gitService = require('../../services/git');
 const autoDeployService = require('../../services/autodeploy');
 const composeValidator = require('../../services/compose-validator');
+const projectPorts = require('../../services/projectPorts');
 const { logger } = require('../../config/logger');
 
 // Perform Git pull (manage or higher)
@@ -46,11 +47,13 @@ router.post('/pull', requireAuth, getProjectAccess(), requirePermission('manage'
         if (result.hasChanges && project.templateType === 'custom') {
             const containerPrefix = `${systemUsername}-${projectName}`;
             const basePort = parseInt(project.port, 10) || 10000;
+            const usedPorts = await projectPorts.getAllUsedPorts();
 
             const reimportResult = composeValidator.reimportUserCompose(
                 projectPath,
                 containerPrefix,
-                basePort
+                basePort,
+                usedPorts
             );
 
             if (reimportResult.success) {
@@ -58,6 +61,15 @@ router.post('/pull', requireAuth, getProjectAccess(), requirePermission('manage'
                     name: projectName,
                     services: reimportResult.services
                 });
+
+                // Update port registrations
+                try {
+                    if (reimportResult.portMappings && reimportResult.portMappings.length > 0) {
+                        await projectPorts.registerPorts(userId, projectName, reimportResult.portMappings);
+                    }
+                } catch (portErr) {
+                    logger.warn('Failed to update port registrations', { error: portErr.message });
+                }
             } else if (!reimportResult.notFound) {
                 logger.warn('Failed to re-import docker-compose.yml after Git pull', {
                     name: projectName,

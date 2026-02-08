@@ -6,6 +6,7 @@ const { generateDockerCompose, generateNginxConfig, getGitPath, isGitRepository 
 const { analyzeComposeCompleteness } = require('./compose-validator');
 const { logger } = require('../config/logger');
 const { DB_VARIABLE_ALIASES } = require('../config/constants');
+const projectPorts = require('./projectPorts');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 const SCRIPTS_PATH = process.env.SCRIPTS_PATH || '/app/scripts';
@@ -464,54 +465,9 @@ function getTemplateDisplayName(name) {
     return names[name] || name;
 }
 
-// Find next available port
-async function getNextAvailablePort() {
-    const usedPorts = new Set();
-
-    try {
-        const users = await fs.readdir(USERS_PATH, { withFileTypes: true });
-
-        for (const user of users) {
-            if (user.isDirectory()) {
-                const userPath = path.join(USERS_PATH, user.name);
-                const projects = await fs.readdir(userPath, { withFileTypes: true });
-
-                for (const project of projects) {
-                    if (project.isDirectory() && !project.name.startsWith('.')) {
-                        const envPath = path.join(userPath, project.name, '.env');
-                        try {
-                            const content = await fs.readFile(envPath, 'utf8');
-                            const env = parseEnvFile(content);
-                            if (env.EXPOSED_PORT) {
-                                usedPorts.add(parseInt(env.EXPOSED_PORT));
-                            }
-                        } catch (e) {
-                            // .env not present
-                        }
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        logger.error('Error determining ports', {
-            error: error.message,
-            stack: error.stack
-        });
-        // Continue with empty set - will start from 8001
-    }
-
-    // Start at port 8001 and find the next free one
-    // Limit to ephemeral port range (max 65535)
-    const MAX_PORT = 65535;
-    let port = 8001;
-    while (usedPorts.has(port)) {
-        port++;
-        if (port > MAX_PORT) {
-            throw new Error('No available ports in valid range (8001-65535)');
-        }
-    }
-
-    return port;
+// Find next available port (delegates to projectPorts service for DB + filesystem lookup)
+async function getNextAvailablePort(count = 1) {
+    return projectPorts.findNextAvailablePort(count);
 }
 
 // Create new project
@@ -567,6 +523,15 @@ async function createProject(systemUsername, projectName, templateType, options 
     // Create user directory if not present
     const userPath = path.join(USERS_PATH, systemUsername);
     await fs.mkdir(userPath, { recursive: true });
+
+    // Register port in database
+    if (options.userId) {
+        try {
+            await projectPorts.registerBasePort(options.userId, projectName, port);
+        } catch (err) {
+            logger.warn('Failed to register port in database', { projectName, port, error: err.message });
+        }
+    }
 
     return {
         name: projectName,
@@ -1080,9 +1045,10 @@ function isDbVariable(varName) {
  * @param {string} systemUsername - System username
  * @param {string} sourceProjectName - Name of the project to clone
  * @param {string} newProjectName - Name for the cloned project
+ * @param {object} [options] - Options (userId for port registration)
  * @returns {Object} Cloned project info
  */
-async function cloneProject(systemUsername, sourceProjectName, newProjectName) {
+async function cloneProject(systemUsername, sourceProjectName, newProjectName, options = {}) {
     // Validate new name
     if (!/^[a-z0-9-]+$/.test(newProjectName)) {
         throw new Error('Project name may only contain lowercase letters, numbers and hyphens');
@@ -1166,6 +1132,15 @@ async function cloneProject(systemUsername, sourceProjectName, newProjectName) {
 
     // Detect template type
     const templateType = await detectTemplateType(destPath);
+
+    // Register port in database
+    if (options.userId) {
+        try {
+            await projectPorts.registerBasePort(options.userId, newProjectName, newPort);
+        } catch (err) {
+            logger.warn('Failed to register cloned port in database', { projectName: newProjectName, port: newPort, error: err.message });
+        }
+    }
 
     logger.info('Project cloned successfully', {
         source: sourceProjectName,

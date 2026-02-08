@@ -5,6 +5,7 @@ const gitService = require('./git');
 const { generateNginxConfig } = require('./utils/nginx');
 const { logger } = require('../config/logger');
 const composeValidator = require('./compose-validator');
+const projectPorts = require('./projectPorts');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
 
@@ -55,7 +56,7 @@ function flattenIfNeeded(destPath) {
 /**
  * Creates a new project from a ZIP file
  */
-async function createProjectFromZip(systemUsername, projectName, zipPath, port) {
+async function createProjectFromZip(systemUsername, projectName, zipPath, port, options = {}) {
     const projectPath = path.join(USERS_PATH, systemUsername, projectName);
     const htmlPath = path.join(projectPath, 'html');
 
@@ -93,7 +94,7 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
 
             const composeContent = fs.readFileSync(userCompose.path, 'utf8');
             const containerPrefix = `${systemUsername}-${projectName}`;
-            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port, userCompose.subdir);
+            const result = composeValidator.processUserCompose(composeContent, containerPrefix, port, userCompose.subdir, options.usedPorts);
 
             if (result.success) {
                 // Use transformed user compose
@@ -152,6 +153,19 @@ async function createProjectFromZip(systemUsername, projectName, zipPath, port) 
                 path.join(nginxDir, 'default.conf'),
                 generateNginxConfig()
             );
+        }
+
+        // Register ports in database
+        if (options.userId) {
+            try {
+                if (portMappings.length > 0) {
+                    await projectPorts.registerPorts(options.userId, projectName, portMappings);
+                } else {
+                    await projectPorts.registerBasePort(options.userId, projectName, port);
+                }
+            } catch (err) {
+                logger.warn('Failed to register ports', { projectName, error: err.message });
+            }
         }
 
         // Delete ZIP file

@@ -7,6 +7,7 @@ const dockerService = require('./docker');
 const userService = require('./user');
 const emailService = require('./email');
 const composeValidator = require('./compose-validator');
+const projectPorts = require('./projectPorts');
 const projectService = require('./project');
 const { VALID_INTERVALS } = require('../config/constants');
 const { logger } = require('../config/logger');
@@ -275,11 +276,13 @@ async function executeDeploy(userId, systemUsername, projectName, triggerType = 
                 if (projectInfo && projectInfo.templateType === 'custom') {
                     const containerPrefix = `${systemUsername}-${projectName}`;
                     const basePort = parseInt(projectInfo.port, 10) || 10000;
+                    const usedPorts = await projectPorts.getAllUsedPorts();
 
                     const reimportResult = composeValidator.reimportUserCompose(
                         projectPath,
                         containerPrefix,
-                        basePort
+                        basePort,
+                        usedPorts
                     );
 
                     if (reimportResult.success) {
@@ -287,6 +290,15 @@ async function executeDeploy(userId, systemUsername, projectName, triggerType = 
                             projectName,
                             services: reimportResult.services
                         });
+
+                        // Update port registrations
+                        try {
+                            if (reimportResult.portMappings && reimportResult.portMappings.length > 0) {
+                                await projectPorts.registerPorts(userId, projectName, reimportResult.portMappings);
+                            }
+                        } catch (portErr) {
+                            logger.warn('[AutoDeploy] Failed to update port registrations', { error: portErr.message });
+                        }
                     } else if (!reimportResult.notFound) {
                         logger.warn('[AutoDeploy] Failed to re-import docker-compose.yml after Git pull', {
                             projectName,

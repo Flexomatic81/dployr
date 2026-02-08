@@ -18,6 +18,7 @@ const proxyService = require('../../services/proxy');
 const backupService = require('../../services/backup');
 const workspaceService = require('../../services/workspace');
 const composeValidator = require('../../services/compose-validator');
+const projectPorts = require('../../services/projectPorts');
 const upload = require('../../middleware/upload');
 const { validateZipMiddleware } = require('../../middleware/upload');
 const { logger } = require('../../config/logger');
@@ -276,7 +277,7 @@ router.post('/', requireAuth, validate('createProject'), async (req, res) => {
             systemUsername,
             name,
             template,
-            { port: parseInt(port) }
+            { port: parseInt(port), userId: req.session.user.id }
         );
 
         req.flash('success', req.t('projects:flash.created', { name }));
@@ -300,11 +301,13 @@ router.post('/from-zip', requireAuth, upload.single('zipfile'), validateZipMiddl
             return res.redirect('/projects/create');
         }
 
+        const usedPorts = await projectPorts.getAllUsedPorts();
         const result = await zipService.createProjectFromZip(
             systemUsername,
             name,
             req.file.path,
-            parseInt(port)
+            parseInt(port),
+            { userId: req.session.user.id, usedPorts }
         );
 
         const typeKey = `projects:types.${result.projectType}`;
@@ -333,12 +336,14 @@ router.post('/from-git', requireAuth, validate('createProjectFromGit'), async (r
             return res.redirect('/projects/create');
         }
 
+        const usedPorts = await projectPorts.getAllUsedPorts();
         const result = await gitService.createProjectFromGit(
             systemUsername,
             name,
             repo_url,
             access_token || null,
-            parseInt(port)
+            parseInt(port),
+            { userId, usedPorts }
         );
 
         // Create deployment log for clone
@@ -461,11 +466,13 @@ router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission
     if (project.templateType === 'custom') {
         const containerPrefix = `${systemUsername}-${project.name}`;
         const basePort = parseInt(project.port, 10) || 10000;
+        const usedPorts = await projectPorts.getAllUsedPorts();
 
         const reimportResult = composeValidator.reimportUserCompose(
             project.path,
             containerPrefix,
-            basePort
+            basePort,
+            usedPorts
         );
 
         if (reimportResult.success) {
@@ -473,6 +480,15 @@ router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission
                 name: project.name,
                 services: reimportResult.services
             });
+
+            // Update port registrations
+            try {
+                if (reimportResult.portMappings && reimportResult.portMappings.length > 0) {
+                    await projectPorts.registerPorts(req.session.user.id, project.name, reimportResult.portMappings);
+                }
+            } catch (portErr) {
+                logger.warn('Failed to update port registrations', { error: portErr.message });
+            }
         } else if (!reimportResult.notFound) {
             // Only warn if there was an actual error (not just missing file)
             logger.warn('Failed to re-import docker-compose.yml, proceeding with existing config', {
@@ -636,7 +652,8 @@ router.post('/:name/clone', requireAuth, getProjectAccess(), async (req, res) =>
         const clonedProject = await projectService.cloneProject(
             systemUsername,
             req.params.name,
-            newName
+            newName,
+            { userId: req.session.user.id }
         );
 
         req.flash('success', req.t('projects:flash.cloned', { source: req.params.name, name: newName }));
@@ -674,6 +691,13 @@ router.delete('/:name', requireAuth, getProjectAccess(), async (req, res) => {
 
         // Delete auto-deploy data
         await autoDeployService.deleteAutoDeploy(req.session.user.id, req.params.name);
+
+        // Release port registrations
+        try {
+            await projectPorts.releasePorts(req.session.user.id, req.params.name);
+        } catch (portErr) {
+            logger.warn('Failed to release port registrations', { error: portErr.message });
+        }
 
         await projectService.deleteProject(systemUsername, req.params.name);
         req.flash('success', req.t('projects:flash.deleted', { name: req.params.name }));

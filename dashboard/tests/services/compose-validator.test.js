@@ -873,6 +873,63 @@ services:
         });
     });
 
+    describe('transformCompose - usedPorts conflict avoidance', () => {
+        it('should skip already used ports during allocation', () => {
+            const compose = {
+                services: {
+                    web: { image: 'nginx', ports: ['80'] },
+                    api: { image: 'node', ports: ['3000'] }
+                }
+            };
+
+            const usedPorts = new Set([10001]);
+            const { portMappings } = composeValidator.transformCompose(compose, 'john-myproject', 10000, undefined, usedPorts);
+
+            expect(portMappings[0].external).toBe(10000);
+            expect(portMappings[1].external).toBe(10002); // Skips 10001
+        });
+
+        it('should skip multiple used ports', () => {
+            const compose = {
+                services: {
+                    web: { image: 'nginx', ports: ['80'] }
+                }
+            };
+
+            const usedPorts = new Set([10000, 10001, 10002]);
+            const { portMappings } = composeValidator.transformCompose(compose, 'john-myproject', 10000, undefined, usedPorts);
+
+            expect(portMappings[0].external).toBe(10003);
+        });
+
+        it('should add allocated ports to usedPorts set', () => {
+            const compose = {
+                services: {
+                    web: { image: 'nginx', ports: ['80'] },
+                    api: { image: 'node', ports: ['3000'] }
+                }
+            };
+
+            const usedPorts = new Set();
+            composeValidator.transformCompose(compose, 'john-myproject', 10000, undefined, usedPorts);
+
+            expect(usedPorts.has(10000)).toBe(true);
+            expect(usedPorts.has(10001)).toBe(true);
+        });
+
+        it('should work without usedPorts parameter (backward compatible)', () => {
+            const compose = {
+                services: {
+                    web: { image: 'nginx', ports: ['80'] }
+                }
+            };
+
+            const { portMappings } = composeValidator.transformCompose(compose, 'john-myproject', 10000);
+
+            expect(portMappings[0].external).toBe(10000);
+        });
+    });
+
     describe('transformCompose - Volume Path Transformation', () => {
         it('should prefix relative volumes with ./html for app services', () => {
             const compose = {

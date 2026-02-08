@@ -38,6 +38,12 @@ const mockComposeValidator = {
     processUserCompose: jest.fn()
 };
 
+// Mock projectPorts
+const mockProjectPorts = {
+    registerPorts: jest.fn().mockResolvedValue(undefined),
+    registerBasePort: jest.fn().mockResolvedValue(undefined)
+};
+
 jest.mock('fs', () => mockFs);
 jest.mock('../../src/services/git', () => mockGitService);
 jest.mock('../../src/services/utils/nginx', () => ({
@@ -47,6 +53,7 @@ jest.mock('../../src/services/utils/security', () => ({
     removeBlockedFiles: mockRemoveBlockedFiles
 }));
 jest.mock('../../src/services/compose-validator', () => mockComposeValidator);
+jest.mock('../../src/services/projectPorts', () => mockProjectPorts);
 
 const zipService = require('../../src/services/zip');
 

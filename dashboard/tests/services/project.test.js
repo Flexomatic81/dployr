@@ -42,11 +42,25 @@ jest.mock('../../src/config/logger', () => ({
     }
 }));
 
+// Mock projectPorts service
+const mockProjectPorts = {
+    findNextAvailablePort: jest.fn().mockResolvedValue(8001),
+    registerBasePort: jest.fn().mockResolvedValue(undefined),
+    registerPorts: jest.fn().mockResolvedValue(undefined),
+    releasePorts: jest.fn().mockResolvedValue(undefined),
+    getAllUsedPorts: jest.fn().mockResolvedValue(new Set()),
+    scanFilesystemPorts: jest.fn().mockResolvedValue(new Set())
+};
+
+jest.mock('../../src/services/projectPorts', () => mockProjectPorts);
+
 const projectService = require('../../src/services/project');
 
 describe('Project Service', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockProjectPorts.findNextAvailablePort.mockResolvedValue(8001);
+        mockProjectPorts.registerBasePort.mockResolvedValue(undefined);
     });
 
     describe('parseEnvFile', () => {
@@ -218,44 +232,22 @@ describe('Project Service', () => {
     });
 
     describe('getNextAvailablePort', () => {
-        it('should return 8001 when no projects exist', async () => {
-            mockFs.readdir.mockResolvedValue([]);
+        it('should delegate to projectPorts.findNextAvailablePort', async () => {
+            mockProjectPorts.findNextAvailablePort.mockResolvedValue(8001);
 
             const result = await projectService.getNextAvailablePort();
 
             expect(result).toBe(8001);
+            expect(mockProjectPorts.findNextAvailablePort).toHaveBeenCalledWith(1);
         });
 
-        it('should find next available port', async () => {
-            mockFs.readdir
-                .mockResolvedValueOnce([{ name: 'user1', isDirectory: () => true }])
-                .mockResolvedValueOnce([
-                    { name: 'project1', isDirectory: () => true },
-                    { name: 'project2', isDirectory: () => true }
-                ]);
-            mockFs.readFile
-                .mockResolvedValueOnce('EXPOSED_PORT=8001')
-                .mockResolvedValueOnce('EXPOSED_PORT=8002');
+        it('should pass count parameter through', async () => {
+            mockProjectPorts.findNextAvailablePort.mockResolvedValue(8005);
 
-            const result = await projectService.getNextAvailablePort();
+            const result = await projectService.getNextAvailablePort(3);
 
-            expect(result).toBe(8003);
-        });
-
-        it('should handle gaps in port numbers', async () => {
-            mockFs.readdir
-                .mockResolvedValueOnce([{ name: 'user1', isDirectory: () => true }])
-                .mockResolvedValueOnce([
-                    { name: 'project1', isDirectory: () => true },
-                    { name: 'project2', isDirectory: () => true }
-                ]);
-            mockFs.readFile
-                .mockResolvedValueOnce('EXPOSED_PORT=8001')
-                .mockResolvedValueOnce('EXPOSED_PORT=8003'); // Gap at 8002
-
-            const result = await projectService.getNextAvailablePort();
-
-            expect(result).toBe(8002); // Should fill the gap
+            expect(result).toBe(8005);
+            expect(mockProjectPorts.findNextAvailablePort).toHaveBeenCalledWith(3);
         });
     });
 
@@ -268,7 +260,6 @@ describe('Project Service', () => {
 
             // Template and env.example
             mockFs.readdir
-                .mockResolvedValueOnce([]) // getNextAvailablePort - no users
                 .mockResolvedValueOnce([ // copyDirectory - template files
                     { name: 'docker-compose.yml', isDirectory: () => false },
                     { name: '.env.example', isDirectory: () => false }
@@ -658,13 +649,11 @@ describe('Project Service', () => {
                 .mockResolvedValueOnce(undefined) // source exists
                 .mockRejectedValueOnce({ code: 'ENOENT' }); // dest doesn't exist
 
-            // getNextAvailablePort
-            mockFs.readdir
-                .mockResolvedValueOnce([]) // no users for port scan
-                .mockResolvedValueOnce([ // source directory files
-                    { name: 'docker-compose.yml', isDirectory: () => false },
-                    { name: '.env', isDirectory: () => false }
-                ]);
+            // copyDirectory reads source directory
+            mockFs.readdir.mockResolvedValueOnce([
+                { name: 'docker-compose.yml', isDirectory: () => false },
+                { name: '.env', isDirectory: () => false }
+            ]);
 
             mockFs.mkdir.mockResolvedValue(undefined);
             mockFs.copyFile.mockResolvedValue(undefined);

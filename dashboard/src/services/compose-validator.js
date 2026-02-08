@@ -301,9 +301,10 @@ function validateCompose(compose) {
  * @param {string} containerPrefix - Prefix for container names (username-projectname)
  * @param {number} basePort - Base port for port allocation
  * @param {string} [sourceDir] - Subdirectory where the compose file was found (e.g. 'docker')
+ * @param {Set<number>} [usedPorts] - Set of already used ports to avoid conflicts
  * @returns {object} - Transformed compose and port mappings
  */
-function transformCompose(compose, containerPrefix, basePort, sourceDir) {
+function transformCompose(compose, containerPrefix, basePort, sourceDir, usedPorts = new Set()) {
     const transformed = JSON.parse(JSON.stringify(compose)); // Deep copy
     const portMappings = [];
     let currentPort = basePort;
@@ -382,7 +383,12 @@ function transformCompose(compose, containerPrefix, basePort, sourceDir) {
                 }
 
                 if (internalPort) {
+                    // Skip already-used ports
+                    while (usedPorts.has(currentPort)) {
+                        currentPort++;
+                    }
                     const externalPort = currentPort++;
+                    usedPorts.add(externalPort);
                     newPorts.push(`${externalPort}:${internalPort}${protocol !== 'tcp' ? '/' + protocol : ''}`);
                     portMappings.push({
                         service: serviceName,
@@ -495,9 +501,10 @@ function stringifyCompose(compose) {
  * @param {string} containerPrefix - Container name prefix
  * @param {number} basePort - Starting port for allocation
  * @param {string} [sourceDir] - Subdirectory where the compose file was found (e.g. 'docker')
+ * @param {Set<number>} [usedPorts] - Set of already used ports to avoid conflicts
  * @returns {object} - Result with sanitized YAML and port mappings
  */
-function processUserCompose(content, containerPrefix, basePort, sourceDir) {
+function processUserCompose(content, containerPrefix, basePort, sourceDir, usedPorts = new Set()) {
     // Parse
     const parseResult = parseCompose(content);
     if (!parseResult.success) {
@@ -513,7 +520,7 @@ function processUserCompose(content, containerPrefix, basePort, sourceDir) {
     }
 
     // Transform
-    const { compose, portMappings } = transformCompose(parseResult.compose, containerPrefix, basePort, sourceDir);
+    const { compose, portMappings } = transformCompose(parseResult.compose, containerPrefix, basePort, sourceDir, usedPorts);
 
     // Stringify
     const yamlOutput = stringifyCompose(compose);
@@ -586,9 +593,10 @@ function findDockerfile(dirPath) {
  * @param {string} projectPath - Path to project directory
  * @param {string} containerPrefix - Container name prefix (username-projectname)
  * @param {number} basePort - Base port for allocation (use existing project port)
+ * @param {Set<number>} [usedPorts] - Set of already used ports to avoid conflicts
  * @returns {object} - Result with success flag, yaml content, and port mappings
  */
-function reimportUserCompose(projectPath, containerPrefix, basePort) {
+function reimportUserCompose(projectPath, containerPrefix, basePort, usedPorts = new Set()) {
     const fs = require('fs');
     const htmlPath = path.join(projectPath, 'html');
 
@@ -608,7 +616,7 @@ function reimportUserCompose(projectPath, containerPrefix, basePort) {
         const composeContent = fs.readFileSync(userCompose.path, 'utf8');
 
         // Process and transform it (validation, port mapping, network injection, etc.)
-        const result = processUserCompose(composeContent, containerPrefix, basePort, userCompose.subdir);
+        const result = processUserCompose(composeContent, containerPrefix, basePort, userCompose.subdir, usedPorts);
 
         if (!result.success) {
             return result;
