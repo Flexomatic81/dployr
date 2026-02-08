@@ -116,7 +116,26 @@ EOF
 
 This ensures the new release is marked as "Latest" even if older releases were recently modified.
 
-### 7. Verify Release
+### 7. Close Related Issues
+
+After creating the release, check for open issues that were fixed:
+
+```bash
+# Find issue references in commits since last release
+git log <last-tag>..HEAD --oneline --no-merges | grep -oP '#\d+'
+
+# List open issues for comparison
+gh issue list --state open --limit 30
+```
+
+For each fixed issue:
+```bash
+gh issue close <number> --comment "Fixed in vX.X.X"
+```
+
+**Tip for future commits**: Include `Closes #N` in commit message bodies so GitHub auto-closes issues on merge to main.
+
+### 8. Verify Release
 
 ```bash
 # Verify tag exists on remote
@@ -126,7 +145,7 @@ git ls-remote --tags origin | grep vX.X.X
 gh release view vX.X.X
 ```
 
-### 8. Sync dev Branch
+### 9. Sync dev Branch
 
 After a successful release, merge `main` back into `dev` to keep branches synchronized:
 
