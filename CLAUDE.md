@@ -178,8 +178,8 @@ Service: `twofa.js`
 |-------|---------|
 | `/dployr-precommit` | Ultra-fast pre-commit checks (staged files only, < 10s) |
 | `/dployr-check` | Quick lint check - language, i18n, code style (< 1 min) |
-| `/dployr-review` | Deep review - architecture, security, performance, tests (5-10 min) |
-| `/dployr-release` | Create release (changelog, tag, GitHub) |
+| `/dployr-review` | Deep review - architecture, security, performance, tests, documentation freshness (5-10 min) |
+| `/dployr-release` | Create release (changelog, tag, GitHub, close issues, sync dev) |
 
 ### Proactive Skill Usage
 
