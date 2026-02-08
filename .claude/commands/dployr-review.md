@@ -124,6 +124,51 @@ Check for untested code:
 - Edge cases covered?
 - Error conditions tested?
 
+## 6. Documentation Freshness
+
+Check whether documentation reflects the current codebase.
+
+### CLAUDE.md
+- **Services listed**: Compare services mentioned in CLAUDE.md (under Architecture, Key Concepts) with actual files in `dashboard/src/services/`. Flag new services not documented.
+- **Tables listed**: Compare database tables mentioned (e.g. `project_ports`, `deployment_logs`) with `CREATE TABLE` statements in `dashboard/src/config/database.js`. Flag new tables not documented.
+- **Security section**: Compare security features listed with actual implementations. Check for new middleware, CSP changes, or auth patterns not mentioned.
+
+```bash
+# Find all service files
+ls dashboard/src/services/*.js | sed 's|.*/||'
+
+# Find all CREATE TABLE statements
+grep 'CREATE TABLE' dashboard/src/config/database.js
+
+# Compare with CLAUDE.md mentions
+grep -oP 'Service: `[^`]+`' CLAUDE.md
+grep -oP 'Table: `[^`]+`' CLAUDE.md
+```
+
+### README.md
+- **Security section**: Check if new user-visible security features (e.g. 2FA, CSP, new auth methods) are listed in the Security section.
+- **Features table**: Check if new user-facing features are mentioned in the feature overview.
+- **Environment variables**: Compare listed env vars with `.env.example`.
+
+### Help Page (locales/*/help.json)
+- **New user-facing features**: Check for new routes or views that users interact with but have no help text.
+  ```bash
+  # Find route groups
+  grep -r 'router\.\(get\|post\)' dashboard/src/routes/ --include='*.js' -l
+
+  # Find help page sections
+  grep '"title"' dashboard/src/locales/en/help.json
+  ```
+- **Outdated instructions**: If UI flows changed (e.g. new buttons, renamed pages), check that help text still matches.
+
+### Report Format
+```
+--- Documentation ---
+✅ CLAUDE.md: All services documented
+⚠️ README.md: Missing security feature "nonce-based CSP"
+⚠️ Help page: No help text for new "Workspaces" feature
+```
+
 ## Output Format
 
 ```
@@ -155,6 +200,11 @@ Top 3 Priorities:
 --- Tests ---
 ✅ 45 tests passed (2.3s)
 ⚠️ Missing tests for: workspace.js, preview.js
+
+--- Documentation ---
+✅ CLAUDE.md: All services and tables documented
+⚠️ README.md: Missing "nonce-based CSP" in security section
+✅ Help page: All user-facing features covered
 
 Action Items:
 1. Add Joi validation to POST /projects/:name/share
