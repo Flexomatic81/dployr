@@ -1,4 +1,6 @@
 const Docker = require('dockerode');
+const { spawn } = require('child_process');
+const path = require('path');
 const { logger } = require('../config/logger');
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
@@ -48,6 +50,62 @@ function toHostPath(containerPath) {
         return containerPath.replace(USERS_PATH, HOST_USERS_PATH);
     }
     return containerPath;
+}
+
+/**
+ * Spawns a docker compose command without shell interpretation
+ * @param {string} hostPath - Host path to the project directory
+ * @param {string[]} args - Additional arguments for docker compose
+ * @param {object} [options] - Options (timeout, maxStdout)
+ * @returns {Promise<string>} stdout output
+ */
+function spawnCompose(hostPath, args, options = {}) {
+    const { timeout, maxStdout = 5 * 1024 * 1024 } = options;
+    const composeFile = path.join(hostPath, 'docker-compose.yml');
+    const fullArgs = ['compose', '-f', composeFile, '--project-directory', hostPath, ...args];
+
+    return new Promise((resolve, reject) => {
+        const proc = spawn('docker', fullArgs);
+
+        let stdout = '';
+        let stderr = '';
+        let stdoutOverflow = false;
+        let timer;
+
+        if (timeout) {
+            timer = setTimeout(() => {
+                proc.kill('SIGTERM');
+                reject(new Error(`Command timed out after ${timeout}ms`));
+            }, timeout);
+        }
+
+        proc.stdout.on('data', (data) => {
+            if (!stdoutOverflow) {
+                stdout += data.toString();
+                if (stdout.length > maxStdout) {
+                    stdoutOverflow = true;
+                }
+            }
+        });
+
+        proc.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        proc.on('error', (err) => {
+            if (timer) clearTimeout(timer);
+            reject(err);
+        });
+
+        proc.on('close', (code) => {
+            if (timer) clearTimeout(timer);
+            if (code !== 0) {
+                reject(new Error(stderr || `Process exited with code ${code}`));
+            } else {
+                resolve(stdout);
+            }
+        });
+    });
 }
 
 // Get container list for a user
@@ -133,141 +191,79 @@ async function getContainerLogs(containerId, lines = 100) {
 
 // Start project with docker-compose
 async function startProject(projectPath, options = {}) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    const buildFlag = options.build ? ' --build' : '';
-    return new Promise((resolve, reject) => {
-        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d${buildFlag}`, (error, stdout, stderr) => {
-            invalidateContainerCache();
-            if (error) {
-                reject(new Error(stderr || error.message));
-            } else {
-                resolve(stdout);
-            }
-        });
-    });
+    const args = ['up', '-d', ...(options.build ? ['--build'] : [])];
+    try {
+        return await spawnCompose(hostPath, args);
+    } finally {
+        invalidateContainerCache();
+    }
 }
 
 // Stop project with docker-compose
 async function stopProject(projectPath) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    return new Promise((resolve, reject) => {
-        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" down`, (error, stdout, stderr) => {
-            invalidateContainerCache();
-            if (error) {
-                reject(new Error(stderr || error.message));
-            } else {
-                resolve(stdout);
-            }
-        });
-    });
+    try {
+        return await spawnCompose(hostPath, ['down']);
+    } finally {
+        invalidateContainerCache();
+    }
 }
 
 // Restart project with docker-compose
 async function restartProject(projectPath) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    return new Promise((resolve, reject) => {
-        exec(`docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" restart`, (error, stdout, stderr) => {
-            invalidateContainerCache();
-            if (error) {
-                reject(new Error(stderr || error.message));
-            } else {
-                resolve(stdout);
-            }
-        });
-    });
+    try {
+        return await spawnCompose(hostPath, ['restart']);
+    } finally {
+        invalidateContainerCache();
+    }
 }
 
 // Get detailed service information for multi-container projects
 async function getProjectServices(projectPath) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    return new Promise((resolve, reject) => {
-        exec(
-            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" ps --format json`,
-            (error, stdout, stderr) => {
-                if (error) {
-                    // If compose file doesn't exist or project not started, return empty
-                    resolve([]);
-                } else {
-                    try {
-                        // Each line is a JSON object
-                        const services = stdout.trim().split('\n')
-                            .filter(line => line.trim())
-                            .map(line => {
-                                try {
-                                    return JSON.parse(line);
-                                } catch {
-                                    return null;
-                                }
-                            })
-                            .filter(s => s !== null);
-                        resolve(services);
-                    } catch (e) {
-                        resolve([]);
-                    }
+    try {
+        const stdout = await spawnCompose(hostPath, ['ps', '--format', 'json']);
+        // Each line is a JSON object
+        const services = stdout.trim().split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                try {
+                    return JSON.parse(line);
+                } catch {
+                    return null;
                 }
-            }
-        );
-    });
+            })
+            .filter(s => s !== null);
+        return services;
+    } catch {
+        // If compose file doesn't exist or project not started, return empty
+        return [];
+    }
 }
 
 // Get logs for a specific service in a multi-container project
 async function getServiceLogs(projectPath, serviceName, lines = 100) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    return new Promise((resolve, reject) => {
-        exec(
-            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" logs --tail ${lines} ${serviceName}`,
-            { maxBuffer: 1024 * 1024 * 5 }, // 5MB buffer
-            (error, stdout, stderr) => {
-                if (error) {
-                    resolve(`Error loading logs for ${serviceName}: ${error.message}`);
-                } else {
-                    resolve(stdout || stderr || 'No logs available');
-                }
-            }
-        );
-    });
+    try {
+        const stdout = await spawnCompose(hostPath, ['logs', '--tail', String(lines), serviceName], { maxStdout: 5 * 1024 * 1024 });
+        return stdout || 'No logs available';
+    } catch (error) {
+        return `Error loading logs for ${serviceName}: ${error.message}`;
+    }
 }
 
 // Restart a specific service in a multi-container project
 async function restartService(projectPath, serviceName) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    return new Promise((resolve, reject) => {
-        exec(
-            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" restart ${serviceName}`,
-            (error, stdout, stderr) => {
-                if (error) {
-                    reject(new Error(stderr || error.message));
-                } else {
-                    resolve(stdout);
-                }
-            }
-        );
-    });
+    return spawnCompose(hostPath, ['restart', serviceName]);
 }
 
 // Rebuild and restart project (for projects with build context)
 async function rebuildProject(projectPath) {
-    const { exec } = require('child_process');
     const hostPath = toHostPath(projectPath);
-    return new Promise((resolve, reject) => {
-        exec(
-            `docker compose -f "${hostPath}/docker-compose.yml" --project-directory "${hostPath}" up -d --build`,
-            { timeout: 300000 }, // 5 minute timeout for builds
-            (error, stdout, stderr) => {
-                if (error) {
-                    reject(new Error(stderr || error.message));
-                } else {
-                    resolve(stdout);
-                }
-            }
-        );
-    });
+    return spawnCompose(hostPath, ['up', '-d', '--build'], { timeout: 300000 });
 }
 
 module.exports = {

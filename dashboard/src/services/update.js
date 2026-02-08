@@ -3,13 +3,13 @@
  * Handles checking for updates and performing Dployr updates
  */
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
 const fs = require('fs').promises;
 const { logger } = require('../config/logger');
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // GitHub repository info
 const GITHUB_OWNER = 'Flexomatic81';
@@ -109,17 +109,21 @@ async function getUpdateBranch() {
 async function getCurrentVersion() {
     try {
         // Get current git hash
-        const { stdout: hash } = await execAsync('git rev-parse --short HEAD', { cwd: DPLOYR_PATH });
+        const { stdout: hash } = await execFileAsync('git', ['rev-parse', '--short', 'HEAD'], { cwd: DPLOYR_PATH });
 
         // Get commit date
-        const { stdout: date } = await execAsync('git log -1 --format=%cd --date=format:\'%Y-%m-%d\'', { cwd: DPLOYR_PATH });
+        const { stdout: date } = await execFileAsync('git', ['log', '-1', '--format=%cd', '--date=format:%Y-%m-%d'], { cwd: DPLOYR_PATH });
 
         // Try to get current tag (if on a release)
         // First fetch tags to ensure we have the latest from remote
         let tag = null;
         try {
-            await execAsync('git fetch --tags 2>/dev/null || true', { cwd: DPLOYR_PATH });
-            const { stdout: tagOutput } = await execAsync('git describe --tags --exact-match 2>/dev/null || echo ""', { cwd: DPLOYR_PATH });
+            await execFileAsync('git', ['fetch', '--tags'], { cwd: DPLOYR_PATH });
+        } catch {
+            // Fetch may fail if offline, continue anyway
+        }
+        try {
+            const { stdout: tagOutput } = await execFileAsync('git', ['describe', '--tags', '--exact-match'], { cwd: DPLOYR_PATH });
             tag = tagOutput.trim() || null;
         } catch {
             // Not on a tag, that's fine
@@ -199,13 +203,13 @@ async function getLatestRelease() {
 async function getCommitsSince(sinceHash, branch = 'main') {
     try {
         // Fetch latest from origin first
-        await execAsync(`git fetch origin ${branch} --quiet`, { cwd: DPLOYR_PATH });
+        await execFileAsync('git', ['fetch', 'origin', branch, '--quiet'], { cwd: DPLOYR_PATH });
 
         // Get commits between current and origin/branch
-        const { stdout } = await execAsync(
-            `git log ${sinceHash}..origin/${branch} --oneline --format="%h|%s|%cd" --date=format:'%Y-%m-%d' 2>/dev/null || echo ""`,
-            { cwd: DPLOYR_PATH }
-        );
+        const { stdout } = await execFileAsync('git', [
+            'log', `${sinceHash}..origin/${branch}`,
+            '--oneline', '--format=%h|%s|%cd', '--date=format:%Y-%m-%d'
+        ], { cwd: DPLOYR_PATH });
 
         if (!stdout.trim()) {
             return [];
@@ -271,12 +275,12 @@ async function checkForUpdates(force = false) {
                 try {
                     // Get the commit SHA for the release tag using git ls-remote
                     // Use ^{} suffix to dereference annotated tags to their commit
-                    const { stdout } = await execAsync(`git ls-remote origin "refs/tags/${latestRelease.tag}^{}"`, { cwd: DPLOYR_PATH });
+                    const { stdout } = await execFileAsync('git', ['ls-remote', 'origin', `refs/tags/${latestRelease.tag}^{}`], { cwd: DPLOYR_PATH });
                     let match = stdout.match(/^([a-f0-9]+)/);
 
                     // If ^{} returns nothing, it's a lightweight tag - try without ^{}
                     if (!match) {
-                        const { stdout: lightweightOutput } = await execAsync(`git ls-remote origin refs/tags/${latestRelease.tag}`, { cwd: DPLOYR_PATH });
+                        const { stdout: lightweightOutput } = await execFileAsync('git', ['ls-remote', 'origin', `refs/tags/${latestRelease.tag}`], { cwd: DPLOYR_PATH });
                         match = lightweightOutput.match(/^([a-f0-9]+)/);
                     }
 
@@ -362,7 +366,7 @@ async function performUpdate() {
 
         // Execute the deploy script with branch parameter
         // Timeout increased to 15 minutes to allow workspace image rebuild
-        const { stdout, stderr } = await execAsync(`bash ${DEPLOY_SCRIPT} --branch ${branch}`, {
+        const { stdout, stderr } = await execFileAsync('bash', [DEPLOY_SCRIPT, '--branch', branch], {
             cwd: DPLOYR_PATH,
             timeout: 900000, // 15 minute timeout (workspace image build can take 5-10 min)
             env: {

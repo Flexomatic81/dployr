@@ -4,16 +4,31 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
 
 const testDir = '/tmp/dployr-test-update';
 
 // Set env BEFORE requiring modules
 process.env.HOST_DPLOYR_PATH = testDir;
 
-// Mock child_process
+// Mock child_process with custom promisify support
+const { promisify } = require('util');
+const mockExecFile = jest.fn();
+// Add custom promisify so util.promisify(execFile) returns { stdout, stderr }
+mockExecFile[promisify.custom] = (...args) => {
+    return new Promise((resolve, reject) => {
+        mockExecFile(...args, (err, stdout, stderr) => {
+            if (err) {
+                err.stdout = stdout;
+                err.stderr = stderr;
+                reject(err);
+            } else {
+                resolve({ stdout, stderr });
+            }
+        });
+    });
+};
 jest.mock('child_process', () => ({
-    exec: jest.fn()
+    execFile: mockExecFile
 }));
 
 // Mock fetch
@@ -109,20 +124,20 @@ describe('Update Service', () => {
 
     describe('getCurrentVersion', () => {
         it('should get version from git commands', async () => {
-            // Mock exec to simulate git commands
-            exec.mockImplementation((cmd, opts, callback) => {
+            // Mock execFile to simulate git commands
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') {
                     callback = opts;
                 }
 
-                if (cmd.includes('rev-parse')) {
-                    callback(null, { stdout: 'abc1234\n' });
-                } else if (cmd.includes('git log')) {
-                    callback(null, { stdout: '2024-01-15\n' });
-                } else if (cmd.includes('describe --tags')) {
-                    callback(null, { stdout: 'v1.0.0\n' });
+                if (args.includes('rev-parse')) {
+                    callback(null, 'abc1234\n', '');
+                } else if (args.includes('log')) {
+                    callback(null, '2024-01-15\n', '');
+                } else if (args.includes('describe')) {
+                    callback(null, 'v1.0.0\n', '');
                 } else {
-                    callback(null, { stdout: '' });
+                    callback(null, '', '');
                 }
             });
 
@@ -134,19 +149,19 @@ describe('Update Service', () => {
         });
 
         it('should handle missing tag gracefully', async () => {
-            exec.mockImplementation((cmd, opts, callback) => {
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') {
                     callback = opts;
                 }
 
-                if (cmd.includes('rev-parse')) {
-                    callback(null, { stdout: 'abc1234\n' });
-                } else if (cmd.includes('git log')) {
-                    callback(null, { stdout: '2024-01-15\n' });
-                } else if (cmd.includes('describe --tags')) {
-                    callback(null, { stdout: '\n' });
+                if (args.includes('rev-parse')) {
+                    callback(null, 'abc1234\n', '');
+                } else if (args.includes('log')) {
+                    callback(null, '2024-01-15\n', '');
+                } else if (args.includes('describe')) {
+                    callback(new Error('No tag'));
                 } else {
-                    callback(null, { stdout: '' });
+                    callback(null, '', '');
                 }
             });
 
@@ -157,7 +172,7 @@ describe('Update Service', () => {
         });
 
         it('should return fallback on git error', async () => {
-            exec.mockImplementation((cmd, opts, callback) => {
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') {
                     callback = opts;
                 }
@@ -263,19 +278,19 @@ describe('Update Service', () => {
             await fs.writeFile(envPath, 'UPDATE_CHANNEL=stable\n');
 
             // Mock git commands
-            exec.mockImplementation((cmd, opts, callback) => {
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') {
                     callback = opts;
                 }
 
-                if (cmd.includes('rev-parse')) {
-                    callback(null, { stdout: 'abc1234\n' });
-                } else if (cmd.includes('git log -1')) {
-                    callback(null, { stdout: '2024-01-15\n' });
-                } else if (cmd.includes('describe --tags')) {
-                    callback(null, { stdout: 'v1.0.0\n' });
+                if (args.includes('rev-parse')) {
+                    callback(null, 'abc1234\n', '');
+                } else if (args[0] === 'log' && args[1] === '-1') {
+                    callback(null, '2024-01-15\n', '');
+                } else if (args.includes('describe')) {
+                    callback(null, 'v1.0.0\n', '');
                 } else {
-                    callback(null, { stdout: '' });
+                    callback(null, '', '');
                 }
             });
 
@@ -307,12 +322,12 @@ describe('Update Service', () => {
             await fs.writeFile(envPath, 'UPDATE_CHANNEL=stable\n');
 
             // First call (force)
-            exec.mockImplementation((cmd, opts, callback) => {
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') callback = opts;
-                if (cmd.includes('rev-parse')) callback(null, { stdout: 'abc1234\n' });
-                else if (cmd.includes('git log -1')) callback(null, { stdout: '2024-01-15\n' });
-                else if (cmd.includes('describe --tags')) callback(null, { stdout: 'v1.0.0\n' });
-                else callback(null, { stdout: '' });
+                if (args.includes('rev-parse')) callback(null, 'abc1234\n', '');
+                else if (args[0] === 'log' && args[1] === '-1') callback(null, '2024-01-15\n', '');
+                else if (args.includes('describe')) callback(null, 'v1.0.0\n', '');
+                else callback(null, '', '');
             });
 
             fetch.mockResolvedValue({
@@ -345,16 +360,16 @@ describe('Update Service', () => {
             await fs.writeFile(envPath, 'UPDATE_CHANNEL=stable\n');
             await fs.writeFile(scriptPath, '#!/bin/bash\necho "Update complete"');
 
-            exec.mockImplementation((cmd, opts, callback) => {
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') {
                     callback = opts;
                     opts = {};
                 }
 
-                if (cmd.includes('deploy.sh')) {
-                    callback(null, { stdout: 'Update complete\n', stderr: '' });
+                if (cmd === 'bash' && args.some(a => a.includes('deploy.sh'))) {
+                    callback(null, 'Update complete\n', '');
                 } else {
-                    callback(null, { stdout: '' });
+                    callback(null, '', '');
                 }
             });
 
@@ -391,19 +406,19 @@ describe('Update Service', () => {
             await fs.writeFile(envPath, 'UPDATE_CHANNEL=stable\n');
             await fs.writeFile(scriptPath, '#!/bin/bash\nexit 1');
 
-            exec.mockImplementation((cmd, opts, callback) => {
+            mockExecFile.mockImplementation((cmd, args, opts, callback) => {
                 if (typeof opts === 'function') {
                     callback = opts;
                     opts = {};
                 }
 
-                if (cmd.includes('deploy.sh')) {
+                if (cmd === 'bash' && args.some(a => a.includes('deploy.sh'))) {
                     const error = new Error('Script failed');
                     error.stdout = 'Error output';
                     error.stderr = 'Some error';
                     callback(error);
                 } else {
-                    callback(null, { stdout: '' });
+                    callback(null, '', '');
                 }
             });
 

@@ -25,13 +25,32 @@ jest.mock('../../src/config/logger', () => ({
     }
 }));
 
-// Mock child_process.exec
+const EventEmitter = require('events');
+
+// Helper to create a mock spawn child process
+function createMockSpawn(stdout = '', stderr = '', exitCode = 0) {
+    const proc = new EventEmitter();
+    proc.stdout = new EventEmitter();
+    proc.stderr = new EventEmitter();
+    proc.kill = jest.fn();
+
+    // Emit data and close asynchronously
+    process.nextTick(() => {
+        if (stdout) proc.stdout.emit('data', Buffer.from(stdout));
+        if (stderr) proc.stderr.emit('data', Buffer.from(stderr));
+        proc.emit('close', exitCode);
+    });
+
+    return proc;
+}
+
+// Mock child_process.spawn
+const mockSpawn = jest.fn();
 jest.mock('child_process', () => ({
-    exec: jest.fn()
+    spawn: mockSpawn
 }));
 
 const dockerService = require('../../src/services/docker');
-const { exec } = require('child_process');
 
 describe('Docker Service', () => {
     beforeEach(() => {
@@ -198,23 +217,16 @@ describe('Docker Service', () => {
 
     describe('startProject', () => {
         it('should start project using docker compose', async () => {
-            exec.mockImplementation((cmd, callback) => {
-                callback(null, 'Started successfully', '');
-            });
+            mockSpawn.mockReturnValue(createMockSpawn('Started successfully'));
 
             const result = await dockerService.startProject('/app/users/test/project');
 
-            expect(exec).toHaveBeenCalledWith(
-                expect.stringContaining('docker compose'),
-                expect.any(Function)
-            );
+            expect(mockSpawn).toHaveBeenCalledWith('docker', expect.arrayContaining(['compose', 'up', '-d']));
             expect(result).toBe('Started successfully');
         });
 
         it('should reject on docker compose error', async () => {
-            exec.mockImplementation((cmd, callback) => {
-                callback(new Error('Failed'), '', 'Error message');
-            });
+            mockSpawn.mockReturnValue(createMockSpawn('', 'Error message', 1));
 
             await expect(dockerService.startProject('/app/users/test/project'))
                 .rejects.toThrow('Error message');
@@ -223,26 +235,22 @@ describe('Docker Service', () => {
 
     describe('stopProject', () => {
         it('should stop project using docker compose down', async () => {
-            exec.mockImplementation((cmd, callback) => {
-                expect(cmd).toContain('down');
-                callback(null, 'Stopped', '');
-            });
+            mockSpawn.mockReturnValue(createMockSpawn('Stopped'));
 
             const result = await dockerService.stopProject('/app/users/test/project');
 
+            expect(mockSpawn).toHaveBeenCalledWith('docker', expect.arrayContaining(['compose', 'down']));
             expect(result).toBe('Stopped');
         });
     });
 
     describe('restartProject', () => {
         it('should restart project using docker compose restart', async () => {
-            exec.mockImplementation((cmd, callback) => {
-                expect(cmd).toContain('restart');
-                callback(null, 'Restarted', '');
-            });
+            mockSpawn.mockReturnValue(createMockSpawn('Restarted'));
 
             const result = await dockerService.restartProject('/app/users/test/project');
 
+            expect(mockSpawn).toHaveBeenCalledWith('docker', expect.arrayContaining(['compose', 'restart']));
             expect(result).toBe('Restarted');
         });
     });
