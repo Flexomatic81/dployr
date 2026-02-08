@@ -5,6 +5,22 @@ All notable changes to Dployr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.5.2] - 2026-02-08
+
+### Security
+- Replaced `exec()` with `spawn()` in docker.js and `execFile()` in update.js to eliminate command injection risk — arguments are now passed as arrays instead of shell-interpreted strings
+- Added input validation (userId, port range 8001-65535, protocol whitelist) to projectPorts service
+
+### Fixed
+- Port conflicts between multi-container custom compose projects: centralized port tracking via `project_ports` database table replaces unreliable filesystem-only scanning
+- Port allocation now considers all registered ports (database + filesystem fallback) when assigning new ports
+- Custom compose projects pass `usedPorts` set during port remapping to avoid collisions
+
+### Added
+- New `projectPorts` service for database-backed port lifecycle management (register, release, backfill)
+- Automatic backfill of existing project ports on startup when `project_ports` table is empty
+- Port registrations on project creation (template, git, zip, clone) and cleanup on deletion
+
 ## [v1.5.1] - 2026-02-07
 
 ### Security
