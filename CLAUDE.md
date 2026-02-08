@@ -6,6 +6,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 - **Server deployments** (ssh hetzner, deploy.sh) **always require explicit user confirmation**
 - Commits and pushes only when requested by the user
+- When a commit fixes a GitHub issue, include `Closes #N` in the commit message body
 
 ## Code Style
 
@@ -83,8 +84,19 @@ Users can deploy their own `docker-compose.yml`. The system validates, sanitizes
 - Blocks dangerous options (privileged, cap_add, host network, docker.sock mounts)
 - Prefixes container names, remaps ports, adds resource limits
 - Database volumes go to `./data/` instead of `./html/`
+- Port allocation checks `usedPorts` set to avoid conflicts with existing projects
 
 Service: `compose-validator.js`
+
+### Port Management
+
+Centralized port tracking via `project_ports` database table:
+- Ports registered on project creation (template, git, zip, clone) and released on deletion
+- `findNextAvailablePort()` merges database + filesystem scan for robustness
+- Custom compose projects register all port mappings (multi-port)
+- Auto-backfill on startup when table is empty
+
+Service: `projectPorts.js`, Table: `project_ports`
 
 ### Database Provider Pattern
 
@@ -150,6 +162,7 @@ Service: `twofa.js`
 
 - Helmet (CSP, security headers)
 - **Nonce-based CSP**: No `unsafe-inline`/`unsafe-eval` in scriptSrc. Inline `<script>` tags require `nonce="<%= cspNonce %>"`. No inline event handlers (`onclick`, `onkeypress` etc.) — use `addEventListener` instead.
+- **No shell execution**: Docker commands use `spawn()` (argument arrays), git commands use `execFile()` — no `exec()` with template strings
 - Rate limiting (auth: 10/15min, API: 100/min)
 - Joi input validation
 - CSRF protection (session-based)
