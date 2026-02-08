@@ -680,7 +680,7 @@ async function start() {
                         logger.warn('Port backfill failed', { error: err.message });
                     }
                 }
-            }).catch(() => {});
+            }).catch(err => { logger.warn('Port backfill check failed', { error: err.message }); });
 
             // Start Auto-Deploy polling
             startAutoDeployPolling();

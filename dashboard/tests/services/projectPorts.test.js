@@ -105,6 +105,39 @@ describe('ProjectPorts Service', () => {
                 [1, 'my-project', 'web', 80, 8001, 'tcp']
             );
         });
+
+        it('should throw on invalid userId', async () => {
+            await expect(projectPorts.registerPorts(null, 'my-project', [
+                { service: 'web', internal: 80, external: 8001 }
+            ])).rejects.toThrow('Invalid userId');
+        });
+
+        it('should throw on invalid projectName', async () => {
+            await expect(projectPorts.registerPorts(1, '', [
+                { service: 'web', internal: 80, external: 8001 }
+            ])).rejects.toThrow('Invalid projectName');
+        });
+
+        it('should skip mappings with invalid port range', async () => {
+            await projectPorts.registerPorts(1, 'my-project', [
+                { service: 'web', internal: 80, external: 99999 },
+                { service: 'api', internal: 3000, external: 8001, protocol: 'tcp' }
+            ]);
+
+            // DELETE + 1 valid INSERT (invalid port skipped)
+            expect(mockConnection.execute).toHaveBeenCalledTimes(2);
+        });
+
+        it('should sanitize invalid protocol to tcp', async () => {
+            await projectPorts.registerPorts(1, 'my-project', [
+                { service: 'web', internal: 80, external: 8001, protocol: 'invalid' }
+            ]);
+
+            expect(mockConnection.execute).toHaveBeenCalledWith(
+                expect.stringContaining('INSERT INTO project_ports'),
+                [1, 'my-project', 'web', 80, 8001, 'tcp']
+            );
+        });
     });
 
     describe('registerBasePort', () => {

@@ -9,6 +9,9 @@ const fs = require('fs').promises;
 const { logger } = require('../config/logger');
 
 const USERS_PATH = process.env.USERS_PATH || '/app/users';
+const MIN_PORT = 8001;
+const MAX_PORT = 65535;
+const VALID_PROTOCOLS = ['tcp', 'udp'];
 
 /**
  * Get database pool (lazy to avoid circular dependency at import time)
@@ -25,6 +28,8 @@ function getPool() {
  */
 async function registerPorts(userId, projectName, portMappings) {
     if (!portMappings || portMappings.length === 0) return;
+    if (!userId || !Number.isInteger(userId)) throw new Error('Invalid userId');
+    if (!projectName || typeof projectName !== 'string') throw new Error('Invalid projectName');
 
     const pool = getPool();
     const connection = await pool.getConnection();
@@ -39,10 +44,16 @@ async function registerPorts(userId, projectName, portMappings) {
 
         // Insert new entries
         for (const mapping of portMappings) {
+            const extPort = parseInt(mapping.external);
+            const intPort = parseInt(mapping.internal);
+            if (!Number.isInteger(extPort) || extPort < MIN_PORT || extPort > MAX_PORT) continue;
+            if (!Number.isInteger(intPort) || intPort < 0 || intPort > MAX_PORT) continue;
+            const protocol = VALID_PROTOCOLS.includes(mapping.protocol) ? mapping.protocol : 'tcp';
+
             await connection.execute(
                 `INSERT INTO project_ports (user_id, project_name, service_name, internal_port, external_port, protocol)
                  VALUES (?, ?, ?, ?, ?, ?)`,
-                [userId, projectName, mapping.service, mapping.internal, mapping.external, mapping.protocol || 'tcp']
+                [userId, projectName, mapping.service || 'unknown', intPort, extPort, protocol]
             );
         }
 
@@ -152,9 +163,8 @@ async function findNextAvailablePort(count = 1) {
     // Merge both sets
     const allUsedPorts = new Set([...dbPorts, ...fsPorts]);
 
-    // Find a contiguous block of 'count' free ports starting from 8001
-    const MAX_PORT = 65535;
-    let startPort = 8001;
+    // Find a contiguous block of 'count' free ports starting from MIN_PORT
+    let startPort = MIN_PORT;
 
     while (startPort + count - 1 <= MAX_PORT) {
         let blockFree = true;
