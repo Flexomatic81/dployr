@@ -1751,7 +1751,7 @@ async function projectAction(action) {
         // Start polling for status
         const expectedStatus = EXPECTED_STATUS[action];
         let attempts = 0;
-        const maxAttempts = 60; // 2 minutes max
+        const maxAttempts = 150; // 5 minutes max
 
         pollInterval = setInterval(async () => {
             attempts++;
