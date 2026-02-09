@@ -1380,13 +1380,12 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
             </div>
             <div class="modal-body text-center py-4">
                 <div id="projectActionSpinner">
-                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                    <div class="progress mt-2 mb-3" style="height: 28px;" id="projectActionProgress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" id="projectActionProgressBar">
+                            <span id="projectActionProgressText"><%= t('projects:action.pleaseWait') %></span>
+                        </div>
                     </div>
-                    <div class="progress mt-3 mb-2" style="height: 6px;" id="projectActionProgress">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="projectActionProgressBar"></div>
-                    </div>
-                    <p class="mb-0 text-body-secondary" id="projectActionStatus"><%= t('projects:action.pleaseWait') %></p>
+                    <p class="mb-0 text-body-secondary small" id="projectActionStatus"><%= t('projects:action.pleaseWait') %></p>
                 </div>
                 <div id="projectActionSuccess" class="d-none">
                     <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
@@ -1682,7 +1681,9 @@ async function projectAction(action) {
     document.getElementById('projectActionError').classList.add('d-none');
     document.getElementById('projectActionFooter').classList.add('d-none');
     document.getElementById('projectActionStatus').textContent = '<%= t("projects:action.pleaseWait") %>';
-    document.getElementById('projectActionProgressBar').style.width = '0%';
+    document.getElementById('projectActionProgressBar').style.width = '100%';
+    document.getElementById('projectActionProgressBar').classList.add('progress-bar-animated');
+    document.getElementById('projectActionProgressText').textContent = '<%= t("projects:action.pleaseWait") %>';
     const titleSpinner = document.querySelector('#projectActionTitle .spinner-border');
     if (titleSpinner) titleSpinner.classList.remove('d-none');
 
@@ -1727,14 +1728,19 @@ async function projectAction(action) {
 
                 // Update progress bar and status text
                 const progressBar = document.getElementById('projectActionProgressBar');
+                const progressText = document.getElementById('projectActionProgressText');
                 if (statusData.totalContainers > 0) {
                     const pct = Math.round((statusData.runningContainers / statusData.totalContainers) * 100);
-                    progressBar.style.width = pct + '%';
-                    document.getElementById('projectActionStatus').textContent =
-                        CONTAINERS_ACTIVE_TEXT.replace('{{running}}', statusData.runningContainers).replace('{{total}}', statusData.totalContainers);
+                    progressBar.style.width = Math.max(pct, 10) + '%';
+                    progressBar.classList.remove('progress-bar-animated');
+                    const containerText = CONTAINERS_ACTIVE_TEXT.replace('{{running}}', statusData.runningContainers).replace('{{total}}', statusData.totalContainers);
+                    progressText.textContent = containerText;
+                    document.getElementById('projectActionStatus').textContent = containerText;
                 } else if (action === 'start' || action === 'rebuild') {
-                    // Building phase: show indeterminate progress
+                    // Building phase: indeterminate animated bar
                     progressBar.style.width = '100%';
+                    progressBar.classList.add('progress-bar-animated');
+                    progressText.textContent = BUILDING_TEXT;
                     document.getElementById('projectActionStatus').textContent = BUILDING_TEXT;
                 }
 
