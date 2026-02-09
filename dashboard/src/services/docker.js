@@ -265,7 +265,7 @@ async function restartService(projectPath, serviceName) {
 // Rebuild and restart project (for projects with build context)
 async function rebuildProject(projectPath, options = {}) {
     const hostPath = toHostPath(projectPath);
-    return spawnCompose(hostPath, ['up', '-d', '--build'], { timeout: 300000, onOutput: options.onOutput });
+    return spawnCompose(hostPath, ['up', '-d', '--build'], { onOutput: options.onOutput });
 }
 
 module.exports = {
