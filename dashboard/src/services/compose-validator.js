@@ -217,9 +217,10 @@ function parseCompose(content) {
 /**
  * Validate compose file against security rules
  * @param {object} compose - Parsed compose object
+ * @param {string} [sourceDir] - Subdirectory where the compose file was found (e.g. 'docker')
  * @returns {object} - Validation result with errors array
  */
-function validateCompose(compose) {
+function validateCompose(compose, sourceDir) {
     const errors = [];
 
     // Check if services exist
@@ -274,8 +275,19 @@ function validateCompose(compose) {
                 : service.build.context || '.';
 
             // Ensure build context is relative (within project)
-            if (buildContext.startsWith('/') || buildContext.startsWith('..')) {
+            if (buildContext.startsWith('/')) {
                 errors.push(`Service "${serviceName}": build context must be relative to project directory`);
+            } else if (buildContext.startsWith('..')) {
+                // When compose file is in a subdirectory (e.g. docker/), resolve
+                // ".." relative to that subdirectory and check if it stays within the project
+                if (sourceDir) {
+                    const resolved = path.posix.normalize(sourceDir + '/' + buildContext);
+                    if (resolved.startsWith('..')) {
+                        errors.push(`Service "${serviceName}": build context must be relative to project directory`);
+                    }
+                } else {
+                    errors.push(`Service "${serviceName}": build context must be relative to project directory`);
+                }
             }
         }
     }
@@ -513,7 +525,7 @@ function processUserCompose(content, containerPrefix, basePort, sourceDir, usedP
     }
 
     // Validate
-    const validation = validateCompose(parseResult.compose);
+    const validation = validateCompose(parseResult.compose, sourceDir);
     if (!validation.valid) {
         logger.warn('User docker-compose.yml validation failed', { errors: validation.errors });
         return { success: false, errors: validation.errors };

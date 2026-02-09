@@ -410,6 +410,60 @@ services:
 
             expect(result.valid).toBe(true);
         });
+
+        it('should allow parent directory build context when sourceDir is set', () => {
+            const compose = {
+                services: {
+                    api: {
+                        build: {
+                            context: '..',
+                            dockerfile: 'apps/api/Dockerfile'
+                        }
+                    },
+                    web: {
+                        build: '..'
+                    }
+                }
+            };
+
+            const result = composeValidator.validateCompose(compose, 'docker');
+
+            expect(result.valid).toBe(true);
+        });
+
+        it('should reject parent directory build context that escapes project with sourceDir', () => {
+            const compose = {
+                services: {
+                    web: {
+                        build: '../..'
+                    }
+                }
+            };
+
+            const result = composeValidator.validateCompose(compose, 'docker');
+
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain(
+                'Service "web": build context must be relative to project directory'
+            );
+        });
+
+        it('should still reject absolute build context even with sourceDir', () => {
+            const compose = {
+                services: {
+                    web: {
+                        build: '/opt/malicious'
+                    }
+                }
+            };
+
+            const result = composeValidator.validateCompose(compose, 'docker');
+
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain(
+                'Service "web": build context must be relative to project directory'
+            );
+        });
     });
 
     describe('validateCompose - Networks', () => {
