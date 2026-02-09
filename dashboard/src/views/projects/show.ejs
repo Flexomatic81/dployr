@@ -1748,14 +1748,10 @@ async function projectAction(action) {
             if (logSource) { logSource.close(); logSource = null; }
         };
 
-        // Start polling for status
+        // Start polling for status (no timeout — user can close modal manually)
         const expectedStatus = EXPECTED_STATUS[action];
-        let attempts = 0;
-        const maxAttempts = 150; // 5 minutes max
 
         pollInterval = setInterval(async () => {
-            attempts++;
-
             try {
                 const statusResponse = await fetch(`/projects/${PROJECT_NAME}/status`);
                 const statusData = await statusResponse.json();
@@ -1796,13 +1792,6 @@ async function projectAction(action) {
                     pollInterval = null;
                     showActionSuccess(action);
                     return;
-                }
-
-                // Timeout
-                if (attempts >= maxAttempts) {
-                    clearInterval(pollInterval);
-                    pollInterval = null;
-                    showActionError('<%= t("projects:action.timeout") %>');
                 }
             } catch (e) {
                 // Ignore polling errors, keep trying
@@ -1853,11 +1842,12 @@ function showActionError(message) {
     document.getElementById('projectActionFooter').classList.remove('d-none');
 }
 
-// Clean up EventSource when modal is closed
+// Clean up EventSource and polling when modal is closed
 var actionModal = document.getElementById('projectActionModal');
 if (actionModal) {
     actionModal.addEventListener('hidden.bs.modal', function() {
         if (logSource) { logSource.close(); logSource = null; }
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     });
 }
 </script>
