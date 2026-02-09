@@ -1391,7 +1391,7 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
                 </div>
                 <div id="projectActionError" class="d-none">
                     <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
-                    <p class="mt-3 mb-0 text-danger" id="projectActionErrorText"><%= t('projects:action.error') %></p>
+                    <pre class="mt-3 mb-0 text-danger text-start small" id="projectActionErrorText" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"><%= t('projects:action.error') %></pre>
                 </div>
             </div>
         </div>
@@ -1661,6 +1661,7 @@ const EXPECTED_STATUS = {
     rebuild: 'running'
 };
 const CONTAINERS_ACTIVE_TEXT = '<%= t("projects:action.containersActive") %>';
+const BUILDING_TEXT = '<%= t("projects:action.building") %>';
 
 let pollInterval = null;
 
@@ -1706,10 +1707,20 @@ async function projectAction(action) {
                 const statusResponse = await fetch(`/projects/${PROJECT_NAME}/status`);
                 const statusData = await statusResponse.json();
 
+                // Check for operation error from backend
+                if (statusData.operationError) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    showActionError(statusData.operationError);
+                    return;
+                }
+
                 // Update status text with container progress
                 if (statusData.totalContainers > 0) {
                     document.getElementById('projectActionStatus').textContent =
                         CONTAINERS_ACTIVE_TEXT.replace('{{running}}', statusData.runningContainers).replace('{{total}}', statusData.totalContainers);
+                } else if (action === 'start' || action === 'rebuild') {
+                    document.getElementById('projectActionStatus').textContent = BUILDING_TEXT;
                 }
 
                 // Check if we reached expected status

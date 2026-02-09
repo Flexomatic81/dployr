@@ -314,7 +314,8 @@
     "success": "Action successful",
     "error": "Action failed",
     "timeout": "Timeout - project may still be processing",
-    "containersActive": "{{running}}/{{total}} containers active"
+    "containersActive": "{{running}}/{{total}} containers active",
+    "building": "Building images..."
   },
 
   "flash": {

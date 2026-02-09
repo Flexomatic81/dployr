@@ -314,7 +314,8 @@
     "success": "Aktion erfolgreich",
     "error": "Fehler bei der Aktion",
     "timeout": "Zeitüberschreitung - Projekt wird möglicherweise noch verarbeitet",
-    "containersActive": "{{running}}/{{total}} Container aktiv"
+    "containersActive": "{{running}}/{{total}} Container aktiv",
+    "building": "Images werden gebaut..."
   },
 
   "flash": {

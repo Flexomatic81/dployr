@@ -22,6 +22,7 @@ const projectPorts = require('../../services/projectPorts');
 const upload = require('../../middleware/upload');
 const { validateZipMiddleware } = require('../../middleware/upload');
 const { logger } = require('../../config/logger');
+const operationErrors = require('../../services/operationErrors');
 
 // Import sub-routers
 const gitRouter = require('./git');
@@ -49,6 +50,9 @@ async function handleProjectOperation(req, res, operation, operationName, status
     const isAsync = req.query.async === 'true';
 
     if (isAsync) {
+        // Clear any previous error before starting new operation
+        operationErrors.clearError(projectName);
+
         // Execute in background and return immediately
         operation()
             .then(() => {
@@ -56,6 +60,7 @@ async function handleProjectOperation(req, res, operation, operationName, status
             })
             .catch(error => {
                 logger.error(`Error ${operationName} project (async)`, { name: projectName, error: error.message });
+                operationErrors.setError(projectName, operationName, error.message);
             });
 
         return res.json({ status: operationName.replace('ed', 'ing'), message: statusMessage });
@@ -409,12 +414,14 @@ router.get('/:name/status', requireAuth, getProjectAccess(), requirePermission('
         const project = req.projectAccess.project;
         const systemUsername = req.projectAccess.systemUsername;
         const projectInfo = await projectService.getProjectInfo(systemUsername, req.params.name);
+        const opError = operationErrors.getError(req.params.name);
 
         res.json({
             status: projectInfo?.status || 'unknown',
             runningContainers: projectInfo?.runningContainers || 0,
             totalContainers: projectInfo?.totalContainers || 0,
-            services: projectInfo?.services || []
+            services: projectInfo?.services || [],
+            operationError: opError ? opError.error : null
         });
     } catch (error) {
         logger.error('Error getting project status', { error: error.message });
@@ -499,6 +506,9 @@ router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission
     }
 
     if (isAsync) {
+        // Clear any previous error before starting new operation
+        operationErrors.clearError(req.params.name);
+
         // Start rebuild in background and return immediately
         dockerService.rebuildProject(project.path)
             .then(() => {
@@ -506,6 +516,7 @@ router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission
             })
             .catch(error => {
                 logger.error('Error rebuilding project (async)', { name: req.params.name, error: error.message });
+                operationErrors.setError(req.params.name, 'rebuilt', error.message);
             });
 
         return res.json({ status: 'rebuilding', message: 'Project is being rebuilt...' });
