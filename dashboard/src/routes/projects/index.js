@@ -23,6 +23,7 @@ const upload = require('../../middleware/upload');
 const { validateZipMiddleware } = require('../../middleware/upload');
 const { logger } = require('../../config/logger');
 const operationErrors = require('../../services/operationErrors');
+const operationLogs = require('../../services/operationLogs');
 
 // Import sub-routers
 const gitRouter = require('./git');
@@ -52,13 +53,16 @@ async function handleProjectOperation(req, res, operation, operationName, status
     if (isAsync) {
         // Clear any previous error before starting new operation
         operationErrors.clearError(projectName);
+        const onOutput = operationLogs.startCapture(projectName);
 
         // Execute in background and return immediately
-        operation()
+        operation(onOutput)
             .then(() => {
+                operationLogs.finish(projectName);
                 logger.info(`Project ${operationName} successfully (async)`, { name: projectName });
             })
             .catch(error => {
+                operationLogs.finish(projectName, error.message);
                 logger.error(`Error ${operationName} project (async)`, { name: projectName, error: error.message });
                 operationErrors.setError(projectName, operationName, error.message);
             });
@@ -429,12 +433,67 @@ router.get('/:name/status', requireAuth, getProjectAccess(), requirePermission('
     }
 });
 
+// SSE: Stream live docker compose output for an active operation
+router.get('/:name/operation-log', requireAuth, getProjectAccess(), requirePermission('read'), (req, res) => {
+    const projectName = req.params.name;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    let nextIndex = 0;
+    let closed = false;
+
+    const sendEvent = (data) => {
+        if (!closed) {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+        }
+    };
+
+    const poll = setInterval(() => {
+        const result = operationLogs.getLines(projectName, nextIndex);
+        if (!result) {
+            // No buffer exists — operation never started or already cleaned up
+            sendEvent({ type: 'done' });
+            cleanup();
+            return;
+        }
+
+        // Send new lines
+        for (const line of result.lines) {
+            sendEvent({ type: 'output', text: line + '\n' });
+        }
+        nextIndex = result.nextIndex;
+
+        // Check if operation finished
+        const state = operationLogs.getState(projectName);
+        if (state && !state.active) {
+            if (state.error) {
+                sendEvent({ type: 'error', text: state.error });
+            } else {
+                sendEvent({ type: 'done' });
+            }
+            cleanup();
+        }
+    }, 500);
+
+    function cleanup() {
+        if (closed) return;
+        closed = true;
+        clearInterval(poll);
+        res.end();
+    }
+
+    req.on('close', cleanup);
+});
+
 // Start project - async API (manage or higher)
 router.post('/:name/start', requireAuth, getProjectAccess(), requirePermission('manage'), async (req, res) => {
     const project = req.projectAccess.project;
     await handleProjectOperation(
         req, res,
-        () => dockerService.startProject(project.path, { build: project.isCustom }),
+        (onOutput) => dockerService.startProject(project.path, { build: project.isCustom, onOutput }),
         'started',
         'Project is starting...'
     );
@@ -445,7 +504,7 @@ router.post('/:name/stop', requireAuth, getProjectAccess(), requirePermission('m
     const project = req.projectAccess.project;
     await handleProjectOperation(
         req, res,
-        () => dockerService.stopProject(project.path),
+        (onOutput) => dockerService.stopProject(project.path, { onOutput }),
         'stopped',
         'Project is stopping...'
     );
@@ -456,7 +515,7 @@ router.post('/:name/restart', requireAuth, getProjectAccess(), requirePermission
     const project = req.projectAccess.project;
     await handleProjectOperation(
         req, res,
-        () => dockerService.restartProject(project.path),
+        (onOutput) => dockerService.restartProject(project.path, { onOutput }),
         'restarted',
         'Project is restarting...'
     );
@@ -508,13 +567,16 @@ router.post('/:name/rebuild', requireAuth, getProjectAccess(), requirePermission
     if (isAsync) {
         // Clear any previous error before starting new operation
         operationErrors.clearError(req.params.name);
+        const onOutput = operationLogs.startCapture(req.params.name);
 
         // Start rebuild in background and return immediately
-        dockerService.rebuildProject(project.path)
+        dockerService.rebuildProject(project.path, { onOutput })
             .then(() => {
+                operationLogs.finish(req.params.name);
                 logger.info('Project rebuilt successfully (async)', { name: req.params.name });
             })
             .catch(error => {
+                operationLogs.finish(req.params.name, error.message);
                 logger.error('Error rebuilding project (async)', { name: req.params.name, error: error.message });
                 operationErrors.setError(req.params.name, 'rebuilt', error.message);
             });

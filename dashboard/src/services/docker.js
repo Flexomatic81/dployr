@@ -60,7 +60,7 @@ function toHostPath(containerPath) {
  * @returns {Promise<string>} stdout output
  */
 function spawnCompose(hostPath, args, options = {}) {
-    const { timeout, maxStdout = 5 * 1024 * 1024 } = options;
+    const { timeout, maxStdout = 5 * 1024 * 1024, onOutput } = options;
     const composeFile = path.join(hostPath, 'docker-compose.yml');
     const fullArgs = ['compose', '-f', composeFile, '--project-directory', hostPath, ...args];
 
@@ -86,10 +86,12 @@ function spawnCompose(hostPath, args, options = {}) {
                     stdoutOverflow = true;
                 }
             }
+            if (onOutput) onOutput(data.toString());
         });
 
         proc.stderr.on('data', (data) => {
             stderr += data.toString();
+            if (onOutput) onOutput(data.toString());
         });
 
         proc.on('error', (err) => {
@@ -194,27 +196,27 @@ async function startProject(projectPath, options = {}) {
     const hostPath = toHostPath(projectPath);
     const args = ['up', '-d', ...(options.build ? ['--build'] : [])];
     try {
-        return await spawnCompose(hostPath, args);
+        return await spawnCompose(hostPath, args, { onOutput: options.onOutput });
     } finally {
         invalidateContainerCache();
     }
 }
 
 // Stop project with docker-compose
-async function stopProject(projectPath) {
+async function stopProject(projectPath, options = {}) {
     const hostPath = toHostPath(projectPath);
     try {
-        return await spawnCompose(hostPath, ['down']);
+        return await spawnCompose(hostPath, ['down'], { onOutput: options.onOutput });
     } finally {
         invalidateContainerCache();
     }
 }
 
 // Restart project with docker-compose
-async function restartProject(projectPath) {
+async function restartProject(projectPath, options = {}) {
     const hostPath = toHostPath(projectPath);
     try {
-        return await spawnCompose(hostPath, ['restart']);
+        return await spawnCompose(hostPath, ['restart'], { onOutput: options.onOutput });
     } finally {
         invalidateContainerCache();
     }
@@ -261,9 +263,9 @@ async function restartService(projectPath, serviceName) {
 }
 
 // Rebuild and restart project (for projects with build context)
-async function rebuildProject(projectPath) {
+async function rebuildProject(projectPath, options = {}) {
     const hostPath = toHostPath(projectPath);
-    return spawnCompose(hostPath, ['up', '-d', '--build'], { timeout: 300000 });
+    return spawnCompose(hostPath, ['up', '-d', '--build'], { timeout: 300000, onOutput: options.onOutput });
 }
 
 module.exports = {
