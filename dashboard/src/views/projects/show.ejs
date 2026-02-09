@@ -1385,7 +1385,6 @@ document.getElementById('refreshLogsBtn')?.addEventListener('click', function() 
                             <span id="projectActionProgressText"><%= t('projects:action.pleaseWait') %></span>
                         </div>
                     </div>
-                    <p class="mb-0 text-body-secondary small" id="projectActionStatus"><%= t('projects:action.pleaseWait') %></p>
                 </div>
                 <div id="projectActionSuccess" class="d-none">
                     <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
@@ -1698,7 +1697,6 @@ async function projectAction(action) {
     document.getElementById('projectActionError').classList.add('d-none');
     document.getElementById('projectActionErrorText').classList.add('d-none');
     document.getElementById('projectActionFooter').classList.add('d-none');
-    document.getElementById('projectActionStatus').textContent = '<%= t("projects:action.pleaseWait") %>';
     document.getElementById('projectActionProgressBar').style.width = '100%';
     document.getElementById('projectActionProgressBar').classList.add('progress-bar-animated');
     document.getElementById('projectActionProgressText').textContent = '<%= t("projects:action.pleaseWait") %>';
@@ -1779,13 +1777,11 @@ async function projectAction(action) {
                     progressBar.classList.remove('progress-bar-animated');
                     const containerText = CONTAINERS_ACTIVE_TEXT.replace('{{running}}', statusData.runningContainers).replace('{{total}}', statusData.totalContainers);
                     progressText.textContent = containerText;
-                    document.getElementById('projectActionStatus').textContent = containerText;
                 } else if (action === 'start' || action === 'rebuild') {
                     // Building phase: indeterminate animated bar
                     progressBar.style.width = '100%';
                     progressBar.classList.add('progress-bar-animated');
                     progressText.textContent = BUILDING_TEXT;
-                    document.getElementById('projectActionStatus').textContent = BUILDING_TEXT;
                 }
 
                 // Check if we reached expected status
